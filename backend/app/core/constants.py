@@ -160,6 +160,12 @@ MIN_EVALUABLE_LENGTH = 100  # Minimum characters required for meaningful evaluat
 # This catches agents that produce valid structure but zero useful content
 MIN_AGENT_FINDINGS = 1  # Minimum findings required (0 = useless output)
 
+# Self-Correction Configuration (Issue #507 - Per-agent output validation)
+# When enabled, agents validate their output before returning and can retry
+# up to SELF_CORRECTION_MAX_RETRIES times if validation fails
+SELF_CORRECTION_ENABLED = True  # Master switch for self-correction
+SELF_CORRECTION_MAX_RETRIES = 2  # Max retries per agent (0 = no self-correction)
+
 # Tavily Search Configuration (Issue #500 - Tier 2 Validation Agents)
 TAVILY_API_URL = "https://api.tavily.com/search"  # Tavily Search API endpoint
 TAVILY_SEARCH_DEPTH_BASIC = "basic"  # Basic search depth (faster, less comprehensive)

@@ -668,6 +668,40 @@
       ]
     },
     {
+      "decision": "Issue #507 - Agent Self-Correction with Output Validation Loops",
+      "rationale": "Implemented per-agent output validation with self-correction retry loops. Pattern: (1) Agent produces output, (2) Validator checks quality (minimum insights, specific titles, no placeholders), (3) If validation fails, retry with correction prompt appended to conversation, (4) Max 2 retries before accepting degraded output. Refactored execution.py to reduce PLR0915 (72 statements to ~35) by extracting: self_correction.py (loop logic), execution_helpers.py (validation helpers), _execute_agent_retry_loop() (main loop), _invoke_agent_with_timeout() (timeout handling).",
+      "date": "2025-12-27",
+      "status": "implemented",
+      "technical_decisions": {
+        "validation_pattern": "Per-agent validators with ValidationResult(is_valid, issues, retry_recommended)",
+        "correction_strategy": "Append correction prompt to conversation, maintaining context",
+        "max_retries": "2 (configurable via SELF_CORRECTION_MAX_RETRIES)",
+        "observability": "Langfuse metadata via update_current_observation()",
+        "refactoring_pattern": "Extract helpers to reduce PLR0915 (too many statements)",
+        "graceful_degradation": "Accept degraded output rather than failing entirely"
+      },
+      "files_created": [
+        "backend/app/domains/analysis/workflows/agents/validation/output_validators.py",
+        "backend/app/domains/analysis/workflows/agents/validation/correction_prompts.py",
+        "backend/app/domains/analysis/workflows/agents/validation/self_correction.py",
+        "backend/app/domains/analysis/workflows/agents/validation/execution_helpers.py"
+      ],
+      "files_modified": [
+        "backend/app/domains/analysis/workflows/agents/execution.py",
+        "backend/app/core/constants.py",
+        "backend/app/core/config.py"
+      ],
+      "test_coverage": {
+        "unit_tests": 150,
+        "test_files": [
+          "test_output_validators.py (108 tests)",
+          "test_correction_prompts.py (21 tests)",
+          "test_self_correction_integration.py (21 tests)"
+        ]
+      },
+      "skill_updated": "ai-native-development/references/agentic-workflows.md - Added Self-Correction Patterns section"
+    },
+    {
       "decision": "Issue #220 - PII Detection Strategy (Hybrid Approach)",
       "rationale": "Hybrid PII detection combining regex (fast path, < 2ms) with Microsoft Presidio (ML-based, 20-50ms) provides optimal balance of speed and accuracy. Two-stage detection: (1) Regex for common patterns (email, phone, SSN, credit card), (2) Presidio for contextual entities (names, organizations, locations). Fast path optimization skips Presidio when no PII detected by regex (90% of cases). Configurable sensitivity levels (low/medium/high) with allowlist support for false positives.",
       "date": "2025-12-10",

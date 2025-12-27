@@ -585,6 +585,36 @@ class Settings(BaseSettings):
         description="Langfuse server URL",
     )
 
+    # Agent Self-Correction Configuration (Issue #507)
+    SELF_CORRECTION_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Enable per-agent output validation with self-correction loops. "
+            "When enabled, agents validate their output quality before returning "
+            "and can retry up to SELF_CORRECTION_MAX_RETRIES times if validation fails. "
+            "This catches issues like empty outputs, placeholder text, and low-quality "
+            "responses before they reach the quality gate."
+        ),
+    )
+    SELF_CORRECTION_MAX_RETRIES: int = Field(
+        default=2,
+        ge=0,
+        le=5,
+        description=(
+            "Maximum number of self-correction retries per agent (0-5). "
+            "Cost per retry: ~500 input + 300 output tokens (~$0.0002 with DeepSeek V3). "
+            "Recommended: 2 (balances quality vs latency). Set to 0 to disable."
+        ),
+    )
+    SELF_CORRECTION_COMPACT_PROMPTS: bool = Field(
+        default=False,
+        description=(
+            "Use compact correction prompts to save tokens. "
+            "Compact prompts are ~60% smaller but less detailed. "
+            "Recommended: False for quality, True for cost savings."
+        ),
+    )
+
     # OpenAI Batch API Configuration (50% cost savings)
     OPENAI_BATCH_ENABLED: bool = Field(
         default=False,
