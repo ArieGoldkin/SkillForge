@@ -703,3 +703,84 @@ def requires_llm():
     placeholder_prefixes = ("sk-test", "test-", "dummy-", "placeholder-")
     if isinstance(api_key, str) and api_key.lower().startswith(placeholder_prefixes):
         pytest.skip(f"{api_field} appears to be a placeholder; skipping external LLM tests.")
+
+
+# ============================================================================
+# VCR.py Configuration for HTTP Recording/Playback (2025 best practice)
+# ============================================================================
+
+
+def redact_api_keys(request):
+    """Redact sensitive API keys from request before recording.
+
+    Args:
+        request: VCR request object
+
+    Returns:
+        Modified request with redacted credentials
+
+    """
+    import json
+
+    # Redact headers
+    headers_to_redact = ["authorization", "x-api-key", "api-key", "x-tavily-api-key"]
+    for header in headers_to_redact:
+        if header in request.headers:
+            request.headers[header] = "REDACTED"
+
+    # Redact body fields
+    if request.body:
+        try:
+            body = json.loads(request.body)
+            if "api_key" in body:
+                body["api_key"] = "REDACTED"
+            request.body = json.dumps(body)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    return request
+
+
+@pytest.fixture(scope="module")
+def vcr_config():
+    """VCR configuration for HTTP recording/playback testing.
+
+    Returns:
+        Dict with VCR configuration options
+
+    """
+    # Use "none" mode in CI to fail fast on missing cassettes
+    record_mode = "none" if os.environ.get("CI") else "once"
+
+    return {
+        "cassette_library_dir": "tests/cassettes",
+        "record_mode": record_mode,
+        "match_on": ["method", "uri"],
+        "filter_headers": [
+            ("authorization", "REDACTED"),
+            ("x-api-key", "REDACTED"),
+            ("api-key", "REDACTED"),
+            ("x-tavily-api-key", "REDACTED"),
+        ],
+        "filter_query_parameters": [
+            ("api_key", "REDACTED"),
+            ("token", "REDACTED"),
+            ("access_token", "REDACTED"),
+        ],
+        "before_record_request": redact_api_keys,
+        "decode_compressed_response": True,
+    }
+
+
+@pytest.fixture
+def vcr_cassette_dir(request):
+    """Return cassette directory based on test module.
+
+    Args:
+        request: pytest request object
+
+    Returns:
+        Path to cassette directory for current test module
+
+    """
+    return f"tests/cassettes/unit/{request.module.__name__.split('.')[-1]}"

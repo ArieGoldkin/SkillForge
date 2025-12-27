@@ -25,13 +25,85 @@ from typing import cast
 
 from langchain_core.runnables import Runnable
 
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.resilience import get_resilience_manager
 from app.core.timeout_config import AGENT_TIMEOUT, STEP_TIMEOUT, create_runnable_config
 from app.core.tracing import get_current_trace_id
+from app.core.tracing_constants import calculate_llm_cost
 from app.core.types import AnalysisID
 
 logger = get_logger(__name__)
+
+
+def _track_llm_cost(
+    result: dict[str, object] | None,
+    agent_type: str,
+    analysis_id: AnalysisID,
+) -> None:
+    """Extract usage metadata and submit cost tracking to Langfuse.
+
+    Args:
+        result: Agent invocation result with usage_metadata
+        agent_type: Type of agent for logging
+        analysis_id: UUID of the analysis
+
+    """
+    if result is None or not hasattr(result, "usage_metadata") or not result.usage_metadata:
+        return
+
+    usage = result.usage_metadata
+    input_tokens = usage.get("input_tokens", 0)  # type: ignore[union-attr]
+    output_tokens = usage.get("output_tokens", 0)  # type: ignore[union-attr]
+    total_tokens = usage.get("total_tokens", 0)  # type: ignore[union-attr]
+
+    logger.info(
+        "agent_token_usage",
+        agent_type=agent_type,
+        analysis_id=str(analysis_id),
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=total_tokens,
+    )
+
+    # Extract model name from response metadata for cost tracking
+    model_name = "unknown"
+    if hasattr(result, "response_metadata") and result.response_metadata:
+        # Try common model name fields from different providers
+        metadata = result.response_metadata
+        model_name = (
+            metadata.get("model")
+            or metadata.get("model_name")
+            or metadata.get("model_id")
+            or "unknown"  # type: ignore[union-attr]
+        )
+
+    # Calculate and submit cost to Langfuse
+    if model_name != "unknown" and input_tokens > 0:
+        cost_usd = calculate_llm_cost(
+            model=model_name,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
+
+        # Submit cost as Langfuse score
+        try:
+            langfuse_service = get_langfuse_service()
+            langfuse_service.submit_score(
+                name="cost_usd",
+                value=cost_usd,
+                comment=f"{model_name}: {input_tokens}in + {output_tokens}out = ${cost_usd:.6f}",
+            )
+            logger.debug(
+                "agent_cost_tracked",
+                agent_type=agent_type,
+                analysis_id=str(analysis_id),
+                model=model_name,
+                cost_usd=cost_usd,
+            )
+        except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+            # Don't fail agent execution if cost tracking fails
+            logger.debug("agent_cost_tracking_failed", error=str(e))
 
 
 async def invoke_agent(
@@ -124,17 +196,8 @@ async def invoke_agent(
             result = await circuit_breaker.call(protected_llm_call)
             duration = time.time() - start_time
 
-            # Extract usage metadata (LangChain-Core 1.2.4+ feature)
-            if hasattr(result, "usage_metadata") and result.usage_metadata:
-                usage = result.usage_metadata
-                logger.info(
-                    "agent_token_usage",
-                    agent_type=agent_type,
-                    analysis_id=str(analysis_id),
-                    input_tokens=usage.get("input_tokens", 0),  # type: ignore[union-attr]
-                    output_tokens=usage.get("output_tokens", 0),  # type: ignore[union-attr]
-                    total_tokens=usage.get("total_tokens", 0),  # type: ignore[union-attr]
-                )
+            # Track token usage and LLM cost in Langfuse
+            _track_llm_cost(result, agent_type, analysis_id)
 
             logger.info(
                 "agent_invocation_success",

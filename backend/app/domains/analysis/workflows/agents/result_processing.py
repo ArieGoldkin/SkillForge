@@ -9,6 +9,7 @@ import time
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.core.tracing import traced_tool, update_current_observation
 from app.core.types import AnalysisID
 from app.core.utils import normalize_analysis_id_to_uuid
 from app.domains.analysis.workflows.agents.base import emit_agent_progress, save_agent_finding
@@ -160,6 +161,7 @@ def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noq
     return count if count > 0 else 1  # At least 1 if findings exist
 
 
+@traced_tool("process_agent_result", tags=["result_processing"])
 async def process_agent_result(  # noqa: PLR0912 - Multiple branches needed for comprehensive result processing
     findings: dict[str, object],
     analysis_id: AnalysisID,
@@ -208,6 +210,16 @@ async def process_agent_result(  # noqa: PLR0912 - Multiple branches needed for 
         numeric_count=specificity_score.numeric_value_count,
         vague_count=specificity_score.vague_phrase_count,
         numeric_compliance=specificity_score.numeric_field_compliance,
+    )
+
+    # Update Langfuse observation with specificity metadata
+    update_current_observation(
+        metadata={
+            "agent_type": agent_type,
+            "specificity_score": specificity_score.overall_score,
+            "quality_level": specificity_score.quality_level,
+            "insights_count": _count_insights(findings, agent_type),
+        }
     )
 
     # Flag low-specificity outputs

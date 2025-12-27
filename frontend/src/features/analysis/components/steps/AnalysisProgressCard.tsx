@@ -1,8 +1,7 @@
 import { memo } from 'react'
 
-import { FileText, Github, Loader2, Video } from 'lucide-react'
-
-import { UI_CONSTANTS } from '@/lib/constants'
+import { type VariantProps, cva } from 'class-variance-authority'
+import { Loader2 } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/components/ui/card'
@@ -10,28 +9,21 @@ import { Progress } from '@shared/components/ui/progress'
 
 import { cn } from '@lib/utils'
 
-import { formatErrorCode } from '../../utils/errorCodeFormatter'
+import { AnalysisProgressCardErrorSummary } from './AnalysisProgressCardErrorSummary'
+import { AnalysisProgressCardMetadata } from './AnalysisProgressCardMetadata'
 
-/**
- * Analysis stage type representing the current processing state
- */
 export type AnalysisStage = 'extracting' | 'processing' | 'analyzing' | 'generating' | 'complete'
+type AnalysisCardStatus = 'analyzing' | 'complete' | 'complete-with-errors'
+type BadgeVariant = 'default' | 'success' | 'warning' | 'info' | 'destructive'
 
-/**
- * Props for AnalysisProgressCard component
- *
- * @property stage - Current analysis stage
- * @property progress - Progress percentage (0-100)
- * @property currentStep - Description of current step
- * @property totalSteps - Total number of steps in analysis
- * @property completedSteps - Number of completed steps
- * @property estimatedTimeRemaining - Optional time estimate (e.g., "2-3 minutes")
- * @property contentType - Optional content type (article, video, repo)
- * @property wordCount - Optional word count
- * @property hasFailedStages - Whether any stages have failed
- * @property failedStagesCount - Number of failed stages
- */
-export interface AnalysisProgressCardProps {
+const analysisCardVariants = cva('animate-in fade-in-50 duration-300', {
+  variants: {
+    status: { analyzing: '', complete: '', 'complete-with-errors': '' },
+  },
+  defaultVariants: { status: 'analyzing' },
+})
+
+export interface AnalysisProgressCardProps extends VariantProps<typeof analysisCardVariants> {
   stage: AnalysisStage
   progress: number
   currentStep: string
@@ -46,74 +38,26 @@ export interface AnalysisProgressCardProps {
   className?: string
 }
 
-/**
- * Get badge variant and label for each analysis stage
- * @param stage - Analysis stage
- * @param hasFailures - Whether there are any failed stages
- */
-const getStageConfig = (
-  stage: AnalysisStage,
-  hasFailures: boolean = false
-): { variant: 'default' | 'success' | 'warning' | 'info' | 'destructive'; label: string } => {
-  const configs: Record<
-    AnalysisStage,
-    { variant: 'default' | 'success' | 'warning' | 'info' | 'destructive'; label: string }
-  > = {
-    extracting: { variant: 'info', label: 'Extracting' },
-    processing: { variant: 'warning', label: 'Processing' },
-    analyzing: { variant: 'warning', label: 'Analyzing' },
-    generating: { variant: 'info', label: 'Generating' },
-    complete: { variant: 'success', label: 'Complete' },
-  }
+const STAGE_BADGE_CONFIG: Record<AnalysisStage, { variant: BadgeVariant; label: string }> = {
+  extracting: { variant: 'info', label: 'Extracting' },
+  processing: { variant: 'warning', label: 'Processing' },
+  analyzing: { variant: 'warning', label: 'Analyzing' },
+  generating: { variant: 'info', label: 'Generating' },
+  complete: { variant: 'success', label: 'Complete' },
+}
 
-  // Override complete status if there are failures
+const getStageConfig = (stage: AnalysisStage, hasFailures = false) => {
   if (stage === 'complete' && hasFailures) {
-    return { variant: 'destructive', label: 'Complete with Errors' }
+    return { variant: 'destructive' as const, label: 'Complete with Errors' }
   }
-
-  return configs[stage]
+  return STAGE_BADGE_CONFIG[stage]
 }
 
 /**
- * AnalysisProgressCard - Display current analysis stage with progress visualization
- *
- * Shows overall progress, current step description, and estimated completion time.
- * Uses teal accent for active progress and status badges.
- *
- * @example
- * ```tsx
- * <AnalysisProgressCard
- *   stage="analyzing"
- *   progress={60}
- *   currentStep="Multi-Agent Analysis"
- *   totalSteps={5}
- *   completedSteps={3}
- *   estimatedTimeRemaining="2-3 minutes"
- * />
- * ```
+ * Display current analysis stage with progress visualization.
+ * Issue #433: Refactored to use CVA variants for status styling (2025 best practice)
  */
-/* eslint-disable max-lines-per-function, complexity -- Main component requires complete JSX layout for progress card (header with spinner, progress bar, step info, time estimate, completion message, error summary). Multiple conditional branches for content type, completion states, and error handling. Already well-structured. */
-const CONTENT_TYPE_CONFIG = {
-  article: {
-    icon: FileText,
-    label: 'Article',
-    color: UI_CONSTANTS.STATUS_STYLE_INFO,
-  },
-  video: {
-    icon: Video,
-    label: 'Video',
-    color: UI_CONSTANTS.STATUS_STYLE_ERROR,
-  },
-  repo: {
-    icon: Github,
-    label: 'Repository',
-    color: UI_CONSTANTS.STATUS_STYLE_WARNING,
-  },
-} as const
-
-/**
- * AnalysisProgressCard wrapped with React.memo for optimized re-renders
- */
+/* eslint-disable max-lines-per-function -- Component requires complete card layout with multiple conditional sections */
 export const AnalysisProgressCard = memo(function AnalysisProgressCard({
   stage,
   progress,
@@ -131,11 +75,11 @@ export const AnalysisProgressCard = memo(function AnalysisProgressCard({
   const stageConfig = getStageConfig(stage, hasFailedStages)
   const isComplete = stage === 'complete'
   const isActive = !isComplete
-  const contentTypeConfig = contentType ? CONTENT_TYPE_CONFIG[contentType] : null
-  const ContentIcon = contentTypeConfig?.icon
+  const status: AnalysisCardStatus =
+    stage === 'complete' ? (hasFailedStages ? 'complete-with-errors' : 'complete') : 'analyzing'
 
   return (
-    <Card className={cn('animate-in fade-in-50 duration-300', className)}>
+    <Card className={cn(analysisCardVariants({ status }), className)}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -149,87 +93,34 @@ export const AnalysisProgressCard = memo(function AnalysisProgressCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Metadata Section */}
-        {(contentType || wordCount !== undefined) && (
-          <div className="rounded-md bg-muted/50 border border-border p-3 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              Content Information
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {contentTypeConfig && ContentIcon && (
-                <Badge
-                  variant="outline"
-                  className={cn('flex items-center gap-1.5 text-xs', contentTypeConfig.color)}
-                >
-                  <ContentIcon className="h-3 w-3" />
-                  {contentTypeConfig.label}
-                </Badge>
-              )}
-              {wordCount !== undefined && wordCount > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {wordCount.toLocaleString()} words
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <Progress
-            value={progress}
-            className="h-2"
-            aria-label="Analysis progress"
-            aria-valuetext={`${progress}% complete - ${currentStep}`}
-          />
-        </div>
-
-        {/* Current Step */}
+        <AnalysisProgressCardMetadata contentType={contentType} wordCount={wordCount} />
+        <Progress
+          value={progress}
+          className="h-2"
+          aria-label="Analysis progress"
+          aria-valuetext={`${progress}% complete - ${currentStep}`}
+        />
         <div className="space-y-1">
           <p className="text-sm font-medium text-foreground">{currentStep}</p>
           <p className="text-xs text-muted-foreground">
             Step {completedSteps} of {totalSteps}
           </p>
         </div>
-
-        {/* Time Estimate */}
         {estimatedTimeRemaining && !isComplete && (
           <p className="text-sm text-muted-foreground">
             Estimated time remaining: {estimatedTimeRemaining}
           </p>
         )}
-
-        {/* Completion Message */}
         {isComplete && !hasFailedStages && (
           <p className="text-sm text-muted-foreground">
             Analysis complete! Review your results below.
           </p>
         )}
-
-        {/* Error Summary */}
         {isComplete && hasFailedStages && (
-          <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 space-y-2">
-            <div className="flex items-start gap-2">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-destructive">
-                  {failedStagesCount} {failedStagesCount === 1 ? 'stage' : 'stages'} failed
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  The analysis completed but encountered errors. Check the stages below for details.
-                </p>
-              </div>
-            </div>
-            {/* Error Codes */}
-            {failedStageErrorCodes.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-destructive/20">
-                <span className="text-xs text-muted-foreground">Error codes:</span>
-                {failedStageErrorCodes.map((errorCode) => (
-                  <Badge key={errorCode} variant="destructive" className="text-xs">
-                    {formatErrorCode(errorCode)}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
+          <AnalysisProgressCardErrorSummary
+            failedStagesCount={failedStagesCount}
+            failedStageErrorCodes={failedStageErrorCodes}
+          />
         )}
       </CardContent>
     </Card>

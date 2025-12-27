@@ -1,6 +1,7 @@
 import type * as React from 'react'
 
-import { FileText, Loader2 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { FileText, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 
 import { UI_CONSTANTS } from '@/lib/constants'
 
@@ -12,112 +13,127 @@ interface LoadingStateDisplayProps {
 }
 
 /**
+ * Loading state UI configuration
+ */
+interface LoadingStateUIConfig {
+  icon: LucideIcon
+  text: string
+  subtitle: string | ((state: LoadingState) => string)
+  textClassName?: string
+  animate?: boolean
+}
+
+/**
+ * Enum-driven configuration for loading states
+ * Replaces switch/case with declarative config object
+ */
+const LOADING_STATE_CONFIG = {
+  disconnected: {
+    icon: Loader2,
+    text: 'Disconnected',
+    subtitle: 'Waiting to connect...',
+    animate: false,
+  },
+  connecting: {
+    icon: Loader2,
+    text: 'Connecting...',
+    subtitle: 'Establishing connection',
+    animate: true,
+  },
+  connected: {
+    icon: Loader2,
+    text: 'Connected',
+    subtitle: 'Waiting for analysis to start',
+    animate: false,
+  },
+  reconnecting: {
+    icon: Loader2,
+    text: 'Reconnecting...',
+    subtitle: 'Attempting to restore connection',
+    animate: true,
+  },
+  waiting_for_events: {
+    icon: Loader2,
+    text: 'Preparing analysis...',
+    subtitle: 'Setting up your content analysis',
+    animate: true,
+  },
+  timeout_warning: {
+    icon: AlertCircle,
+    text: 'Connection timeout',
+    subtitle: 'This is taking longer than expected',
+    textClassName: 'text-orange-600',
+    animate: false,
+  },
+  extracting: {
+    icon: FileText,
+    text: 'Extracting content...',
+    subtitle: (state: LoadingState) =>
+      state.type === 'extracting' && state.wordCount
+        ? `Processing ${state.wordCount.toLocaleString()} words`
+        : 'Reading and analyzing your content',
+    animate: false,
+  },
+  analyzing: {
+    icon: Loader2,
+    text: 'Analyzing content...',
+    subtitle: (state: LoadingState) =>
+      state.type === 'analyzing'
+        ? `Running AI analysis (${state.progress}%)`
+        : 'Running AI analysis',
+    animate: true,
+  },
+  generating: {
+    icon: Loader2,
+    text: 'Generating report...',
+    subtitle: 'Compiling your analysis results',
+    animate: true,
+  },
+  complete: {
+    icon: CheckCircle2,
+    text: 'Analysis complete',
+    subtitle: 'Your results are ready to view',
+    textClassName: 'text-green-700',
+    animate: false,
+  },
+  error: {
+    icon: AlertCircle,
+    text: 'Analysis failed',
+    subtitle: (state: LoadingState) => (state.type === 'error' ? state.error : 'An error occurred'),
+    textClassName: 'text-destructive',
+    animate: false,
+  },
+} as const satisfies Record<LoadingState['type'], LoadingStateUIConfig>
+
+/**
  * Contextual loading state display for analysis phases
  *
  * Shows appropriate messages and icons based on the current loading state.
  * Provides clear feedback to users about what's happening during analysis.
  *
  * Issue #399: Replaces generic "Loading" with specific, contextual messages
+ * Issue #433: Refactored to use enum-driven configuration pattern (2025 best practice)
  */
-/**
- * Get display content for waiting state
- */
-const getWaitingContent = () => ({
-  icon: <Loader2 className="h-4 w-4 animate-spin" />,
-  text: 'Preparing analysis...',
-  subtitle: 'Setting up your content analysis',
-})
-
-/**
- * Get display content for extracting state
- */
-const getExtractingContent = (wordCount?: number) => ({
-  icon: <FileText className={`${UI_CONSTANTS.HEIGHT_SM} ${UI_CONSTANTS.WIDTH_SM}`} />,
-  text: 'Extracting content...',
-  subtitle: wordCount
-    ? `Processing ${wordCount.toLocaleString()} words`
-    : 'Reading and analyzing your content',
-})
-
-/**
- * Get display content for analyzing state
- */
-const getAnalyzingContent = (progress: number) => ({
-  icon: <Loader2 className="h-4 w-4 animate-spin" />,
-  text: 'Analyzing content...',
-  subtitle: `Running AI analysis (${progress}%)`,
-})
-
-/**
- * Get display content for generating state
- */
-const getGeneratingContent = () => ({
-  icon: <Loader2 className="h-4 w-4 animate-spin" />,
-  text: 'Generating report...',
-  subtitle: 'Compiling your analysis results',
-})
-
-/**
- * Get display content for complete state
- */
-const getCompleteContent = () => ({
-  text: 'Analysis complete',
-  subtitle: 'Your results are ready to view',
-})
-
-/**
- * Get display content for error state
- */
-const getErrorContent = (error: string) => ({
-  text: 'Analysis failed',
-  subtitle: error,
-})
-
-/**
- * Get display content for default loading state
- */
-const getDefaultContent = () => ({
-  icon: <Loader2 className="h-4 w-4 animate-spin" />,
-  text: 'Loading...',
-  subtitle: 'Please wait',
-})
-
 export function LoadingStateDisplay({ loadingState }: LoadingStateDisplayProps): React.ReactNode {
-  const getDisplayContent = (): { icon?: React.ReactNode; text: string; subtitle?: string } => {
-    switch (loadingState.type) {
-      case 'waiting_for_events':
-        return getWaitingContent()
-      case 'extracting':
-        return getExtractingContent(loadingState.wordCount)
-      case 'analyzing':
-        return getAnalyzingContent(loadingState.progress)
-      case 'generating':
-        return getGeneratingContent()
-      case 'complete':
-        return getCompleteContent()
-      case 'error':
-        return getErrorContent(loadingState.error)
-      default:
-        return getDefaultContent()
-    }
-  }
-
-  const { icon, text, subtitle } = getDisplayContent()
+  const config = LOADING_STATE_CONFIG[loadingState.type]
+  const Icon = config.icon
+  const subtitle =
+    typeof config.subtitle === 'function' ? config.subtitle(loadingState) : config.subtitle
 
   return (
     <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-      {icon && <div className="flex-shrink-0">{icon}</div>}
-      <div className="flex-1 min-w-0">
-        <p
+      <div className="flex-shrink-0">
+        <Icon
           className={cn(
-            'text-sm font-medium',
-            loadingState.type === 'error' && 'text-destructive',
-            loadingState.type === 'complete' && 'text-green-700'
+            UI_CONSTANTS.HEIGHT_SM,
+            UI_CONSTANTS.WIDTH_SM,
+            config.animate && 'animate-spin'
           )}
-        >
-          {text}
-        </p>
-        {subtitle && <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>}
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={cn('text-sm font-medium', config.textClassName)}>{config.text}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
       </div>
     </div>
   )

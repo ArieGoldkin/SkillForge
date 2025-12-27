@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.core.logging import get_logger
+from app.core.tracing import traced_tool, update_current_observation
 from app.domains.analysis.workflows.agents.validation.correction_prompts import (
     build_correction_prompt,
 )
@@ -56,6 +57,7 @@ class SelfCorrectionResult:
     updated_messages: dict[str, Any] | None = None  # For retry with correction prompt
 
 
+@traced_tool("run_self_correction_loop", tags=["self_correction", "retry"])
 async def run_self_correction_loop(  # noqa: PLR0913
     input_messages: dict[str, Any],
     current_output: dict[str, Any],
@@ -116,6 +118,16 @@ async def run_self_correction_loop(  # noqa: PLR0913
         attempt=context.current_attempt + 1,
         issues=validation_result.issues[:5],  # First 5 issues
         retry_recommended=validation_result.retry_recommended,
+    )
+
+    # Update Langfuse observation with validation failure details
+    update_current_observation(
+        metadata={
+            "validation_passed": False,
+            "issues_count": len(validation_result.issues),
+            "retry_recommended": validation_result.retry_recommended,
+            "attempt": context.current_attempt + 1,
+        }
     )
 
     # Check if we should retry with correction prompt

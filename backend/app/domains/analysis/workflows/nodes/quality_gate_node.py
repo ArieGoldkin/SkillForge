@@ -8,6 +8,7 @@ Issue #301: Add quality validation gate to ensure high-quality artifacts.
 """
 
 import time
+from contextlib import aclosing
 from typing import Any
 
 from app.core.constants import MIN_EVALUABLE_LENGTH
@@ -505,9 +506,9 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
             # Convert analysis_id to UUID if it's a string
             analysis_uuid = UUID(analysis_id) if isinstance(analysis_id, str) else analysis_id
 
-            # Create a new session for error recording
-            async for db_session in get_db():
-                try:
+            # Create a new session for error recording using aclosing
+            async with aclosing(get_db()) as session_gen:
+                async for db_session in session_gen:
                     analysis_repo = AnalysisRepository(session=db_session)
                     await analysis_repo.record_error(
                         analysis_id=analysis_uuid,
@@ -515,9 +516,7 @@ async def quality_gate_node(state: AnalysisState) -> dict[str, object]:  # noqa:
                         error_message=str(e),
                         stage="quality_gate",
                     )
-                finally:
-                    await db_session.close()
-                break  # Only need one iteration
+                    break  # Only need one iteration
         except Exception as record_error:  # noqa: BLE001 - Graceful degradation
             logger.warning(
                 "error_recording_failed",
