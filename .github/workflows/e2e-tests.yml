@@ -350,10 +350,11 @@ jobs:
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
           
           START_TIME=$(date +%s)
-          
+
           # Global setup will create storageState.json
           # Verify it was created after test run
-          npx playwright test --project=chromium
+          # Exclude visual-regression tests (handled by dedicated visual-regression job)
+          npx playwright test --project=chromium --ignore-snapshots
           
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
@@ -579,10 +580,11 @@ jobs:
           echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
           
           START_TIME=$(date +%s)
-          
+
           # Run full test suite including LLM and Langfuse integration tests
           # Global setup will create storageState.json for optimization
-          npx playwright test --project=chromium
+          # Use --ignore-snapshots to skip VRT (handled by dedicated job)
+          npx playwright test --project=chromium --ignore-snapshots
           
           END_TIME=$(date +%s)
           DURATION=$((END_TIME - START_TIME))
