@@ -569,3 +569,178 @@ async function assessComplexity(task: string): Promise<number> {
   return Object.values(factors).reduce((sum, val) => sum + val, 0)
 }
 ```
+
+---
+
+## Self-Correction Patterns (Issue #507)
+
+### Per-Agent Output Validation
+
+Validate agent output quality BEFORE final acceptance. This catches low-quality outputs early.
+
+```python
+@dataclass
+class ValidationResult:
+    """Result of validating agent output."""
+    is_valid: bool
+    issues: list[str]
+    retry_recommended: bool
+
+class AgentOutputValidator(ABC):
+    """Base class for per-agent validation."""
+
+    @abstractmethod
+    def validate(self, output: dict) -> ValidationResult:
+        """Validate agent output quality."""
+        pass
+
+    @abstractmethod
+    def get_correction_hints(self) -> list[str]:
+        """Get hints for correcting validation failures."""
+        pass
+```
+
+### Self-Correction Loop
+
+When validation fails, retry with a correction prompt:
+
+```python
+async def run_with_self_correction(
+    agent: Agent,
+    input_messages: list[dict],
+    validator: AgentOutputValidator,
+    max_retries: int = 2,
+) -> dict:
+    """Execute agent with self-correction loop."""
+
+    current_messages = input_messages
+    correction_count = 0
+
+    for attempt in range(max_retries + 1):
+        # Invoke agent
+        output = await agent.invoke(current_messages)
+
+        # Validate output
+        validation = validator.validate(output)
+
+        if validation.is_valid:
+            return output  # Success!
+
+        # Check if we should retry
+        if not validation.retry_recommended or attempt >= max_retries:
+            break  # Accept degraded output
+
+        # Build correction prompt
+        correction_prompt = build_correction_prompt(
+            issues=validation.issues,
+            hints=validator.get_correction_hints(),
+            attempt_number=attempt + 2,
+        )
+
+        # Augment messages with failed output + correction
+        current_messages = [
+            *input_messages,
+            {"role": "assistant", "content": str(output)},
+            {"role": "user", "content": correction_prompt},
+        ]
+
+        correction_count += 1
+
+    return output  # Return best available
+```
+
+### Correction Prompt Template
+
+```python
+CORRECTION_PROMPT = """
+## Self-Correction Required (Attempt {attempt_number})
+
+Your previous response did not meet quality requirements.
+
+### Issues Found:
+{issues_list}
+
+### Correction Guidelines:
+{correction_hints}
+
+### Important:
+- Address ALL issues listed above
+- Provide MORE specific details from source content
+- Include concrete examples, metrics, or quotes
+- Maintain the required output structure
+- Do NOT use placeholder text like "TBD" or "[insert]"
+
+Please generate a corrected response.
+"""
+```
+
+### Example Validators
+
+```python
+class KeyInsightsValidator(AgentOutputValidator):
+    """Validates key_insights agent output."""
+
+    def validate(self, output: dict) -> ValidationResult:
+        issues = []
+
+        insights = output.get("insights", [])
+
+        # Check minimum count
+        if len(insights) < 3:
+            issues.append(f"Only {len(insights)} insights, need >= 3")
+
+        # Check for generic titles
+        for insight in insights:
+            title = insight.get("title", "")
+            if any(vague in title.lower() for vague in ["key insight", "important point"]):
+                issues.append(f"Generic title: '{title}'")
+
+        return ValidationResult(
+            is_valid=len(issues) == 0,
+            issues=issues,
+            retry_recommended=len(issues) <= 3,  # Retry if fixable
+        )
+
+    def get_correction_hints(self) -> list[str]:
+        return [
+            "Extract 3+ unique insights from the content",
+            "Each insight needs a specific title (not generic)",
+            "Each description must explain WHY this insight matters",
+        ]
+```
+
+### Observability Integration
+
+Record self-correction metadata for monitoring:
+
+```python
+def record_self_correction_metadata(
+    context: SelfCorrectionContext,
+    agent_type: str,
+    update_observation_fn: Callable,
+) -> None:
+    """Record correction metrics in Langfuse."""
+
+    metadata = {
+        "self_correction_enabled": context.enabled,
+        "self_correction_count": context.correction_count,
+        "final_attempt_number": context.current_attempt + 1,
+        "validation_passed": context.validation_results[-1].is_valid,
+        "all_issues": [
+            issue
+            for result in context.validation_results
+            for issue in result.issues[:3]
+        ],
+        "agent_type": agent_type,
+    }
+
+    update_observation_fn(metadata=metadata)
+```
+
+### Best Practices
+
+1. **Validate Early**: Run validation before expensive downstream processing
+2. **Limit Retries**: 2 retries is optimal (diminishing returns after)
+3. **Specific Hints**: Provide actionable correction guidance, not generic advice
+4. **Track Metrics**: Record correction rates per agent to identify weak agents
+5. **Graceful Degradation**: Accept degraded output rather than failing entirely

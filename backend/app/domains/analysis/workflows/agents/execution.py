@@ -5,11 +5,16 @@ streaming support, error handling, and database persistence.
 
 Redis semantic caching is integrated at the model factory level (get_chat_model),
 providing automatic caching for all LLM calls without explicit cache management here.
+
+Issue #507: Added self-correction loop with per-agent output validation.
+When enabled, agents validate their output quality and can retry with
+correction prompts if validation fails.
 """
 
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
 from langchain_core.runnables import Runnable
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.constants import MIN_AGENT_FINDINGS
 from app.core.logging import get_logger
 from app.core.timeout_config import AGENT_TIMEOUT
+from app.core.tracing import update_current_observation
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.base import emit_agent_progress
 from app.domains.analysis.workflows.agents.invocation import invoke_agent
@@ -28,7 +34,14 @@ from app.domains.analysis.workflows.agents.result_processing import (
     handle_agent_error,
     process_agent_result,
 )
-from app.domains.analysis.workflows.agents.validation import score_agent_output
+from app.domains.analysis.workflows.agents.validation import (
+    ValidationResult,
+    get_validator,
+    record_self_correction_metadata,
+    run_self_correction_loop,
+    validate_findings_count,
+    validate_specificity_score,
+)
 
 logger = get_logger(__name__)
 
@@ -68,6 +81,42 @@ def get_min_agent_findings() -> int:
     return int(os.environ.get("MIN_AGENT_FINDINGS", str(MIN_AGENT_FINDINGS)))
 
 
+def get_self_correction_enabled() -> bool:
+    """Get self-correction enabled flag from environment or default.
+
+    Issue #507: Master switch for per-agent output validation.
+
+    Returns:
+        True if self-correction is enabled (default: True)
+
+    """
+    return os.environ.get("SELF_CORRECTION_ENABLED", "true").lower() == "true"
+
+
+def get_self_correction_max_retries() -> int:
+    """Get maximum self-correction retries from environment or default.
+
+    Issue #507: Controls how many times an agent can retry after validation failure.
+
+    Returns:
+        Maximum retries (default: 2)
+
+    """
+    return int(os.environ.get("SELF_CORRECTION_MAX_RETRIES", "2"))
+
+
+def get_self_correction_compact_prompts() -> bool:
+    """Get compact prompts flag from environment or default.
+
+    Issue #507: Use smaller correction prompts to save tokens.
+
+    Returns:
+        True if compact prompts should be used (default: False)
+
+    """
+    return os.environ.get("SELF_CORRECTION_COMPACT_PROMPTS", "false").lower() == "true"
+
+
 @dataclass
 class AgentExecutionParams:
     """Parameters for agent execution.
@@ -84,18 +133,67 @@ class AgentExecutionParams:
 
 
 @dataclass
+class SelfCorrectionContext:
+    """Tracks self-correction state during agent execution.
+
+    Issue #507: Used to track validation attempts and results for observability.
+    """
+
+    enabled: bool = True
+    max_retries: int = 2
+    current_attempt: int = 0
+    validation_results: list[ValidationResult] = field(default_factory=list)
+    correction_count: int = 0  # Number of corrections actually applied
+
+    def record_validation(self, result: ValidationResult) -> None:
+        """Record a validation result."""
+        self.validation_results.append(result)
+        if not result.is_valid:
+            self.correction_count += 1
+
+    def should_retry(self) -> bool:
+        """Check if we should retry based on last validation."""
+        if not self.validation_results:
+            return False
+        last_result = self.validation_results[-1]
+        return (
+            not last_result.is_valid
+            and last_result.retry_recommended
+            and self.current_attempt < self.max_retries
+        )
+
+    def to_metadata(self) -> dict[str, Any]:
+        """Convert to metadata dict for Langfuse/observability."""
+        return {
+            "self_correction_enabled": self.enabled,
+            "self_correction_count": self.correction_count,
+            "final_attempt_number": self.current_attempt + 1,
+            "validation_passed": (
+                self.validation_results[-1].is_valid if self.validation_results else True
+            ),
+            "all_issues": [
+                issue
+                for result in self.validation_results
+                for issue in result.issues[:3]  # First 3 issues per validation
+            ],
+        }
+
+
+@dataclass
 class AgentExecutionConfig:
     """Configuration for agent execution.
 
     Groups agent execution configuration to reduce function complexity.
 
     Issue #299-304: Added specificity_threshold to allow content-aware threshold adjustment.
+    Issue #507: Added self_correction_context for tracking validation state.
     """
 
     session: AsyncSession
     max_content_length: int = 12000
     timeout: float = AGENT_TIMEOUT
     specificity_threshold: float | None = None  # None = use default from env
+    self_correction: SelfCorrectionContext = field(default_factory=SelfCorrectionContext)
 
 
 async def _run_agent_with_tracking_impl(
@@ -106,9 +204,6 @@ async def _run_agent_with_tracking_impl(
 
     This function contains the actual logic. The public `run_agent_with_tracking`
     function wraps this with @traceable for Langfuse instrumentation.
-
-    Redis semantic caching is automatically enabled for all agents via the model
-    factory (get_chat_model). No explicit cache management needed here.
 
     Redis semantic caching is automatically enabled for all agents via the model
     factory (get_chat_model). No explicit cache management needed here.
@@ -138,9 +233,7 @@ async def _run_agent_with_tracking_impl(
     )
 
     try:
-        # Build user prompt using prompt builder
-        # Issue #300: Include proactive context from memory recall
-        # Note: Redis semantic caching is integrated at model level (no manual cache management)
+        # Build user prompt and initialize execution context
         user_prompt = build_agent_user_prompt(
             content=params.content,
             content_type=params.content_type,
@@ -148,131 +241,46 @@ async def _run_agent_with_tracking_impl(
             proactive_context=params.proactive_context,
         )
 
-        # Invoke agent with structured output (async with timeout)
-        input_messages = {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                }
-            ]
-        }
+        input_messages = {"messages": [{"role": "user", "content": user_prompt}]}
 
-        attempts = 0
-        findings = None
-        specificity_score = None
+        # Initialize validation configuration
         max_retries = get_specificity_max_retries()
-        # Issue #299-304: Use content-aware threshold if provided, otherwise default
         min_score = (
             config.specificity_threshold
             if config.specificity_threshold is not None
             else get_specificity_min_score()
         )
+        min_findings = get_min_agent_findings()
 
-        # DEBUG: Log threshold being used (Issue #299-304)
-        logger.info(
-            "threshold_being_used_in_execution",
-            agent_type=params.agent_type,
-            analysis_id=params.analysis_id,
-            config_threshold=config.specificity_threshold,
-            final_min_score=min_score,
-            used_config=config.specificity_threshold is not None,
+        # Issue #507: Initialize self-correction context
+        self_correction_enabled = get_self_correction_enabled()
+        self_correction_ctx = SelfCorrectionContext(
+            enabled=self_correction_enabled,
+            max_retries=get_self_correction_max_retries(),
+        )
+        validator = get_validator(params.agent_type) if self_correction_enabled else None
+        use_compact_prompts = get_self_correction_compact_prompts()
+
+        # Execute retry loop with validation
+        findings = await _execute_agent_retry_loop(
+            params=params,
+            config=config,
+            input_messages=input_messages,
+            max_retries=max_retries,
+            min_score=min_score,
+            min_findings=min_findings,
+            self_correction_ctx=self_correction_ctx,
+            validator=validator,
+            use_compact_prompts=use_compact_prompts,
         )
 
-        while attempts <= max_retries:
-            try:
-                final_result = await invoke_agent(
-                    agent=params.agent,
-                    input_messages=input_messages,
-                    analysis_id=params.analysis_id,
-                    agent_type=params.agent_type,
-                    timeout=config.timeout,
-                )
-            except TimeoutError as exc:
-                # LangGraph's RunnableConfig timeout raises TimeoutError directly
-                logger.exception(
-                    "timeout_error",
-                    context=f"Agent {params.agent_type} execution",
-                    timeout=config.timeout,
-                    agent_type=params.agent_type,
-                    analysis_id=params.analysis_id,
-                )
-                msg = f"Agent {params.agent_type} execution exceeded timeout of {config.timeout}s"
-                raise TimeoutError(msg) from exc
-
-            # Extract structured response (validated Pydantic model)
-            findings = extract_structured_response(final_result, params.agent_type)
-
-            # Issue #507: Check for empty findings BEFORE specificity validation
-            # An agent can return valid structure with ZERO useful content
-            # Can be disabled by setting MIN_AGENT_FINDINGS=0 in environment
-            min_findings = get_min_agent_findings()
-            insights_count = _count_insights(findings, params.agent_type)
-            if min_findings > 0 and insights_count < min_findings:
-                if attempts >= max_retries:
-                    logger.error(
-                        "agent_empty_findings_exhausted",
-                        agent_type=params.agent_type,
-                        analysis_id=params.analysis_id,
-                        insights_count=insights_count,
-                        min_required=min_findings,
-                        retries=attempts,
-                    )
-                    error_message = (
-                        f"Agent produced {insights_count} findings "
-                        f"(minimum {min_findings} required)"
-                    )
-                    raise ValueError(error_message)
-
-                attempts += 1
-                logger.warning(
-                    "agent_empty_findings_retry",
-                    agent_type=params.agent_type,
-                    analysis_id=params.analysis_id,
-                    attempt=attempts,
-                    insights_count=insights_count,
-                    min_required=min_findings,
-                )
-                continue  # Retry the agent invocation
-
-            # Validate specificity; retry once if below threshold
-            # Skip validation if threshold is 0.0 (disabled for tests)
-            if min_score > 0.0:
-                specificity_score = score_agent_output(
-                    findings,
-                    agent_type=params.agent_type,
-                )
-                if specificity_score.overall_score >= min_score:
-                    break
-
-                if attempts >= max_retries:
-                    logger.error(
-                        "agent_specificity_below_threshold",
-                        agent_type=params.agent_type,
-                        analysis_id=params.analysis_id,
-                        specificity_score=specificity_score.overall_score,
-                        threshold=min_score,
-                        retries=attempts,
-                    )
-                    error_message = (
-                        "Specificity score "
-                        f"{specificity_score.overall_score} "
-                        f"below threshold {min_score}"
-                    )
-                    raise ValueError(error_message)
-
-                attempts += 1
-                logger.warning(
-                    "agent_specificity_retry",
-                    agent_type=params.agent_type,
-                    analysis_id=params.analysis_id,
-                    attempt=attempts,
-                    specificity_score=specificity_score.overall_score,
-                    threshold=min_score,
-                )
-            else:
-                # Validation disabled (min_score = 0.0), proceed without checking
-                break
+        # Issue #507: Record self-correction metadata for Langfuse observability
+        record_self_correction_metadata(
+            context=self_correction_ctx,
+            agent_type=params.agent_type,
+            analysis_id=str(params.analysis_id),
+            update_observation_fn=update_current_observation,
+        )
 
         # Process and persist result
         return await process_agent_result(
@@ -284,13 +292,11 @@ async def _run_agent_with_tracking_impl(
         )
 
     except GeneratorExit:
-        # Handle task cancellation (e.g., workflow interrupted)
         await handle_agent_cancellation(
             analysis_id=params.analysis_id,
             agent_type=params.agent_type,
             start_time=start_time,
         )
-        # Re-raise to propagate to workflow
         raise
     except Exception as e:
         await handle_agent_error(
@@ -300,6 +306,145 @@ async def _run_agent_with_tracking_impl(
             start_time=start_time,
         )
         raise
+
+
+async def _execute_agent_retry_loop(  # noqa: PLR0913
+    params: AgentExecutionParams,
+    config: AgentExecutionConfig,
+    input_messages: dict[str, Any],
+    max_retries: int,
+    min_score: float,
+    min_findings: int,
+    self_correction_ctx: SelfCorrectionContext,
+    validator: Any | None,
+    use_compact_prompts: bool,
+) -> dict[str, Any]:
+    """Execute agent with retry loop for validation failures.
+
+    Extracted from _run_agent_with_tracking_impl to reduce function complexity.
+
+    Args:
+        params: Agent execution parameters
+        config: Agent execution configuration
+        input_messages: Initial conversation messages
+        max_retries: Maximum retry attempts for specificity/findings validation
+        min_score: Minimum specificity score threshold
+        min_findings: Minimum required findings count
+        self_correction_ctx: Self-correction state tracking
+        validator: Agent-specific output validator
+        use_compact_prompts: Whether to use compact correction prompts
+
+    Returns:
+        Validated agent findings dictionary
+
+    Raises:
+        ValueError: If validation fails after all retries
+        TimeoutError: If agent execution times out
+
+    """
+    attempts = 0
+    findings: dict[str, Any] = {}
+    current_messages = input_messages
+
+    while attempts <= max_retries:
+        # Invoke agent
+        final_result = await _invoke_agent_with_timeout(params, config, current_messages)
+        findings = extract_structured_response(final_result, params.agent_type)
+
+        # Validate findings count
+        insights_count = _count_insights(findings, params.agent_type)
+        findings_check = validate_findings_count(
+            agent_type=params.agent_type,
+            analysis_id=str(params.analysis_id),
+            insights_count=insights_count,
+            min_findings=min_findings,
+            current_attempt=attempts,
+            max_retries=max_retries,
+        )
+
+        if findings_check.should_fail:
+            raise ValueError(findings_check.error_message)
+        if findings_check.should_retry:
+            attempts += 1
+            continue
+
+        # Validate specificity score
+        specificity_check = validate_specificity_score(
+            findings=findings,
+            agent_type=params.agent_type,
+            analysis_id=str(params.analysis_id),
+            min_score=min_score,
+            current_attempt=attempts,
+            max_retries=max_retries,
+        )
+
+        if specificity_check.should_fail:
+            raise ValueError(specificity_check.error_message)
+        if specificity_check.should_retry:
+            attempts += 1
+            continue
+
+        # Issue #507: Self-correction validation
+        correction_result = await run_self_correction_loop(
+            input_messages=current_messages,
+            current_output=findings,
+            agent_type=params.agent_type,
+            analysis_id=str(params.analysis_id),
+            context=self_correction_ctx,
+            validator=validator,
+            use_compact_prompts=use_compact_prompts,
+            emit_progress_fn=emit_agent_progress,
+        )
+
+        if correction_result.should_continue_loop and correction_result.updated_messages:
+            current_messages = correction_result.updated_messages
+            continue
+
+        findings = correction_result.final_output
+        break
+
+    return findings
+
+
+async def _invoke_agent_with_timeout(
+    params: AgentExecutionParams,
+    config: AgentExecutionConfig,
+    input_messages: dict[str, Any],
+) -> Any:
+    """Invoke agent with timeout handling.
+
+    Extracted to reduce complexity in retry loop.
+
+    Args:
+        params: Agent execution parameters
+        config: Agent execution configuration
+        input_messages: Conversation messages for agent
+
+    Returns:
+        Raw agent response
+
+    Raises:
+        TimeoutError: If agent execution exceeds timeout
+
+    """
+    try:
+        return await invoke_agent(
+            agent=params.agent,
+            input_messages=input_messages,
+            analysis_id=params.analysis_id,
+            agent_type=params.agent_type,
+            timeout=config.timeout,
+        )
+    except TimeoutError as exc:
+        logger.exception(
+            "timeout_error",
+            context=f"Agent {params.agent_type} execution",
+            timeout=config.timeout,
+            agent_type=params.agent_type,
+            analysis_id=params.analysis_id,
+        )
+        msg = f"Agent {params.agent_type} execution exceeded timeout of {config.timeout}s"
+        raise TimeoutError(msg) from exc
 
 
 async def run_agent_with_tracking(  # noqa: PLR0913

@@ -1,6 +1,7 @@
 import pytest
 
 from app.domains.analysis.workflows.agents import execution, result_processing
+from app.domains.analysis.workflows.agents.validation import execution_helpers
 
 
 @pytest.mark.unit
@@ -34,7 +35,8 @@ async def test_specificity_retry_then_success(monkeypatch):
     monkeypatch.setattr(execution, "emit_agent_progress", fake_emit_agent_progress)
     monkeypatch.setattr(execution, "invoke_agent", fake_invoke_agent)
     monkeypatch.setattr(execution, "extract_structured_response", fake_extract_structured_response)
-    monkeypatch.setattr(execution, "score_agent_output", fake_score_agent_output)
+    # Issue #507 Refactoring: score_agent_output moved to execution_helpers
+    monkeypatch.setattr(execution_helpers, "score_agent_output", fake_score_agent_output)
     monkeypatch.setattr(execution, "process_agent_result", fake_process_agent_result)
     monkeypatch.setattr(result_processing, "emit_agent_progress", fake_emit_agent_progress)
 
@@ -77,7 +79,8 @@ async def test_specificity_failure_after_retries(monkeypatch):
     monkeypatch.setattr(execution, "emit_agent_progress", fake_emit_agent_progress)
     monkeypatch.setattr(execution, "invoke_agent", fake_invoke_agent)
     monkeypatch.setattr(execution, "extract_structured_response", fake_extract_structured_response)
-    monkeypatch.setattr(execution, "score_agent_output", fake_score_agent_output)
+    # Issue #507 Refactoring: score_agent_output moved to execution_helpers
+    monkeypatch.setattr(execution_helpers, "score_agent_output", fake_score_agent_output)
     monkeypatch.setattr(execution, "process_agent_result", fake_process_agent_result)
     # Set threshold to 0.7 to test retry logic (conftest sets it to 0.0)
 

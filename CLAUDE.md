@@ -281,6 +281,8 @@ This project uses specialized instruction files to optimize tokens while maintai
 | `.claude/instructions/communication-protocol.md` | File-based messaging protocol |
 | `.claude/instructions/parallel-execution-rules.md` | Conflict prevention & locking |
 | `.claude/instructions/architecture-decisions.md` | Shared architectural context |
+| `.claude/instructions/code-quality-rules.md` | Frontend quality rules (ESLint, Biome) |
+| `.claude/instructions/backend-code-quality-rules.md` | Backend quality rules (Ruff, PLR0915 patterns) |
 
 
 ## ⚡ MANDATORY: Agent Activation Protocol (v4.0 - Dynamic Discovery)
