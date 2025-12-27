@@ -120,7 +120,13 @@ async def test_embedding_failure_stops_workflow(requires_database, reset_engine_
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_supervisor_failure_stops_workflow(requires_database, reset_engine_connections):
-    """Test that supervisor failure stops workflow."""
+    """Test that supervisor failure stops workflow.
+
+    Note: Under pytest-xdist parallel load, worker crashes can occur if resources
+    aren't properly cleaned up. This test uses try/finally to ensure proper cleanup.
+    """
+    import asyncio
+
     analysis_id = uuid.uuid4()
     test_url = f"https://test-supervisor-abort-{analysis_id}.com"
 
@@ -189,7 +195,11 @@ async def test_supervisor_failure_stops_workflow(requires_database, reset_engine
         ):
             workflow = create_analysis_workflow()
             orchestrator = WorkflowOrchestrator(workflow=workflow)
-            await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
+            try:
+                await orchestrator.run(analysis_id, test_url, skill_level="intermediate")
+            finally:
+                # Allow pending async tasks to complete to prevent worker crashes
+                await asyncio.sleep(0.05)
 
     # Verify subsequent nodes were NOT called
     assert nodes_called["quality_gate"] is False, "Quality gate should be skipped"

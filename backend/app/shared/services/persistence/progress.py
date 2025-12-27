@@ -166,18 +166,25 @@ async def persist_progress_event(event_data: EventData) -> None:
         )
 
 
-def persist_progress_event_async(event_data: EventData) -> None:
-    """Schedule progress event persistence as fire-and-forget task.
+def persist_progress_event_async(event_data: EventData) -> asyncio.Task[None] | None:
+    """Schedule progress event persistence as background task.
 
     Follows pattern from analyze.py for background task management.
     Tasks are tracked to prevent garbage collection and have completion
     callbacks for error handling.
+
+    **Best Practice (Issue #507)**: Returns the task for optional awaiting.
+    In production code, callers can ignore the return value (fire-and-forget).
+    In tests, callers can await the task to eliminate race conditions.
 
     Note: Skips persistence during benchmark mode to avoid FK constraint
     violations from synthetic analysis_ids.
 
     Args:
         event_data: SSE event data dictionary
+
+    Returns:
+        The asyncio.Task if created, None if skipped (benchmark mode)
 
     """
     # Skip persistence during benchmarks - synthetic UUIDs don't exist in analyses table
@@ -187,8 +194,9 @@ def persist_progress_event_async(event_data: EventData) -> None:
             analysis_id=event_data.get("analysis_id"),
             stage=event_data.get("stage"),
         )
-        return
+        return None
 
     task: asyncio.Task[None] = asyncio.create_task(persist_progress_event(event_data))
     _progress_tasks.add(task)
     task.add_done_callback(_handle_progress_task_completion)
+    return task

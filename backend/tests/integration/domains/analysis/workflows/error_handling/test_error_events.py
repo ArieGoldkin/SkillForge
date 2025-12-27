@@ -293,7 +293,11 @@ async def test_agent_failure_emits_error_event(
 @pytest.mark.asyncio
 @pytest.mark.integration
 async def test_aggregation_failure_emits_error_event(requires_database, reset_engine_connections):
-    """Test that aggregation failure emits error event."""
+    """Test that aggregation failure emits error event.
+
+    Issue #507: This test uses the best practice of awaiting the persistence task
+    to eliminate race conditions, rather than relying on sleep-based delays.
+    """
     analysis_id = uuid.uuid4()
     test_url = f"https://test-aggregation-failure-{analysis_id}.com"
 
@@ -304,20 +308,21 @@ async def test_aggregation_failure_emits_error_event(requires_database, reset_en
     # This verifies that the error event system works correctly
     from app.shared.services.messaging.sse_helpers import emit_error_event
 
-    await emit_error_event(
+    # Issue #507: emit_error_event returns the persistence task for awaiting
+    persistence_task = await emit_error_event(
         analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
         stage="aggregate_findings",
         error="Aggregation validation failed during test",
         error_code="AGGREGATION_FAILED",
     )
 
-    # Wait for async event persistence
-    import asyncio
+    # Issue #507: Await the persistence task to guarantee DB commit before polling
+    # This eliminates the race condition that caused flaky tests under 16-worker load
+    if persistence_task is not None:
+        await persistence_task
 
-    await asyncio.sleep(0.3)
-
-    # Verify error event was persisted
-    event_found = await wait_for_event_persistence(analysis_id, "error", max_wait=10.0)
+    # Verify error event was persisted (should be immediate now)
+    event_found = await wait_for_event_persistence(analysis_id, "error", max_wait=5.0)
     assert event_found, "Error event should be persisted"
 
     # Verify the event structure matches expected format for aggregation failures
@@ -331,6 +336,9 @@ async def test_artifact_failure_emits_error_event(requires_database, reset_engin
 
     Note: This test verifies the error event emission logic directly, not through workflow execution.
     Artifact generation failures emit error events with stage='artifact_generation'.
+
+    Issue #507: This test uses the best practice of awaiting the persistence task
+    to eliminate race conditions, rather than relying on sleep-based delays.
     """
     analysis_id = uuid.uuid4()
     test_url = f"https://test-artifact-failure-{analysis_id}.com"
@@ -342,21 +350,25 @@ async def test_artifact_failure_emits_error_event(requires_database, reset_engin
     # This verifies that the error event system works correctly
     from app.shared.services.messaging.sse_helpers import emit_error_event
 
-    await emit_error_event(
+    # Issue #507: emit_error_event returns the persistence task for awaiting
+    persistence_task = await emit_error_event(
         analysis_id=str(analysis_id),  # Convert UUID to string for JSON serialization
         stage="artifact_generation",
         error="Template rendering failed during test",
         error_code="ARTIFACT_GENERATION_FAILED",
     )
 
-    # Wait for async event persistence
-    import asyncio
+    # Issue #507: Await the persistence task to guarantee DB commit before polling
+    # This eliminates the race condition that caused flaky tests under 16-worker load
+    if persistence_task is not None:
+        await persistence_task
 
-    await asyncio.sleep(0.3)
-
-    # Verify error event was persisted
-    event_found = await wait_for_event_persistence(analysis_id, "error", max_wait=10.0)
-    assert event_found, "Error event should be persisted"
+    # Verify error event was persisted (should be immediate now)
+    event_found = await wait_for_event_persistence(analysis_id, "error", max_wait=5.0)
+    assert event_found, (
+        f"Error event should be persisted for analysis_id={analysis_id}. "
+        "If this fails, the persistence task may not have committed properly."
+    )
 
     # Verify the event structure matches expected format for artifact failures
     await verify_error_event(analysis_id, "artifact_generation", "ARTIFACT_GENERATION_FAILED")

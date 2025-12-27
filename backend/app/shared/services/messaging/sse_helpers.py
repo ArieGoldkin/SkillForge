@@ -2,8 +2,13 @@
 
 Issue #444: Updated to use broadcaster factory for multi-instance support.
 Uses Redis Pub/Sub when available, falls back to in-memory broadcaster.
+
+Issue #507: Functions now return asyncio.Task for optional awaiting.
+In production code, the return value can be ignored (fire-and-forget).
+In tests, callers can await the task to eliminate race conditions.
 """
 
+import asyncio
 from datetime import UTC, datetime
 
 from app.core.config import get_settings
@@ -28,11 +33,15 @@ async def emit_streaming_event(
     stage: str,
     status: str,
     **kwargs: object,
-) -> None:
+) -> "asyncio.Task[None] | None":
     """Emit SSE event during workflow execution.
 
     Publishes a structured event to the broadcaster channel for the given
     analysis. Events are consumed by SSE endpoint subscribers.
+
+    **Best Practice (Issue #507)**: Returns the persistence task for optional awaiting.
+    In production code, callers can ignore the return value (fire-and-forget).
+    In tests, callers can await the task to eliminate race conditions.
 
     Args:
         event_type: Event type ("progress", "complete", "error", "evaluation",
@@ -41,6 +50,9 @@ async def emit_streaming_event(
         stage: Workflow stage name (e.g., "extraction", "tech_comparison")
         status: Stage status ("pending", "running", "complete", "failed")
         **kwargs: Additional event data (e.g., word_count, agent, error, quality_score, metrics)
+
+    Returns:
+        The asyncio.Task if created, None if skipped (benchmark mode)
 
     Example:
         ```python
@@ -69,9 +81,10 @@ async def emit_streaming_event(
     broadcaster = await get_broadcaster(_get_broadcaster_backend())
     await broadcaster.publish(channel, event_data)
 
-    # Persist to database (non-blocking, fire-and-forget)
-    # This enables historical progress tracking and audit trails
-    persist_progress_event_async(event_data)
+    # Persist to database - returns task for optional awaiting (Issue #507)
+    # In production: fire-and-forget (ignore return value)
+    # In tests: await task to eliminate race conditions
+    persistence_task = persist_progress_event_async(event_data)
 
     logger.debug(
         "sse_event_emitted",
@@ -81,6 +94,8 @@ async def emit_streaming_event(
         status=status,
     )
 
+    return persistence_task
+
 
 async def emit_error_event(
     analysis_id: AnalysisID,
@@ -88,7 +103,7 @@ async def emit_error_event(
     error: str | Exception,
     error_code: str | None = None,
     **kwargs: object,
-) -> None:
+) -> asyncio.Task[None] | None:
     """Emit standardized error event for workflow failures.
 
     This is the ONLY way to emit error events. All workflow nodes
@@ -97,12 +112,19 @@ async def emit_error_event(
     Always emits `type="error"` with `status="failed"` to ensure
     frontend can reliably detect failures.
 
+    **Best Practice (Issue #507)**: Returns the persistence task for optional awaiting.
+    In production code, callers can ignore the return value (fire-and-forget).
+    In tests, callers can await the task to eliminate race conditions.
+
     Args:
         analysis_id: UUID of the analysis (as string)
         stage: Stage name where error occurred (e.g., "extraction", "quality_validation")
         error: Error message or Exception object (will be converted to string)
         error_code: Optional error code (e.g., "EXTRACTION_FAILED", "QUALITY_GATE_FAILED")
         **kwargs: Additional event data (e.g., agent_type, quality_scores, retry_count)
+
+    Returns:
+        The asyncio.Task if created, None if skipped (benchmark mode)
 
     Example:
         ```python
@@ -142,9 +164,10 @@ async def emit_error_event(
     broadcaster = await get_broadcaster(_get_broadcaster_backend())
     await broadcaster.publish(channel, event_data)
 
-    # Persist to database (non-blocking, fire-and-forget)
-    # This enables historical progress tracking and audit trails
-    persist_progress_event_async(event_data)
+    # Persist to database - returns task for optional awaiting (Issue #507)
+    # In production: fire-and-forget (ignore return value)
+    # In tests: await task to eliminate race conditions
+    persistence_task = persist_progress_event_async(event_data)
 
     logger.info(
         "sse_error_event_emitted",
@@ -153,6 +176,8 @@ async def emit_error_event(
         error_code=error_code,
         error_message=error_message[:100],  # Truncate for logging
     )
+
+    return persistence_task
 
 
 async def emit_evaluation_event(
