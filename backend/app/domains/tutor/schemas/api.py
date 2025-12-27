@@ -2,7 +2,8 @@
 
 from pydantic import BaseModel, Field
 
-from app.core.branded_ids import AnalysisID, SessionID
+# Note: Response schemas use `str` for JSON serialization.
+# Branded types (SessionID, AnalysisID) are for internal type safety only.
 
 
 class CreateSessionRequest(BaseModel):
@@ -14,7 +15,7 @@ class CreateSessionRequest(BaseModel):
 
     """
 
-    analysis_id: AnalysisID | None = Field(None, description="Optional analysis ID")
+    analysis_id: str | None = Field(None, description="Optional analysis ID")
     user_level: str = Field(
         default="intermediate",
         description="User skill level: beginner, intermediate, advanced",
@@ -31,7 +32,7 @@ class CreateSessionResponse(BaseModel):
 
     """
 
-    session_id: SessionID = Field(..., description="Session ID")
+    session_id: str = Field(..., description="Session ID")
     status: str = Field(..., description="Session status")
     sse_endpoint: str = Field(..., description="SSE endpoint path")
 
@@ -54,8 +55,8 @@ class GetSessionResponse(BaseModel):
 
     """
 
-    session_id: SessionID = Field(..., description="Session ID")
-    analysis_id: AnalysisID | None = Field(None, description="Optional analysis ID")
+    session_id: str = Field(..., description="Session ID")
+    analysis_id: str | None = Field(None, description="Optional analysis ID")
     status: str = Field(..., description="Session status")
     syllabus: dict[str, object] | None = Field(None, description="Generated syllabus")
     current_section: int = Field(..., description="Current section index")

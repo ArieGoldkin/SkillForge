@@ -12,7 +12,7 @@ from app.api.schemas.errors import ErrorResponse
 from app.api.v1.analysis.sse_handler import (
     stream_analysis_progress as stream_analysis_progress_handler,
 )
-from app.core.branded_ids import AnalysisID, create_analysis_id
+from app.core.branded_ids import AnalysisID
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.utils import normalize_analysis_id_to_uuid
@@ -204,10 +204,10 @@ async def create_analysis(
         )
 
     # Generate or normalize analysis_id
+    # With Annotated types, UUID flows through directly - no conversion needed
     if request.analysis_id:
         try:
-            analysis_uuid_raw = normalize_analysis_id_to_uuid(request.analysis_id)
-            analysis_uuid = create_analysis_id(analysis_uuid_raw)
+            analysis_uuid: AnalysisID = normalize_analysis_id_to_uuid(request.analysis_id)
         except Exception as e:
             logger.warning(
                 "analysis_id_normalization_failed",
@@ -219,7 +219,7 @@ async def create_analysis(
                 detail=f"Invalid analysis_id format: {e!s}",
             ) from e
     else:
-        analysis_uuid = create_analysis_id(uuid.uuid4())
+        analysis_uuid: AnalysisID = uuid.uuid4()
 
     # Create Analysis record
     try:
