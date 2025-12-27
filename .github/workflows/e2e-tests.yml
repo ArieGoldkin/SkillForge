@@ -252,6 +252,36 @@ jobs:
 
           echo "✓ Created comprehensive .env.test for CI lightweight E2E mode"
 
+      # =========================================================================
+      # OPTIMIZATION: Try to pull pre-built images from ghcr.io
+      # If images exist, docker compose --build will use them as cache
+      # This can reduce build time from 15min to 1-2min
+      # =========================================================================
+      - name: Pull pre-built images (cache optimization)
+        continue-on-error: true  # Non-blocking - will build if pull fails
+        run: |
+          # Login to GitHub Container Registry
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          # Determine image tag based on event type
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TAG="pr-${{ github.event.pull_request.number }}"
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+
+          echo "📦 Attempting to pull pre-built images with tag: ${TAG}"
+
+          # Pull images - failures are OK (will build from source)
+          docker pull "ghcr.io/${{ github.repository }}/backend:${TAG}" 2>/dev/null && \
+            echo "✓ Backend image pulled" || echo "⚠️ Backend image not found, will build"
+          docker pull "ghcr.io/${{ github.repository }}/frontend:${TAG}" 2>/dev/null && \
+            echo "✓ Frontend image pulled" || echo "⚠️ Frontend image not found, will build"
+
+          # Show what we have
+          echo "📋 Available images:"
+          docker images | grep -E "ghcr.io|skillforge" || true
+
       - name: Build and start test environment (lightweight mode)
         run: |
           # ==========================================================================
@@ -260,6 +290,9 @@ jobs:
           # Docker Compose on macOS self-hosted runners can fail intermittently
           # due to Docker Desktop VM restarts or resource contention.
           # Implement retry with exponential backoff for resilience.
+          #
+          # NOTE: If pre-built images were pulled above, docker compose --build
+          # will use them as layer cache, significantly speeding up the build.
 
           start_containers() {
             echo "⏳ Starting containers..."

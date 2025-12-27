@@ -203,72 +203,8 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
   # ============================================================================
-  # Phase 3: BUILD (3-4 min) - Only run if tests pass, cache for E2E reuse
+  # NOTE: Docker build removed - it was causing Buildx conflicts and served
+  # no purpose (the image was never used). Docker images are built by:
+  # - docker-build.yml (pushes to ghcr.io for E2E reuse)
+  # - e2e-tests.yml (builds via docker-compose for testing)
   # ============================================================================
-  build:
-    needs: [changes, test]  # Only build if tests pass
-    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: self-hosted
-    timeout-minutes: 15  # Allow time for retries
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check Docker readiness (exponential backoff)
-        run: |
-          # Docker Desktop on macOS can be flaky - use exponential backoff
-          MAX_RETRIES=12
-          RETRY=0
-          DELAY=2
-          MAX_DELAY=30
-
-          while [ $RETRY -lt $MAX_RETRIES ]; do
-            # Test both 'docker info' and 'docker ps' - some failures only show in one
-            if docker info >/dev/null 2>&1 && docker ps >/dev/null 2>&1; then
-              echo "✓ Docker daemon ready after $RETRY retries"
-              exit 0
-            fi
-
-            RETRY=$((RETRY + 1))
-            echo "Docker not ready, waiting ${DELAY}s... (attempt $RETRY/$MAX_RETRIES)"
-            sleep $DELAY
-
-            # Exponential backoff with cap
-            DELAY=$((DELAY * 2))
-            if [ $DELAY -gt $MAX_DELAY ]; then
-              DELAY=$MAX_DELAY
-            fi
-          done
-          echo "::error::Docker daemon not ready after $MAX_RETRIES attempts"
-          docker info 2>&1 || true
-          exit 1
-
-      - name: Cleanup stale Buildx builders
-        run: |
-          # Remove all non-default builders to prevent conflicts
-          for builder in $(docker buildx ls --format '{{.Name}}' 2>/dev/null | grep -v '^default$' | grep -v '^desktop-linux$' || true); do
-            echo "Removing stale builder: $builder"
-            docker buildx rm "$builder" --force 2>/dev/null || true
-          done
-          docker buildx use default 2>/dev/null || true
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        timeout-minutes: 5
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: false
-          tags: skillforge-backend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # Export to local Docker for potential local testing
-          load: true
-
-      - name: Verify Docker image
-        run: |
-          docker images skillforge-backend:${{ github.sha }}
-          echo "Docker image built and cached successfully"
