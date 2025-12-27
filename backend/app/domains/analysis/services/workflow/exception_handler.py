@@ -126,16 +126,15 @@ async def handle_workflow_exception(
             message="WorkflowStageError handled gracefully, workflow stopped",
         )
         return  # Don't re-raise, workflow completes gracefully
-    else:
-        logger.warning(
-            "workflow_task_failed_no_stage_context",
-            analysis_id=str(analysis_id),
-            error_type=type(exc).__name__,
-            error_message=str(exc),
-            message=(
-                "Exception without stage context - not emitting SSE event. "
-                "Exception should be wrapped with WorkflowStageError."
-            ),
-        )
+    logger.warning(
+        "workflow_task_failed_no_stage_context",
+        analysis_id=str(analysis_id),
+        error_type=type(exc).__name__,
+        error_message=str(exc),
+        message=(
+            "Exception without stage context - not emitting SSE event. "
+            "Exception should be wrapped with WorkflowStageError."
+        ),
+    )
     # Re-raise non-WorkflowStageError exceptions
     raise exc
