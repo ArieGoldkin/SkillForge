@@ -30,13 +30,33 @@ test.describe('Extraction Error Handling', () => {
     await analyzePage.goto(analysis_id);
 
     // Wait for analysis to process (either complete with error or fail)
-    // First check API status to see if analysis failed
+    // Poll API status to see if analysis failed
     let analysisStatus = 'pending';
     let attempts = 0;
     const maxAttempts = 12; // 60 seconds total (5s intervals)
-    
+
     while (attempts < maxAttempts && analysisStatus === 'pending') {
-      await page.waitForTimeout(5000); // Wait 5 seconds between checks
+      // Poll for status change with 5 second timeout
+      await expect
+        .poll(
+          async () => {
+            try {
+              const analysis = await getAnalysis(request, analysis_id);
+              return analysis.status;
+            } catch {
+              return 'pending'; // API not ready yet
+            }
+          },
+          {
+            timeout: 5000,
+            intervals: [1000],
+          }
+        )
+        .not.toBe('pending')
+        .catch(() => {
+          // Status still pending, continue loop
+        });
+
       try {
         const analysis = await getAnalysis(request, analysis_id);
         analysisStatus = analysis.status;

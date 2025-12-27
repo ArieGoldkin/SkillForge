@@ -47,6 +47,10 @@ jobs:
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: self-hosted
     steps:
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids macOS .DS_Store lock issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -91,6 +95,10 @@ jobs:
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: self-hosted
     steps:
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids macOS .DS_Store lock issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -134,6 +142,10 @@ jobs:
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: self-hosted
     steps:
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids macOS .DS_Store lock issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -191,32 +203,8 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
   # ============================================================================
-  # Phase 3: BUILD (3-4 min) - Only run if tests pass, cache for E2E reuse
+  # NOTE: Docker build removed - it was causing Buildx conflicts and served
+  # no purpose (the image was never used). Docker images are built by:
+  # - docker-build.yml (pushes to ghcr.io for E2E reuse)
+  # - e2e-tests.yml (builds via docker-compose for testing)
   # ============================================================================
-  build:
-    needs: [changes, test]  # Only build if tests pass
-    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: self-hosted
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: false
-          tags: skillforge-backend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # Export to local Docker for potential local testing
-          load: true
-
-      - name: Verify Docker image
-        run: |
-          docker images skillforge-backend:${{ github.sha }}
-          echo "Docker image built and cached successfully"

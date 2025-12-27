@@ -1,0 +1,183 @@
+name: 'Setup Docker with Layer Caching'
+description: 'Configure Docker Buildx with multi-layer caching, resilient daemon checks, and pre-pulled base images'
+inputs:
+  cache-path:
+    description: 'Path to Docker layer cache'
+    required: false
+    default: '/tmp/.buildx-cache'
+  pre-pull-images:
+    description: 'Pre-pull base images for faster builds'
+    required: false
+    default: 'true'
+  max-retries:
+    description: 'Maximum retries for Docker daemon health check'
+    required: false
+    default: '12'
+
+runs:
+  using: 'composite'
+  steps:
+    # ==========================================================================
+    # Phase 1: Docker Daemon Health Check with Exponential Backoff
+    # ==========================================================================
+    # Docker Desktop on macOS can be flaky, especially after sleep/wake cycles
+    # or when the VM needs to restart. Exponential backoff is critical.
+    - name: Wait for Docker daemon (exponential backoff)
+      shell: bash
+      run: |
+        echo "⏳ Checking Docker daemon availability..."
+
+        MAX_RETRIES=${{ inputs.max-retries }}
+        RETRY=0
+        DELAY=2
+        MAX_DELAY=30
+
+        while [ $RETRY -lt $MAX_RETRIES ]; do
+          # Test both 'docker info' and 'docker ps' - some failures only show in one
+          if docker info >/dev/null 2>&1 && docker ps >/dev/null 2>&1; then
+            echo "✓ Docker daemon ready after $RETRY retries"
+            exit 0
+          fi
+
+          RETRY=$((RETRY + 1))
+          echo "Docker not ready, waiting ${DELAY}s... (attempt $RETRY/$MAX_RETRIES)"
+          sleep $DELAY
+
+          # Exponential backoff with cap
+          DELAY=$((DELAY * 2))
+          if [ $DELAY -gt $MAX_DELAY ]; then
+            DELAY=$MAX_DELAY
+          fi
+        done
+
+        echo "::error::Docker daemon not ready after $MAX_RETRIES attempts"
+        echo "Last docker info output:"
+        docker info 2>&1 || true
+        exit 1
+
+    # ==========================================================================
+    # Phase 2: Cleanup Stale Buildx Builders (Critical for stability)
+    # ==========================================================================
+    # Stale builders cause "connection error: EOF" and "context deadline exceeded"
+    # Always clean before creating new builders to prevent resource conflicts
+    - name: Cleanup stale Buildx builders
+      shell: bash
+      run: |
+        echo "⏳ Cleaning up stale Buildx builders..."
+
+        # List all builders and identify stale ones
+        docker buildx ls 2>/dev/null || true
+
+        # Remove all non-default builders to prevent conflicts
+        # The setup-buildx-action will create a fresh one
+        for builder in $(docker buildx ls --format '{{.Name}}' 2>/dev/null | grep -v '^default$' | grep -v '^desktop-linux$' || true); do
+          echo "Removing stale builder: $builder"
+          docker buildx rm "$builder" --force 2>/dev/null || true
+        done
+
+        # Prune buildx cache if it's too large (>10GB)
+        CACHE_SIZE=$(docker system df --format '{{.Size}}' 2>/dev/null | head -1 || echo "0")
+        echo "Docker disk usage: $CACHE_SIZE"
+
+        # Reset to default builder before setup-buildx-action creates new one
+        docker buildx use default 2>/dev/null || true
+
+        echo "✓ Buildx cleanup complete"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver-opts: |
+          image=moby/buildkit:latest
+          network=host
+        # Give Buildx more time to initialize on slow/recovering daemons
+        config-inline: |
+          [worker.oci]
+            max-parallelism = 2
+          [registry."docker.io"]
+            mirrors = ["registry-1.docker.io"]
+
+    # Verify Buildx is actually working (not just created)
+    - name: Verify Buildx builder
+      shell: bash
+      run: |
+        echo "⏳ Verifying Buildx builder..."
+
+        # Retry Buildx inspection with exponential backoff
+        MAX_RETRIES=5
+        RETRY=0
+        DELAY=2
+
+        while [ $RETRY -lt $MAX_RETRIES ]; do
+          if docker buildx inspect --bootstrap 2>&1; then
+            echo "✓ Buildx builder verified and bootstrapped"
+            exit 0
+          fi
+
+          RETRY=$((RETRY + 1))
+          echo "Buildx not ready, waiting ${DELAY}s... (attempt $RETRY/$MAX_RETRIES)"
+          sleep $DELAY
+          DELAY=$((DELAY * 2))
+        done
+
+        # Non-fatal: continue even if Buildx has issues (falls back to docker build)
+        echo "::warning::Buildx verification failed, will use fallback build method"
+
+    - name: Configure Docker environment
+      shell: bash
+      run: |
+        # Enable BuildKit caching
+        echo "BUILDKIT_INLINE_CACHE=1" >> $GITHUB_ENV
+        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+        echo "COMPOSE_DOCKER_CLI_BUILD=1" >> $GITHUB_ENV
+        # Note: DOCKER_API_VERSION removed - let Docker auto-negotiate
+        # This prevents version mismatch errors when Docker is upgraded
+
+        # Create cache directories for backend and frontend
+        mkdir -p ${{ inputs.cache-path }}/backend
+        mkdir -p ${{ inputs.cache-path }}/frontend
+        echo "✓ Docker BuildKit configured with cache at ${{ inputs.cache-path }}"
+
+    # Pre-pull base images in parallel for faster builds
+    - name: Pre-pull base images (parallel)
+      if: inputs.pre-pull-images == 'true'
+      shell: bash
+      run: |
+        echo "⏳ Pre-pulling base images..."
+
+        # Pull images in parallel using background jobs
+        # Add timeout to prevent hanging on network issues
+        timeout 120 docker pull python:3.13-slim &
+        PID1=$!
+        timeout 120 docker pull node:20-slim &
+        PID2=$!
+        timeout 120 docker pull pgvector/pgvector:pg17 &
+        PID3=$!
+        timeout 120 docker pull redis/redis-stack-server:7.4.0-v1 &
+        PID4=$!
+
+        # Wait for all pulls to complete (allow failures - images may be cached)
+        wait $PID1 $PID2 $PID3 $PID4 2>/dev/null || true
+
+        echo "✓ Base images ready (or already cached)"
+
+    - name: Verify Docker and cleanup stale resources
+      shell: bash
+      run: |
+        # Final Docker health check
+        docker info >/dev/null 2>&1 || { echo "Docker not ready"; exit 1; }
+
+        # Clean up stale test containers (fast)
+        docker compose -f docker-compose.test.yml down -v --remove-orphans 2>/dev/null || true
+        docker container prune -f 2>/dev/null || true
+
+        # Remove stale skillforge containers if any
+        STALE=$(docker ps -aq -f name="skillforge.*test" 2>/dev/null)
+        if [ -n "$STALE" ]; then
+          docker rm -f $STALE 2>/dev/null || true
+        fi
+
+        # Cleanup dangling images to free space
+        docker image prune -f 2>/dev/null || true
+
+        echo "✓ Docker ready and clean"

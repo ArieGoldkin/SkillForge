@@ -118,8 +118,19 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     // Send a message to create history
     await sendTutorMessage(request, sessionId!, 'Test message for history');
 
-    // Wait for message to be stored (brief wait for async write)
-    await page.waitForTimeout(500);
+    // Wait for message to be stored by polling the API
+    await expect
+      .poll(
+        async () => {
+          const session = await getTutorSession(request, sessionId!);
+          return session.messages.length;
+        },
+        {
+          timeout: 5000,
+          intervals: [100, 250, 500],
+        }
+      )
+      .toBeGreaterThan(0);
 
     // Reload the page to verify history persists
     await page.reload();
@@ -158,15 +169,37 @@ test.describe.skip('Tutor Page - Socratic Chat', () => {
     const firstMessage = 'First question about React';
     await sendTutorMessage(request, sessionId!, firstMessage);
 
-    // Brief wait for message to be stored (not waiting for LLM response)
-    await page.waitForTimeout(500);
+    // Wait for first message to be stored by polling the API
+    await expect
+      .poll(
+        async () => {
+          const session = await getTutorSession(request, sessionId!);
+          return session.messages.filter((m) => m.role === 'user').length;
+        },
+        {
+          timeout: 5000,
+          intervals: [100, 250, 500],
+        }
+      )
+      .toBeGreaterThanOrEqual(1);
 
     // Send second message
     const secondMessage = 'Second question about hooks';
     await sendTutorMessage(request, sessionId!, secondMessage);
 
-    // Brief wait for message to be stored
-    await page.waitForTimeout(500);
+    // Wait for second message to be stored
+    await expect
+      .poll(
+        async () => {
+          const session = await getTutorSession(request, sessionId!);
+          return session.messages.filter((m) => m.role === 'user').length;
+        },
+        {
+          timeout: 5000,
+          intervals: [100, 250, 500],
+        }
+      )
+      .toBeGreaterThanOrEqual(2);
 
     // Verify both messages exist in session history via API
     const session = await getTutorSession(request, sessionId!);

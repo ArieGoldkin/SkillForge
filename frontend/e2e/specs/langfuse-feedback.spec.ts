@@ -134,7 +134,7 @@ test.describe('Langfuse Feedback Integration E2E', () => {
 
     // With storageState, direct navigation to artifact URL is faster (skips baseURL navigation)
     await page.goto(ARTIFACT_URL);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify page loaded
     await expect(page.getByTestId('markdown-preview')).toBeVisible({ timeout: 15000 });
@@ -144,9 +144,8 @@ test.describe('Langfuse Feedback Integration E2E', () => {
 
     // Scroll to bottom to find feedback section (it's below the markdown content)
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500); // Allow scroll to complete
 
-    // Find the feedback section
+    // Wait for feedback section to be in viewport after scroll
     const feedbackSection = page.locator('text="Was this helpful?"').locator('..');
     await expect(feedbackSection).toBeVisible({ timeout: 5000 });
 
@@ -158,8 +157,8 @@ test.describe('Langfuse Feedback Integration E2E', () => {
     await thumbsUpButton.click();
     logger.info('Clicked thumbs-up button');
 
-    // Wait for feedback to be submitted
-    await page.waitForTimeout(2000);
+    // Wait for feedback to be submitted by checking aria-pressed attribute
+    await expect(thumbsUpButton).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
 
     // Verify button is now selected
     const isSelected = await thumbsUpButton.getAttribute('aria-pressed');
@@ -191,12 +190,11 @@ test.describe('Langfuse Feedback Integration E2E', () => {
 
     // Navigate to artifact page
     await page.goto(ARTIFACT_URL);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.getByTestId('markdown-preview')).toBeVisible({ timeout: 15000 });
 
     // Scroll to bottom to find feedback section
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500);
 
     // Find thumbs-down button
     const thumbsDownButton = page.getByRole('button', { name: /this was not helpful|thumbs down/i });
@@ -224,8 +222,8 @@ test.describe('Langfuse Feedback Integration E2E', () => {
     // Dialog should close
     await expect(commentDialog).not.toBeVisible({ timeout: 5000 });
 
-    // Wait for submission
-    await page.waitForTimeout(2000);
+    // Wait for submission by checking thumbs-down button state
+    await expect(thumbsDownButton).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
 
     logTestStep('Verify Score in Langfuse via API');
 

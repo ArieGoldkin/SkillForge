@@ -30,14 +30,13 @@ test.describe('Error Handling Tests', () => {
 
     await submitButton.click();
 
-    // Wait for either error display or navigation
+    // Wait for either error display or navigation (no timeout fallback needed with Promise.race)
     await Promise.race([
       page.locator('[role="alert"]').waitFor({ state: 'visible', timeout: 15000 }),
       page.getByText(/error|failed/i).waitFor({ state: 'visible', timeout: 15000 }),
       page.waitForURL(/\/(analyze|library)/, { timeout: 15000 }),
-      page.waitForTimeout(15000), // Max wait time
     ]).catch(() => {
-      // Timeout is acceptable - just continue
+      // If all promises reject, that's fine - we'll check state below
     });
 
     // Check if error appeared OR navigation happened

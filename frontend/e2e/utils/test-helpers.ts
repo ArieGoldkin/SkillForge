@@ -21,10 +21,14 @@ export async function waitForResponse(page: Page, urlPattern: string | RegExp) {
 }
 
 /**
- * Wait for all network activity to settle.
+ * Wait for DOM to be ready (NOT networkidle, as SSE streams keep connections open).
+ * Use element-based waits instead of network idle for better reliability.
+ *
+ * @deprecated Prefer element-based waits like `await expect(element).toBeVisible()`
  */
 export async function waitForNetworkIdle(page: Page, timeout = 5000) {
-  await page.waitForLoadState('networkidle', { timeout });
+  // Use domcontentloaded instead of networkidle to avoid SSE blocking
+  await page.waitForLoadState('domcontentloaded', { timeout });
 }
 
 /**

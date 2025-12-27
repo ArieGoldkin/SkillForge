@@ -1,0 +1,112 @@
+name: 'Setup Playwright'
+description: 'Install Node.js, dependencies, and Playwright browsers with aggressive caching'
+inputs:
+  node-version:
+    description: 'Node.js version to install'
+    required: false
+    default: '20'
+  working-directory:
+    description: 'Frontend working directory'
+    required: false
+    default: './frontend'
+
+runs:
+  using: 'composite'
+  steps:
+    # IMPORTANT: Do NOT use cache: 'npm' on self-hosted runners!
+    # It downloads from GitHub's cloud cache which can be slower than local install
+    # and may hang on connectivity issues. We use local node_modules persistence instead.
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    # Self-hosted runner optimization: Check if node_modules already exists and is valid
+    - name: Check npm cache status
+      id: npm-cache
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -d "node_modules" ] && [ -f "node_modules/.package-lock.json" ]; then
+          if diff -q package-lock.json node_modules/.package-lock.json >/dev/null 2>&1; then
+            echo "cache_hit=true" >> $GITHUB_OUTPUT
+            echo "✓ node_modules cache valid"
+          else
+            echo "cache_hit=false" >> $GITHUB_OUTPUT
+            echo "⚠ package-lock.json changed"
+          fi
+        else
+          echo "cache_hit=false" >> $GITHUB_OUTPUT
+          echo "⚠ No node_modules cache"
+        fi
+
+    - name: Install npm dependencies (if cache miss)
+      if: steps.npm-cache.outputs.cache_hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "⏳ Installing npm dependencies..."
+        # Note: Rely on job-level timeout. We removed GitHub cache: 'npm' which was causing hangs.
+        npm ci --prefer-offline --no-audit --no-fund
+        echo "✓ npm ci complete"
+
+    # Self-hosted runner optimization: Check if Playwright browsers already installed
+    - name: Check Playwright cache status
+      id: playwright-cache
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        PLAYWRIGHT_BROWSERS_PATH="${HOME}/.cache/ms-playwright"
+        EXPECTED_VERSION=$(node -p "require('./node_modules/@playwright/test/package.json').version" 2>/dev/null || echo "unknown")
+
+        echo "Expected Playwright version: ${EXPECTED_VERSION}"
+        echo "playwright_version=${EXPECTED_VERSION}" >> $GITHUB_OUTPUT
+
+        # Check for chromium directory with proper executable
+        if [ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]; then
+          CHROMIUM_DIR=$(ls -d "${PLAYWRIGHT_BROWSERS_PATH}"/chromium-* 2>/dev/null | head -1)
+          if [ -n "$CHROMIUM_DIR" ]; then
+            # Check for executable (Linux or Mac)
+            if [ -x "${CHROMIUM_DIR}/chrome-linux/chrome" ] || \
+               [ -x "${CHROMIUM_DIR}/chrome-mac/Chromium.app/Contents/MacOS/Chromium" ] || \
+               [ -x "${CHROMIUM_DIR}/chrome-mac-arm64/Chromium.app/Contents/MacOS/Chromium" ]; then
+              echo "cache_hit=true" >> $GITHUB_OUTPUT
+              echo "✓ Playwright browsers cached: ${CHROMIUM_DIR}"
+              exit 0
+            fi
+          fi
+        fi
+
+        echo "cache_hit=false" >> $GITHUB_OUTPUT
+        echo "⚠ Playwright browsers not cached"
+
+    - name: Install Playwright browsers (if cache miss)
+      if: steps.playwright-cache.outputs.cache_hit != 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "⏳ Installing Playwright Chromium..."
+        # NOTE: Do NOT use --with-deps on self-hosted runners
+        # It tries to install system deps via apt/brew which hangs or takes forever
+        # Self-hosted runners should already have required deps installed
+        npx playwright install chromium
+        echo "✓ Playwright Chromium installed"
+
+    - name: Prepare .auth directory
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        # Clean up stale storageState from previous runs
+        rm -rf .auth
+        mkdir -p .auth
+        echo "✓ Fresh .auth directory ready"
+
+    - name: Report setup status
+      shell: bash
+      run: |
+        echo "## Playwright Setup Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| npm cache | ${{ steps.npm-cache.outputs.cache_hit == 'true' && '✓ Hit' || '⏳ Installed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Playwright | ${{ steps.playwright-cache.outputs.cache_hit == 'true' && '✓ Cached' || '⏳ Installed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Version | ${{ steps.playwright-cache.outputs.playwright_version }} |" >> $GITHUB_STEP_SUMMARY

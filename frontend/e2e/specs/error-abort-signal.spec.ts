@@ -30,7 +30,9 @@ test.describe('Abort Signal Propagation', () => {
 
     // Verify workflow stopped - no later stages should run
     // Check that we don't see embedding, supervisor, or agent stages
-    await page.waitForTimeout(5000); // Wait a bit to ensure no further progress
+    // Wait for page to settle by checking that error state is stable
+    const errorMessage = page.getByText(/extraction.*fail|failed.*extract|error/i).or(page.getByRole('alert'));
+    await expect(errorMessage).toBeVisible();
 
     const embeddingStage = page.getByText(/embedding|generating.*embedding/i);
     const supervisorStage = page.getByText(/supervisor|routing/i);

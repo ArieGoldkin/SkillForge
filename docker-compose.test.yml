@@ -68,6 +68,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: runtime
+      # BuildKit cache for faster rebuilds
+      cache_from:
+        - type=local,src=/tmp/.buildx-cache/backend
+      cache_to:
+        - type=local,dest=/tmp/.buildx-cache/backend,mode=max
     container_name: skillforge-backend-test
     env_file:
       - ./backend/.env.test  # Test environment uses separate .env.test file
@@ -97,9 +102,9 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8500/api/v1/health"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      timeout: 10s
+      retries: 8
+      start_period: 60s
     volumes:
       # Mount code for hot reload (development)
       - ./backend/app:/app/app:ro
@@ -126,6 +131,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
+      # BuildKit cache for faster rebuilds
+      cache_from:
+        - type=local,src=/tmp/.buildx-cache/frontend
+      cache_to:
+        - type=local,dest=/tmp/.buildx-cache/frontend,mode=max
     container_name: skillforge-frontend-test
     environment:
       NODE_ENV: development
@@ -318,7 +328,7 @@ services:
       target: runtime
     container_name: skillforge-backend-seed-test
     env_file:
-      - ./backend/.env.test  # Test environment uses separate .env.test file.test  # Test environment uses separate .env.test file
+      - ./backend/.env.test  # Test environment uses separate .env.test file
     environment:
       ENVIRONMENT: test
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/skillforge-test
@@ -330,6 +340,7 @@ services:
     volumes:
       - ./backend/scripts:/app/scripts:ro
       - ./backend/data:/app/data:ro
+      - ./backend/tests/smoke/retrieval/fixtures:/app/tests/smoke/retrieval/fixtures:ro  # Fixtures for golden dataset
     command: >
       sh -c "
         echo 'Waiting for backend to be ready...' &&
@@ -350,7 +361,7 @@ services:
       target: runtime
     container_name: skillforge-langfuse-restore-test
     env_file:
-      - ./backend/.env.test  # Test environment uses separate .env.test file.test  # Test environment uses separate .env.test file
+      - ./backend/.env.test  # Test environment uses separate .env.test file
     environment:
       ENVIRONMENT: test
       # LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY are loaded from .env.test via env_file

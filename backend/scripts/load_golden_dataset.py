@@ -119,6 +119,8 @@ def generate_placeholder_artifact(doc: dict) -> str:
 
 async def main(replace: bool = False) -> int:
     """Load golden dataset as individual analyses."""
+    import os
+
     from sqlalchemy import text
 
     from app.core.logging import get_logger
@@ -126,9 +128,17 @@ async def main(replace: bool = False) -> int:
     from app.db.models.analysis_chunk import AnalysisChunk
     from app.db.models.artifact import Artifact
     from app.db.session import AsyncSessionLocal
-    from app.shared.services.embeddings import EmbeddingService
+    from app.shared.services.embeddings import DeterministicEmbeddingService, EmbeddingService
 
     logger = get_logger(__name__)
+
+    # Use deterministic embeddings in CI/test mode (no API keys required)
+    use_deterministic = os.getenv("SKILLFORGE_DETERMINISTIC_EMBEDDINGS", "").lower() == "true"
+    if use_deterministic:
+        logger.info("Using deterministic embeddings (no API keys required)")
+        embedding_service = DeterministicEmbeddingService()
+    else:
+        embedding_service = EmbeddingService()
 
     # Load fixture data
     fixtures_dir = Path(__file__).parent.parent / "tests/smoke/retrieval/fixtures"
@@ -147,9 +157,6 @@ async def main(replace: bool = False) -> int:
 
     logger.info(f"Found {len(documents)} documents with {total_sections} sections")
 
-    # Initialize embedding service
-    embedding_service = EmbeddingService()
-
     async with AsyncSessionLocal() as session:
         if replace:
             logger.info("Clearing ALL existing data...")
@@ -161,6 +168,9 @@ async def main(replace: bool = False) -> int:
 
         # Process each document as a separate analysis
         total_chunks = 0
+        seen_urls: set[str] = set()  # Track URLs to skip duplicates
+        skipped_count = 0
+
         for doc_idx, doc in enumerate(documents):
             doc_id = doc["id"]
             doc_title = doc["title"]
@@ -168,6 +178,15 @@ async def main(replace: bool = False) -> int:
             source_url = doc.get("source_url")
             tags = doc.get("tags", [])
             sections = doc.get("sections", [])
+
+            # Skip duplicate URLs (fixture data has some duplicates)
+            if source_url in seen_urls:
+                logger.warning(
+                    f"[{doc_idx + 1}/{len(documents)}] Skipping duplicate URL: {doc_title}"
+                )
+                skipped_count += 1
+                continue
+            seen_urls.add(source_url)
 
             logger.info(f"[{doc_idx + 1}/{len(documents)}] Creating: {doc_title}")
 
@@ -183,14 +202,41 @@ async def main(replace: bool = False) -> int:
                 )
                 return 1
 
+            # Build raw_content from sections (required for status='complete')
+            # This satisfies the check_complete_has_content constraint
+            raw_content_parts = [f"# {doc_title}", ""]
+            for section in sections:
+                section_title = section.get("title", "Section")
+                section_content = section.get("content", "")
+                raw_content_parts.append(f"## {section_title}")
+                raw_content_parts.append("")
+                raw_content_parts.append(section_content)
+                raw_content_parts.append("")
+            raw_content = "\n".join(raw_content_parts)
+
+            # Build extraction_metadata (required for status='complete')
+            # This satisfies the check_complete_has_metadata constraint
+            extraction_metadata = {
+                "source": "golden-dataset",
+                "document_id": doc_id,
+                "section_count": len(sections),
+                "word_count": len(raw_content.split()),
+                "language": doc.get("language", "en"),
+                "tags": tags,
+            }
+
             analysis = Analysis(
                 id=analysis_id,
                 url=source_url,
                 content_type=content_type,
                 status="complete",
                 title=doc_title,
+                raw_content=raw_content,
+                extraction_metadata=extraction_metadata,
             )
             session.add(analysis)
+            # Flush analysis first to satisfy foreign key constraint for artifact
+            await session.flush()
 
             # Generate placeholder artifact (needs real workflow for full quality)
             markdown_content = generate_placeholder_artifact(doc)
@@ -280,6 +326,8 @@ async def main(replace: bool = False) -> int:
         logger.info(f"   Analyses:  {analyses_count}")
         logger.info(f"   Artifacts: {artifacts_count}")
         logger.info(f"   Chunks:    {chunks_count}")
+        if skipped_count > 0:
+            logger.info(f"   Skipped:   {skipped_count} (duplicate URLs)")
         logger.info("=" * 60)
 
         return 0
