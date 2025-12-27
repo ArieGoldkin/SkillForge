@@ -1,0 +1,123 @@
+interactions:
+- request:
+    body: '{"api_key": "REDACTED", "query": "Next.js 15 features", "search_depth":
+      "advanced", "max_results": 5, "include_answer": true, "include_raw_content":
+      false, "include_images": true}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '199'
+      Content-Type:
+      - application/json
+      Host:
+      - api.tavily.com
+      User-Agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://api.tavily.com/search
+  response:
+    body:
+      string: "{\"query\":\"Next.js 15 features\",\"follow_up_questions\":null,\"answer\":\"Next.js
+        15 introduces Server Actions, React Server Components, and improved TypeScript
+        support. It also features enhanced caching and performance optimizations.\",\"images\":[\"https://i.ytimg.com/vi/EetWQhsXFjo/maxresdefault.jpg\",\"https://api.reliasoftware.com/uploads/nextjs_15_new_features_5df4d01230.webp\",\"https://miro.medium.com/v2/resize:fit:1358/1*3VslFq3sjOriDrbg6z96yw.png\",\"https://embarkingonvoyage.com/wp-content/uploads/2025/06/Why-Minimal-APIs-in-.NET-Are-Perfect-for-Agile-and-Microservice-Architectures-4.webp\",\"https://miro.medium.com/v2/resize:fit:1358/1*r6qHL4K75o8lAXYs-9dyTw.png\"],\"results\":[{\"url\":\"https://reliasoftware.com/blog/nextjs-15-new-features\",\"title\":\"What
+        are New Features in Next.js 15? Next.js 15 Upgrade Guide\",\"content\":\"Next.js
+        15 makes building fast and efficient web apps easier. With features like Server
+        Actions, React Server Components, and Dynamic HTML Streaming, you can reduce
+        your JavaScript load, speed up page rendering, and improve user experience.
+        By following these simple patterns and tips, you can build modern, high-performance
+        web applications with this Next.js latest version.\\n\\nFurther Reading:\\n\\n
+        Next.js 15 Documentation\\n Server Actions in Next.js\\n Streaming and Suspense
+        in Next.js [...] # What are New Features in Next.js 15? Next.js 15 Upgrade
+        Guide\\n\\nNguyen Tri Nhan\\n\\nSoftware Development\\n\\nServer Actions,
+        React Server Components, Dynamic HTML Streaming, Partial Prerendering (Experimental),
+        next/after API (Experimental) are key Next.js 15 features. [...] Next.js 15
+        builds on previous innovations to deliver significant improvements in performance
+        and developer experience. This Next.js latest version focuses on optimizing
+        Server Actions, React Server Components (RSC), and Dynamic HTML Streaming
+        to streamline data handling, boost rendering efficiency, and reduce JavaScript
+        bundle sizes.\",\"score\":0.9296516,\"raw_content\":null},{\"url\":\"https://www.syncfusion.com/blogs/post/whats-new-in-next-js-15-rc\",\"title\":\"What's
+        New in Next.js 15 RC?\",\"content\":\"TL;DR: Explore Next.js 15 RC\u2019s
+        innovative features, including support for React 19 RC, improved hydration
+        error handling, and advanced caching updates. The blog covers stable enhancements
+        like the React Compiler and experimental features such as partial prerendering.
+        Learn how to upgrade to the new version and leverage these improvements for
+        more efficient web development. [...] Thanks for reading! In this article,
+        we delved into the notable features and improvements of Next.js 15 RC, covering
+        everything from stable advancements like React 19 RC support and enhanced
+        caching techniques to experimental additions such as the React Compiler and
+        partial prerendering. Next.js is pushing the envelope of web development,
+        enhancing both the developer experience and the performance of web apps. [...]
+        In this blog, we will explore the Next.js 15 RC to test the latest features
+        for the upcoming stable release of Next.js. The first release candidate for
+        Next.js 15 RC was rolled out on May 23, 2024. This means we can examine all
+        the new development, production, and caching features. The latest updates
+        include several key features organized into stable and experimental improvements.\\n\\nSyncfusion
+        React UI components are the developers\u2019 choice to build user-friendly
+        web app. You deserve them too.\",\"score\":0.9284155,\"raw_content\":null},{\"url\":\"https://dev.to/mohith/introduction-to-nextjs-15-whats-new-and-improved-12gl\",\"title\":\"Introduction
+        to Next.js 15: What's New and Improved\",\"content\":\"Enhanced Developer
+        Experience  \\n Next.js 15 continues to prioritize making developers' lives
+        easier. Here are some of the cool new tools and features:\\n\\nImproved TypeScript
+        Support: If you\u2019re using TypeScript, things just got better. Next.js
+        15 offers faster type-checking and better editor integration. This means catching
+        errors early and writing more reliable code. [...] Next.js 15 is a big step
+        forward, bringing a host of new features and improvements that make building
+        modern web applications even better. From performance boosts and developer-friendly
+        tools to powerful new middleware capabilities and enhanced API routes, Next.js
+        15 has something for everyone. If you haven't upgraded yet, now's the perfect
+        time to do so and take advantage of all these awesome new features.  \\n CHECK
+        OUT FOR MORE \\n\\nHappy coding!\\n\\n## Top comments (2)\\n\\nSubscribe\\n\\nFarhan
+        Akhtar [...] Cool New Middleware Features  \\n One of the exciting new additions
+        in Next.js 15 is middleware. This lets you run code before your requests are
+        completed, perfect for tasks like authentication, logging, or modifying requests.
+        Setting up middleware is simple, yet it adds a powerful layer of functionality
+        to your app.\\n\\nBetter API Routes  \\n API routes in Next.js 15 have seen
+        some major improvements, making them more versatile and performant:\",\"score\":0.92763275,\"raw_content\":null},{\"url\":\"https://medium.com/@dmostoller/next-js-15-new-features-breaking-changes-and-improvements-you-need-to-know-ac98fa6f0c2d\",\"title\":\"Next.js
+        15: New Features, Breaking Changes, and Improvements ...\",\"content\":\"Next.js
+        15 brings powerful new tools for developers aiming to build fast, scalable
+        applications with optimized developer experience. While this release includes
+        several breaking changes, the codemod CLI and thorough documentation make
+        upgrading straightforward. With React 19 support, automated bundling, advanced
+        caching control, and performance improvements, Next.js 15 is ready for production
+        and sets the stage for an exciting future of web development. [...] For developers
+        managing their own infrastructure, Next.js 15 introduces improvements in Cache-Control
+        configuration. Now, custom Cache-Control headers aren\u2019t overridden, giving
+        developers full control over caching behavior for ISR pages. Additionally,
+        Next.js will automatically use `sharp` for image optimization without requiring
+        a separate installation, simplifying the self-hosting setup.\\n\\n## 11. Bundling
+        External Packages (Stable) [...] Next.js 15 has officially launched with a
+        range of updates, focusing heavily on stability, new features, and improvements
+        in performance, caching, security, and tooling. This release also sets the
+        foundation for seamless migration to React 19, along with enhanced developer
+        tooling to simplify workflows. Here\u2019s a deep dive into the highlights
+        of Next.js 15 and what they mean for your projects.\\n\\n## 1. @next/codemod
+        CLI: Automated Upgrades for a Smoother Transition\",\"score\":0.9104262,\"raw_content\":null},{\"url\":\"https://javascript.plainenglish.io/nextjs-15-features-b30d575f8dd7\",\"title\":\"Next.js
+        15 Features: A Walkthrough | by Ash Gole\",\"content\":\"In this blog, I\u2019ll
+        walk you through the newest features of Next.js 15, from Server Actions and
+        App Router enhancements to better streaming and performance improvements.
+        I\u2019ve included simple code examples and explained things in a beginner-friendly
+        way \u2014 just like I\u2019d share with a fellow developer over coffee. Let\u2019s
+        dive in! \U0001F680\\n\\n> ASHABB ReactJSList on Medium\\n>\\n> visit our
+        website ashabb.com\\n>\\n> instagram \\n>\\n> \U0001F680 1. Partial Prerendering
+        (Stable)\",\"score\":0.89501935,\"raw_content\":null}],\"response_time\":0.0,\"request_id\":\"ca732247-6366-433c-8c40-a8bb397a58ba\"}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '7338'
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 27 Dec 2025 17:03:16 GMT
+      content-security-policy:
+      - default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self';
+        style-src 'self';base-uri 'self';form-action 'self'; require-trusted-types-for
+        'script'; upgrade-insecure-requests;
+    status:
+      code: 200
+      message: OK
+version: 1

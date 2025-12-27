@@ -1,35 +1,20 @@
 import { memo } from 'react'
-import type * as React from 'react'
 
-import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
-
-import type { StageStatus } from '@/schemas/sse'
+import { Loader2 } from 'lucide-react'
 
 import { Badge } from '@shared/components/ui/badge'
 
 import { cn } from '@lib/utils'
 
+import {
+  formatAgentName,
+  formatStatus,
+  getStatusBadgeVariant,
+  getStatusIcon,
+} from '../../config/stageStatusConfig'
 import { formatErrorCode } from '../../utils/errorCodeFormatter'
 
-import { formatAgentName, formatStatus, getStatusBadgeVariant, type StageState } from './constants'
-
-/**
- * Get status icon component for a stage
- */
-const getStatusIcon = (status: StageStatus): React.ReactNode => {
-  const iconClasses = 'h-5 w-5'
-
-  switch (status) {
-    case 'complete':
-      return <CheckCircle2 className={cn(iconClasses, 'text-status-success')} />
-    case 'running':
-      return <Loader2 className={cn(iconClasses, 'animate-spin text-status-warning')} />
-    case 'failed':
-      return <XCircle className={cn(iconClasses, 'text-status-error')} />
-    case 'pending':
-      return <Circle className={cn(iconClasses, 'text-muted-foreground')} />
-  }
-}
+import type { StageState } from './constants'
 
 interface StageItemProps {
   stage: StageState
@@ -60,7 +45,7 @@ export const StageItem = memo(function StageItem({ stage, isLast }: StageItemPro
     >
       {/* Status icon - decorative, hidden from screen readers */}
       <div className="absolute left-0 top-1" aria-hidden="true">
-        {getStatusIcon(stage.status)}
+        {getStatusIcon(stage.status, 'h-5 w-5')}
       </div>
       {!isLast && (
         <div

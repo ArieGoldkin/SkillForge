@@ -1,7 +1,6 @@
 """Exception handling service for workflow execution."""
 
-import uuid
-
+from app.core.branded_ids import AnalysisID
 from app.core.exceptions import (
     WorkflowStageError,
     is_cleanup_generator_exit,
@@ -17,7 +16,7 @@ logger = get_logger(__name__)
 
 async def handle_workflow_exception(
     exc: BaseException,
-    analysis_id: uuid.UUID,
+    analysis_id: AnalysisID,
     workflow_completed: bool,
 ) -> None:
     """Handle workflow exceptions with status updates and SSE events.

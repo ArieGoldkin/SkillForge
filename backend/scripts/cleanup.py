@@ -43,14 +43,16 @@ Examples:
 import argparse
 import asyncio
 import sys
+from contextlib import aclosing
 from pathlib import Path
 
 # Add backend directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from app.services.cleanup import CleanupService
+
 from app.core.logging import get_logger
 from app.db.session import get_async_session
-from app.services.cleanup import CleanupService
 
 logger = get_logger(__name__)
 
@@ -138,30 +140,31 @@ async def main() -> None:
     )
 
     # Get database session
-    async for session in get_async_session():
-        try:
-            # Initialize cleanup service
-            service = CleanupService(session, batch_size=args.batch_size)
+    async with aclosing(get_async_session()) as session_gen:
+        async for session in session_gen:
+            try:
+                # Initialize cleanup service
+                service = CleanupService(session, batch_size=args.batch_size)
 
-            # Execute requested operation
-            if args.check:
-                await run_health_check(service)
-            elif args.dry_run:
-                await run_dry_run(service, args.include_superseded)
-            elif args.orphans:
-                await run_orphan_cleanup(service, args.include_superseded, args.hard_delete)
-            elif args.ttl:
-                await run_ttl_cleanup(service)
-            elif args.full:
-                await run_full_cleanup(service, args.include_superseded, args.hard_delete)
-            elif args.report:
-                await generate_report(service, args.report)
+                # Execute requested operation
+                if args.check:
+                    await run_health_check(service)
+                elif args.dry_run:
+                    await run_dry_run(service, args.include_superseded)
+                elif args.orphans:
+                    await run_orphan_cleanup(service, args.include_superseded, args.hard_delete)
+                elif args.ttl:
+                    await run_ttl_cleanup(service)
+                elif args.full:
+                    await run_full_cleanup(service, args.include_superseded, args.hard_delete)
+                elif args.report:
+                    await generate_report(service, args.report)
 
-            logger.info("cleanup_script_completed")
+                logger.info("cleanup_script_completed")
 
-        except Exception as e:
-            logger.error("cleanup_script_failed", error=str(e), exc_info=True)
-            sys.exit(1)
+            except Exception as e:
+                logger.error("cleanup_script_failed", error=str(e), exc_info=True)
+                sys.exit(1)
 
 
 async def run_health_check(service: CleanupService) -> None:

@@ -18,25 +18,21 @@ import { memo, useState } from 'react'
 import type React from 'react'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import {
-  AlertCircle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Circle,
-  Clock,
-  Loader2,
-  MinusCircle,
-  XCircle,
-} from 'lucide-react'
+import { AlertCircle, ChevronDown, ChevronRight, Clock, Loader2 } from 'lucide-react'
 
 import type { StageStatus } from '@/schemas/sse'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
 
-import { assertNever, cn } from '@lib/utils'
+import { cn } from '@lib/utils'
 
+import {
+  formatAgentName,
+  formatStatus,
+  getStatusBadgeVariant,
+  getStatusIcon,
+} from '../../config/stageStatusConfig'
 import { formatErrorCode } from '../../utils/errorCodeFormatter'
 
 // ============================================================================
@@ -71,87 +67,6 @@ export interface AccordionStageItemProps {
 // ============================================================================
 
 /**
- * Get status icon component for a stage
- */
-const getStatusIcon = (status: StageStatus): React.ReactNode => {
-  const iconClasses = 'h-4 w-4 flex-shrink-0'
-
-  switch (status) {
-    case 'complete':
-      return <CheckCircle2 className={cn(iconClasses, 'text-status-success')} aria-hidden="true" />
-    case 'running':
-    case 'synthesizing':
-    case 'detecting_conflicts':
-      return (
-        <Loader2
-          className={cn(iconClasses, 'animate-spin text-status-warning')}
-          aria-hidden="true"
-        />
-      )
-    case 'failed':
-    case 'static_fallback':
-      return <XCircle className={cn(iconClasses, 'text-status-error')} aria-hidden="true" />
-    case 'skipped':
-      return <MinusCircle className={cn(iconClasses, 'text-muted-foreground')} aria-hidden="true" />
-    case 'pending':
-      return <Circle className={cn(iconClasses, 'text-muted-foreground')} aria-hidden="true" />
-    default:
-      return assertNever(status)
-  }
-}
-
-/**
- * Get badge variant for stage status
- */
-const getStatusBadgeVariant = (
-  status: StageStatus
-): 'default' | 'success' | 'warning' | 'info' | 'secondary' | 'destructive' => {
-  switch (status) {
-    case 'complete':
-      return 'success'
-    case 'running':
-    case 'synthesizing':
-    case 'detecting_conflicts':
-      return 'warning'
-    case 'failed':
-    case 'static_fallback':
-      return 'destructive'
-    case 'skipped':
-      return 'secondary'
-    case 'pending':
-      return 'default'
-    default:
-      return assertNever(status)
-  }
-}
-
-/**
- * Format status for display
- */
-const formatStatus = (status: StageStatus): string => {
-  switch (status) {
-    case 'complete':
-      return 'Complete'
-    case 'running':
-      return 'Running'
-    case 'synthesizing':
-      return 'Synthesizing'
-    case 'detecting_conflicts':
-      return 'Detecting Conflicts'
-    case 'static_fallback':
-      return 'Static Fallback'
-    case 'failed':
-      return 'Failed'
-    case 'skipped':
-      return 'Skipped'
-    case 'pending':
-      return 'Pending'
-    default:
-      return assertNever(status)
-  }
-}
-
-/**
  * Format timestamp for display
  */
 const formatTimestamp = (timestamp: Date): string => {
@@ -160,16 +75,6 @@ const formatTimestamp = (timestamp: Date): string => {
     minute: '2-digit',
     second: '2-digit',
   })
-}
-
-/**
- * Format agent name for display
- */
-const formatAgentName = (agent: string): string => {
-  return agent
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
 }
 
 // ============================================================================
@@ -228,7 +133,7 @@ const AccordionStageItemBase = memo(function AccordionStageItem({
     >
       <div className="flex items-start gap-3">
         {/* Status icon - matches h-4 w-4 from getStatusIcon */}
-        <div className="mt-0.5">{getStatusIcon(status)}</div>
+        <div className="mt-0.5">{getStatusIcon(status, 'h-4 w-4 flex-shrink-0')}</div>
 
         {/* Stage info */}
         <div className="flex-1 min-w-0">

@@ -10,6 +10,7 @@ Available Dependencies:
 """
 
 from collections.abc import AsyncGenerator
+from contextlib import aclosing
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -39,8 +40,9 @@ async def get_database_session() -> AsyncGenerator[AsyncSession]:
         AsyncSession: SQLAlchemy async session
 
     """
-    async for session in _get_db():
-        yield session
+    async with aclosing(_get_db()) as db_gen:
+        async for session in db_gen:
+            yield session
 
 
 def get_app_settings() -> Settings:

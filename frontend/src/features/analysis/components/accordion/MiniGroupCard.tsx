@@ -40,35 +40,46 @@ export interface MiniGroupCardProps {
 // Helper Functions
 // ============================================================================
 
+/** Status configuration for badge variants and border colors */
+const statusConfig = {
+  pending: {
+    badgeVariant: 'default' as const,
+    borderColor: 'border-l-muted-foreground/30',
+  },
+  'in-progress': {
+    badgeVariant: 'info' as const,
+    borderColor: 'border-l-primary',
+  },
+  completed: {
+    badgeVariant: 'success' as const,
+    borderColor: 'border-l-[oklch(0.6959_0.1491_162.4796)]',
+  },
+  failed: {
+    badgeVariant: 'destructive' as const,
+    borderColor: 'border-l-destructive',
+  },
+  partial: {
+    badgeVariant: 'warning' as const,
+    borderColor: 'border-l-[oklch(0.7686_0.1647_70.0804)]',
+  },
+} satisfies Record<
+  GroupStatus,
+  {
+    badgeVariant: 'default' | 'success' | 'warning' | 'info' | 'destructive'
+    borderColor: string
+  }
+>
+
 /** Get badge variant for each status */
 const getBadgeVariant = (
   status: GroupStatus
 ): 'default' | 'success' | 'warning' | 'info' | 'destructive' => {
-  const variants: Record<GroupStatus, 'default' | 'success' | 'warning' | 'info' | 'destructive'> =
-    {
-      pending: 'default',
-      'in-progress': 'info',
-      completed: 'success',
-      failed: 'destructive',
-      partial: 'warning',
-    }
-  return variants[status]
+  return statusConfig[status].badgeVariant
 }
 
 /** Get status-based border color */
 const getStatusBorderColor = (status: GroupStatus): string => {
-  switch (status) {
-    case 'completed':
-      return 'border-l-[oklch(0.6959_0.1491_162.4796)]'
-    case 'in-progress':
-      return 'border-l-primary'
-    case 'failed':
-      return 'border-l-destructive'
-    case 'partial':
-      return 'border-l-[oklch(0.7686_0.1647_70.0804)]'
-    default:
-      return 'border-l-muted-foreground/30'
-  }
+  return statusConfig[status].borderColor
 }
 
 // ============================================================================

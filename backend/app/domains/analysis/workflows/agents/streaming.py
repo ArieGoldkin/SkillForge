@@ -15,9 +15,11 @@ from typing import cast, overload
 
 from langchain_core.runnables import Runnable
 
+from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT, create_runnable_config
 from app.core.tracing import get_current_trace_id
+from app.core.tracing_constants import calculate_llm_cost
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.streaming_helpers import emit_progress_if_needed
 
@@ -105,6 +107,7 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
     total_tokens = 0
     input_tokens = 0
     output_tokens = 0
+    model_name = "unknown"  # Track model name for cost calculation
 
     # Get Langfuse trace ID for correlation if available
     trace_id = get_current_trace_id()
@@ -156,6 +159,17 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
                         input_tokens = getattr(metadata, "input_tokens", input_tokens)
                         output_tokens += getattr(metadata, "output_tokens", 0)
                         total_tokens = input_tokens + output_tokens
+
+                    # Extract model name from response metadata for cost tracking
+                    if hasattr(chunk, "response_metadata") and chunk.response_metadata:
+                        # Try common model name fields from different providers
+                        metadata = chunk.response_metadata
+                        model_name = (
+                            metadata.get("model")
+                            or metadata.get("model_name")
+                            or metadata.get("model_id")
+                            or model_name  # Keep previous value if not found
+                        )
 
                     if should_break:
                         break
@@ -214,6 +228,33 @@ async def stream_agent_response(  # noqa: PLR0912, PLR0915 - Complex streaming l
             total_tokens=total_tokens,
             trace_id=trace_id,
         )
+
+        # Calculate and submit cost to Langfuse (graceful degradation)
+        if model_name != "unknown" and input_tokens > 0:
+            try:
+                cost_usd = calculate_llm_cost(
+                    model=model_name,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                )
+
+                # Submit cost as Langfuse score
+                langfuse_service = get_langfuse_service()
+                langfuse_service.submit_score(
+                    name="cost_usd",
+                    value=cost_usd,
+                    comment=f"{model_name}: {input_tokens}in + {output_tokens}out = ${cost_usd:.6f}",
+                )
+                logger.debug(
+                    "streaming_cost_tracked",
+                    agent_type=agent_type,
+                    analysis_id=str(analysis_id),
+                    model=model_name,
+                    cost_usd=cost_usd,
+                )
+            except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+                # Don't fail agent execution if cost tracking fails
+                logger.debug("streaming_cost_tracking_failed", error=str(e))
 
     # If we have a result, return it; otherwise return empty dict for graceful degradation
     if final_result is None:

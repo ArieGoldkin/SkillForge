@@ -34,13 +34,14 @@ import {
   MinusCircle,
   XCircle,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 import type { SuccessMetrics } from '@/schemas/sse'
 
 import { Badge } from '@shared/components/ui/badge'
 import { Button } from '@shared/components/ui/button'
 
-import { assertNever, cn } from '@lib/utils'
+import { cn } from '@lib/utils'
 
 import type { ProgressStep } from '../../hooks/useProgressSteps'
 import { formatErrorCode } from '../../utils/errorCodeFormatter'
@@ -58,77 +59,76 @@ interface StageItemProps {
   showTimestamp: boolean
 }
 
+/**
+ * Stage status configuration type
+ * Maps each status to its icon, badge variant, label, and optional icon styling
+ */
+type StageStatusConfig = {
+  icon: LucideIcon
+  badgeVariant: 'default' | 'success' | 'warning' | 'info' | 'secondary' | 'destructive'
+  label: string
+  iconClassName?: string
+}
+
+/**
+ * Status type extracted from ProgressStep
+ */
+type StageStatus = ProgressStep['status']
+
+/**
+ * Exhaustive status configuration map
+ * Uses 'as const satisfies' pattern to ensure:
+ * 1. All status values are covered (exhaustiveness check)
+ * 2. No extra properties are added
+ * 3. Type-safe access to configuration
+ */
+const STAGE_STATUS_CONFIG = {
+  completed: {
+    icon: CheckCircle2,
+    badgeVariant: 'success',
+    label: 'Complete',
+    iconClassName: 'text-status-success',
+  },
+  'in-progress': {
+    icon: Loader2,
+    badgeVariant: 'warning',
+    label: 'Running',
+    iconClassName: 'animate-spin text-status-warning',
+  },
+  failed: {
+    icon: XCircle,
+    badgeVariant: 'destructive',
+    label: 'Failed',
+    iconClassName: 'text-status-error',
+  },
+  skipped: {
+    icon: MinusCircle,
+    badgeVariant: 'secondary',
+    label: 'Skipped',
+    iconClassName: 'text-muted-foreground',
+  },
+  pending: {
+    icon: Circle,
+    badgeVariant: 'default',
+    label: 'Pending',
+    iconClassName: 'text-muted-foreground',
+  },
+} as const satisfies Record<StageStatus, StageStatusConfig>
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 /**
  * Get status icon component for a stage
+ * Uses config-driven approach for type safety and exhaustiveness
  */
-const getStatusIcon = (status: ProgressStep['status']): React.ReactNode => {
-  const iconClasses = 'h-4 w-4 flex-shrink-0'
+const getStatusIcon = (status: StageStatus): React.ReactNode => {
+  const config = STAGE_STATUS_CONFIG[status]
+  const Icon = config.icon
+  const iconClasses = cn('h-4 w-4 flex-shrink-0', config.iconClassName)
 
-  switch (status) {
-    case 'completed':
-      return <CheckCircle2 className={cn(iconClasses, 'text-status-success')} aria-hidden="true" />
-    case 'in-progress':
-      return (
-        <Loader2
-          className={cn(iconClasses, 'animate-spin text-status-warning')}
-          aria-hidden="true"
-        />
-      )
-    case 'failed':
-      return <XCircle className={cn(iconClasses, 'text-status-error')} aria-hidden="true" />
-    case 'skipped':
-      return <MinusCircle className={cn(iconClasses, 'text-muted-foreground')} aria-hidden="true" />
-    case 'pending':
-      return <Circle className={cn(iconClasses, 'text-muted-foreground')} aria-hidden="true" />
-    default:
-      return assertNever(status)
-  }
-}
-
-/**
- * Get badge variant for stage status
- */
-const getStatusBadgeVariant = (
-  status: ProgressStep['status']
-): 'default' | 'success' | 'warning' | 'info' | 'secondary' | 'destructive' => {
-  switch (status) {
-    case 'completed':
-      return 'success'
-    case 'in-progress':
-      return 'warning'
-    case 'failed':
-      return 'destructive'
-    case 'skipped':
-      return 'secondary'
-    case 'pending':
-      return 'default'
-    default:
-      return assertNever(status)
-  }
-}
-
-/**
- * Format status for display
- */
-const formatStatus = (status: ProgressStep['status']): string => {
-  switch (status) {
-    case 'completed':
-      return 'Complete'
-    case 'in-progress':
-      return 'Running'
-    case 'failed':
-      return 'Failed'
-    case 'skipped':
-      return 'Skipped'
-    case 'pending':
-      return 'Pending'
-    default:
-      return assertNever(status)
-  }
+  return <Icon className={iconClasses} aria-hidden="true" />
 }
 
 /**
@@ -201,7 +201,7 @@ export const StageItem = memo(function StageItem({
         'hover:bg-muted/50'
       )}
       role="listitem"
-      aria-label={`${stage.title}: ${formatStatus(stage.status)}`}
+      aria-label={`${stage.title}: ${STAGE_STATUS_CONFIG[stage.status].label}`}
       data-testid="accordion-stage-item"
       data-stage-id={stage.id}
       data-stage-status={stage.status}
@@ -238,12 +238,12 @@ export const StageItem = memo(function StageItem({
 
               {/* Status Badge */}
               <Badge
-                variant={getStatusBadgeVariant(stage.status)}
+                variant={STAGE_STATUS_CONFIG[stage.status].badgeVariant}
                 className="text-xs"
                 role="status"
                 aria-live={isActive ? 'polite' : 'off'}
               >
-                {formatStatus(stage.status)}
+                {STAGE_STATUS_CONFIG[stage.status].label}
               </Badge>
             </div>
           </div>

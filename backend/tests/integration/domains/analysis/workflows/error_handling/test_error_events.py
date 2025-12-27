@@ -16,7 +16,6 @@ from app.domains.analysis.workflows.analysis import create_analysis_workflow
 from .conftest import (
     build_test_graph,
     create_test_analysis,
-    mock_downstream_stages,
     verify_analysis_status,
     verify_error_event,
     verify_progress_event_failed,

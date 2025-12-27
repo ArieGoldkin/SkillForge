@@ -128,9 +128,7 @@ async def test_agent_applies_grounding(
     ):
         # Configure PromptManager mock
         mock_pm = AsyncMock()
-        mock_pm.get_prompt_with_langfuse_client = AsyncMock(
-            return_value=(test_base_prompt, None)
-        )
+        mock_pm.get_prompt_with_langfuse_client = AsyncMock(return_value=(test_base_prompt, None))
         mock_get_pm.return_value = mock_pm
 
         # Run the agent

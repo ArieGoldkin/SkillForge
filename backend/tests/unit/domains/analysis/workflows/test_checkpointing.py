@@ -6,9 +6,7 @@ to ensure proper fallback chain and configuration handling.
 Reference: Issue #576 (GAP 3) - Redis Checkpointing
 """
 
-import os
-from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from langgraph.checkpoint.memory import MemorySaver
@@ -281,9 +279,7 @@ class TestCheckpointerSelection:
             # Should fallback to MemorySaver
             assert isinstance(checkpointer, MemorySaver)
 
-    def test_postgres_value_error_fallback_to_memory(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_postgres_value_error_fallback_to_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test fallback to MemorySaver when PostgreSQL raises ValueError."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 

@@ -22,9 +22,7 @@ import sys
 import pytest
 
 from app.core.bulkhead import (
-    Bulkhead,
     BulkheadRegistry,
-    BulkheadStats,
     Tier,
     get_bulkhead_registry,
     reset_bulkhead_registry,
@@ -73,6 +71,7 @@ class TestResilienceManagerReset:
         # Force circuit breaker to OPEN state by triggering failures
         for _ in range(5):  # Exceed failure threshold
             try:
+
                 async def failing_call():
                     raise RuntimeError("Simulated failure")
 
@@ -290,6 +289,7 @@ class TestCrossTestIsolation:
         # Force to OPEN
         for _ in range(5):
             try:
+
                 async def fail():
                     raise RuntimeError("Fail")
 

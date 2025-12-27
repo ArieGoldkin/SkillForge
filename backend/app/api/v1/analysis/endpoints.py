@@ -12,6 +12,7 @@ from app.api.schemas.errors import ErrorResponse
 from app.api.v1.analysis.sse_handler import (
     stream_analysis_progress as stream_analysis_progress_handler,
 )
+from app.core.branded_ids import AnalysisID, create_analysis_id
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.utils import normalize_analysis_id_to_uuid
@@ -118,7 +119,7 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
     },
 )
 async def stream_analysis_progress_endpoint(
-    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    analysis_id: Annotated[AnalysisID, Path(description="Analysis UUID")],
     request: Request,
 ):
     """Stream real-time analysis progress via Server-Sent Events (SSE).
@@ -205,7 +206,8 @@ async def create_analysis(
     # Generate or normalize analysis_id
     if request.analysis_id:
         try:
-            analysis_uuid = normalize_analysis_id_to_uuid(request.analysis_id)
+            analysis_uuid_raw = normalize_analysis_id_to_uuid(request.analysis_id)
+            analysis_uuid = create_analysis_id(analysis_uuid_raw)
         except Exception as e:
             logger.warning(
                 "analysis_id_normalization_failed",
@@ -217,7 +219,7 @@ async def create_analysis(
                 detail=f"Invalid analysis_id format: {e!s}",
             ) from e
     else:
-        analysis_uuid = uuid.uuid4()
+        analysis_uuid = create_analysis_id(uuid.uuid4())
 
     # Create Analysis record
     try:
@@ -318,7 +320,7 @@ async def create_analysis(
     },
 )
 async def get_analysis(
-    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    analysis_id: Annotated[AnalysisID, Path(description="Analysis UUID")],
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
     artifact_repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> AnalyzeStatusResponse:
@@ -413,7 +415,7 @@ async def get_error_summary(
     },
 )
 async def get_analysis_progress(
-    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    analysis_id: Annotated[AnalysisID, Path(description="Analysis UUID")],
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
 ) -> AnalysisProgressResponse:
     """Get stored progress events for a completed analysis.
@@ -473,7 +475,7 @@ async def get_analysis_progress(
     },
 )
 async def rerun_analysis(
-    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    analysis_id: Annotated[AnalysisID, Path(description="Analysis UUID")],
     fastapi_request: Request,
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
     artifact_repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
@@ -602,7 +604,7 @@ async def rerun_analysis(
     },
 )
 async def retry_analysis(
-    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    analysis_id: Annotated[AnalysisID, Path(description="Analysis UUID")],
     fastapi_request: Request,
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
 ) -> AnalysisRetryResponse:

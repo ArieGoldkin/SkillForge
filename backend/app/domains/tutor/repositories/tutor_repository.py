@@ -4,11 +4,11 @@ Composes session and message repositories for tutoring operations.
 """
 
 from typing import Protocol
-from uuid import UUID
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branded_ids import AnalysisID, SessionID
 from app.core.logging import get_logger
 from app.db.models.tutoring import TutoringMessage, TutoringSession
 from app.db.session import get_db
@@ -29,26 +29,26 @@ class ITutorRepository(Protocol):
 
     async def create_session(
         self,
-        analysis_id: UUID | None = None,
+        analysis_id: AnalysisID | None = None,
         user_level: str = "intermediate",
         session_metadata: dict[str, object] | None = None,
     ) -> TutoringSession:
         """Create a new tutoring session."""
         ...
 
-    async def get_session(self, session_id: UUID) -> TutoringSession | None:
+    async def get_session(self, session_id: SessionID) -> TutoringSession | None:
         """Get a tutoring session by ID."""
         ...
 
     async def get_session_with_messages(
-        self, session_id: UUID
+        self, session_id: SessionID
     ) -> tuple[TutoringSession, list[TutoringMessage]]:
         """Get session with all messages (for resume)."""
         ...
 
     async def save_message(
         self,
-        session_id: UUID,
+        session_id: SessionID,
         role: str,
         content: str,
         message_metadata: dict[str, object] | None = None,
@@ -56,13 +56,13 @@ class ITutorRepository(Protocol):
         """Save a message to the conversation history."""
         ...
 
-    async def get_analysis_summary(self, analysis_id: UUID) -> dict[str, object] | None:
+    async def get_analysis_summary(self, analysis_id: AnalysisID) -> dict[str, object] | None:
         """Get analysis summary for context (from aggregated_insights)."""
         ...
 
     async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
-        session_id: UUID,
+        session_id: SessionID,
         syllabus: dict[str, object] | None = None,
         current_section: int | None = None,
         current_lesson: int | None = None,
@@ -101,7 +101,7 @@ class TutorRepository:
 
     async def create_session(
         self,
-        analysis_id: UUID | None = None,
+        analysis_id: AnalysisID | None = None,
         user_level: str = "intermediate",
         session_metadata: dict[str, object] | None = None,
     ) -> TutoringSession:
@@ -112,19 +112,19 @@ class TutorRepository:
             session_metadata=session_metadata,
         )
 
-    async def get_session(self, session_id: UUID) -> TutoringSession | None:
+    async def get_session(self, session_id: SessionID) -> TutoringSession | None:
         """Get a tutoring session by ID."""
         return await self._session_repo.get_session(session_id)
 
     async def get_session_with_messages(
-        self, session_id: UUID
+        self, session_id: SessionID
     ) -> tuple[TutoringSession, list[TutoringMessage]]:
         """Get session with all messages (for resume)."""
         return await self._message_repo.get_session_with_messages(session_id)
 
     async def save_message(
         self,
-        session_id: UUID,
+        session_id: SessionID,
         role: str,
         content: str,
         message_metadata: dict[str, object] | None = None,
@@ -137,7 +137,7 @@ class TutorRepository:
             message_metadata=message_metadata,
         )
 
-    async def get_analysis_summary(self, analysis_id: UUID) -> dict[str, object] | None:
+    async def get_analysis_summary(self, analysis_id: AnalysisID) -> dict[str, object] | None:
         """Get analysis summary for context (from aggregated_insights)."""
         from app.domains.tutor.services.analysis_service import get_analysis_summary
 
@@ -145,7 +145,7 @@ class TutorRepository:
 
     async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
-        session_id: UUID,
+        session_id: SessionID,
         syllabus: dict[str, object] | None = None,
         current_section: int | None = None,
         current_lesson: int | None = None,

@@ -11,19 +11,19 @@ import { STAGE_CONFIG } from '../config/stageRegistry'
 /**
  * Map backend stage status to UI step status
  */
+const STAGE_STATUS_MAP = {
+  complete: 'completed',
+  running: 'in-progress',
+  failed: 'failed',
+  skipped: 'skipped',
+  pending: 'pending',
+  synthesizing: 'in-progress',
+  detecting_conflicts: 'in-progress',
+  static_fallback: 'failed',
+} as const satisfies Record<StageStatus, AnalysisStepStatus>
+
 export function mapStageStatus(status: StageStatus): AnalysisStepStatus {
-  switch (status) {
-    case 'complete':
-      return 'completed'
-    case 'running':
-      return 'in-progress'
-    case 'failed':
-      return 'failed'
-    case 'skipped':
-      return 'skipped'
-    default:
-      return 'pending'
-  }
+  return STAGE_STATUS_MAP[status]
 }
 
 /**
@@ -238,44 +238,54 @@ function getCompleteAction(stage: StageName, details?: Record<string, unknown>):
   return `Completed ${STAGE_CONFIG[stage]?.title || stage}`
 }
 
+/** Action handler functions for each status type */
+type ActionHandler = (
+  stage: StageName,
+  details: Record<string, unknown> | undefined,
+  stageTitle: string
+) => string
+
+const ACTION_HANDLERS: Record<StageStatus, ActionHandler> = {
+  running: (stage) => RUNNING_ACTIONS[stage] || 'Processing...',
+  complete: (stage, details) => getCompleteAction(stage, details),
+  failed: (_stage, details, stageTitle) => {
+    // Show error message from details if available
+    if (details?.error && typeof details.error === 'string') {
+      const errorMsg =
+        details.error.length > VALIDATION_CONSTANTS.ERROR_MESSAGE_SHORT_TRUNCATE_LENGTH
+          ? `${details.error.substring(0, VALIDATION_CONSTANTS.ERROR_MESSAGE_SHORT_TRUNCATE_LENGTH)}...`
+          : details.error
+      return `Failed: ${errorMsg}`
+    }
+    if (details?.error_code && typeof details.error_code === 'string') {
+      return `Failed: ${details.error_code}`
+    }
+    // Show processing time if available
+    if (details?.processing_time_ms && typeof details.processing_time_ms === 'number') {
+      const seconds = Math.round(details.processing_time_ms / 1000)
+      return `Failed after ${seconds}s`
+    }
+    return `Failed ${stageTitle}`
+  },
+  skipped: (_stage, details, stageTitle) => {
+    // Show skip reason if available
+    if (details?.skip_reason && typeof details.skip_reason === 'string') {
+      return `Skipped: ${details.skip_reason}`
+    }
+    return `Skipped ${stageTitle}`
+  },
+  pending: (_stage, _details, stageTitle) => `Started ${stageTitle}`,
+  synthesizing: (_stage, _details, stageTitle) => `Started ${stageTitle}`,
+  detecting_conflicts: (_stage, _details, stageTitle) => `Started ${stageTitle}`,
+  static_fallback: (_stage, _details, stageTitle) => `Started ${stageTitle}`,
+} as const satisfies Record<StageStatus, ActionHandler>
+
 /** Generate action description from event */
-/* eslint-disable complexity -- Function handles multiple status types with different detail extraction logic for each */
 export function getActionDescription(
   stage: StageName,
   status: StageStatus,
   details?: Record<string, unknown>
 ): string {
   const stageTitle = STAGE_CONFIG[stage]?.title || stage
-  switch (status) {
-    case 'running':
-      return RUNNING_ACTIONS[stage] || 'Processing...'
-    case 'complete':
-      return getCompleteAction(stage, details)
-    case 'failed':
-      // Show error message from details if available
-      if (details?.error && typeof details.error === 'string') {
-        const errorMsg =
-          details.error.length > VALIDATION_CONSTANTS.ERROR_MESSAGE_SHORT_TRUNCATE_LENGTH
-            ? `${details.error.substring(0, VALIDATION_CONSTANTS.ERROR_MESSAGE_SHORT_TRUNCATE_LENGTH)}...`
-            : details.error
-        return `Failed: ${errorMsg}`
-      }
-      if (details?.error_code && typeof details.error_code === 'string') {
-        return `Failed: ${details.error_code}`
-      }
-      // Show processing time if available
-      if (details?.processing_time_ms && typeof details.processing_time_ms === 'number') {
-        const seconds = Math.round(details.processing_time_ms / 1000)
-        return `Failed after ${seconds}s`
-      }
-      return `Failed ${stageTitle}`
-    case 'skipped':
-      // Show skip reason if available
-      if (details?.skip_reason && typeof details.skip_reason === 'string') {
-        return `Skipped: ${details.skip_reason}`
-      }
-      return `Skipped ${stageTitle}`
-    default:
-      return `Started ${stageTitle}`
-  }
+  return ACTION_HANDLERS[status](stage, details, stageTitle)
 }

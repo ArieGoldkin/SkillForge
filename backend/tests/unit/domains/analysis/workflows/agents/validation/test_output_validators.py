@@ -16,7 +16,6 @@ import pytest
 
 from app.domains.analysis.workflows.agents.validation.output_validators import (
     AGENT_VALIDATORS,
-    MIN_CONFIDENCE_SCORE,
     MIN_DESCRIPTION_LENGTH,
     MIN_VERDICT_LENGTH,
     ActionableValidator,
@@ -31,7 +30,6 @@ from app.domains.analysis.workflows.agents.validation.output_validators import (
     get_validator,
     validate_agent_output,
 )
-
 
 # =============================================================================
 # ValidationResult Tests
@@ -113,7 +111,7 @@ class TestKeyInsightsValidator:
 
     @pytest.fixture
     def valid_output(self) -> dict:
-        """Valid key_insights output."""
+        """Return valid key_insights output fixture."""
         return {
             "insights": [
                 {
@@ -315,7 +313,7 @@ class TestProsConsValidator:
 
     @pytest.fixture
     def valid_output(self) -> dict:
-        """Valid pros_cons output."""
+        """Return valid pros_cons output fixture."""
         return {
             "pros": [
                 "Built-in state management with checkpointer support",
@@ -447,7 +445,7 @@ class TestAudienceFitValidator:
 
     @pytest.fixture
     def valid_output(self) -> dict:
-        """Valid audience_fit output."""
+        """Return valid audience_fit output fixture."""
         return {
             "primary_audience": {
                 "name": "Senior Backend Engineers",
@@ -462,9 +460,7 @@ class TestAudienceFitValidator:
             "confidence_score": 0.85,
         }
 
-    def test_valid_output_passes(
-        self, validator: AudienceFitValidator, valid_output: dict
-    ) -> None:
+    def test_valid_output_passes(self, validator: AudienceFitValidator, valid_output: dict) -> None:
         """Test that valid output passes validation."""
         result = validator.validate(valid_output)
 
@@ -573,7 +569,7 @@ class TestActionableValidator:
 
     @pytest.fixture
     def valid_output(self) -> dict:
-        """Valid actionable output."""
+        """Return valid actionable output fixture."""
         return {
             "immediate_actions": [
                 {
@@ -591,9 +587,7 @@ class TestActionableValidator:
             "confidence_score": 0.85,
         }
 
-    def test_valid_output_passes(
-        self, validator: ActionableValidator, valid_output: dict
-    ) -> None:
+    def test_valid_output_passes(self, validator: ActionableValidator, valid_output: dict) -> None:
         """Test that valid output passes validation."""
         result = validator.validate(valid_output)
 
@@ -765,7 +759,7 @@ class TestTechComparatorValidator:
 
     @pytest.fixture
     def valid_output(self) -> dict:
-        """Valid tech_comparator output."""
+        """Return valid tech_comparator output fixture."""
         return {
             "primary_tech": "LangGraph",
             "alternatives": ["LangChain LCEL", "CrewAI"],
@@ -846,9 +840,7 @@ class TestTechComparatorValidator:
         assert result.is_valid is False
         assert any("Comparison table is missing" in issue for issue in result.issues)
 
-    def test_comparison_missing_tech_entries(
-        self, validator: TechComparatorValidator
-    ) -> None:
+    def test_comparison_missing_tech_entries(self, validator: TechComparatorValidator) -> None:
         """Test validation detects missing tech entries in comparison."""
         output = {
             "primary_tech": "LangGraph",
@@ -941,9 +933,7 @@ class TestTechComparatorValidator:
         assert result.is_valid is False
         assert any("is invalid" in issue for issue in result.issues)
 
-    def test_retry_recommended_with_four_issues(
-        self, validator: TechComparatorValidator
-    ) -> None:
+    def test_retry_recommended_with_four_issues(self, validator: TechComparatorValidator) -> None:
         """Test tech_comparator allows retry with up to 4 issues."""
         output = {
             "primary_tech": "",  # Issue 1
@@ -984,7 +974,7 @@ class TestSecurityAuditorValidator:
 
     @pytest.fixture
     def valid_output(self) -> dict:
-        """Valid security_auditor output."""
+        """Return valid security_auditor output fixture."""
         return {
             "security_risks": [
                 {
@@ -1040,9 +1030,7 @@ class TestSecurityAuditorValidator:
         "severity",
         ["low", "medium", "high", "critical", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
     )
-    def test_valid_severities(
-        self, validator: SecurityAuditorValidator, severity: str
-    ) -> None:
+    def test_valid_severities(self, validator: SecurityAuditorValidator, severity: str) -> None:
         """Test all valid severity levels pass validation."""
         output = {
             "security_risks": [
@@ -1126,9 +1114,7 @@ class TestSecurityAuditorValidator:
         assert result.is_valid is False
         assert any("All best practices are generic" in issue for issue in result.issues)
 
-    def test_some_generic_best_practices_allowed(
-        self, validator: SecurityAuditorValidator
-    ) -> None:
+    def test_some_generic_best_practices_allowed(self, validator: SecurityAuditorValidator) -> None:
         """Test validation allows some generic best practices if not all."""
         output = {
             "security_risks": [
@@ -1151,9 +1137,7 @@ class TestSecurityAuditorValidator:
         # Should not fail for mixed generic/specific best practices
         assert not any("All best practices are generic" in issue for issue in result.issues)
 
-    def test_placeholder_in_risk_description(
-        self, validator: SecurityAuditorValidator
-    ) -> None:
+    def test_placeholder_in_risk_description(self, validator: SecurityAuditorValidator) -> None:
         """Test validation detects placeholder in risk description."""
         output = {
             "security_risks": [
@@ -1211,7 +1195,7 @@ class TestImplementationPlannerValidator:
 
     @pytest.fixture
     def valid_output(self) -> dict:
-        """Valid implementation_planner output."""
+        """Return valid implementation_planner output fixture."""
         return {
             "prerequisites": [
                 "Python 3.10+ installed",
@@ -1247,9 +1231,7 @@ class TestImplementationPlannerValidator:
         assert len(result.issues) == 0
         assert result.confidence == 0.85
 
-    def test_insufficient_prerequisites(
-        self, validator: ImplementationPlannerValidator
-    ) -> None:
+    def test_insufficient_prerequisites(self, validator: ImplementationPlannerValidator) -> None:
         """Test validation fails with < 1 prerequisites."""
         output = {
             "prerequisites": [],
@@ -1282,9 +1264,7 @@ class TestImplementationPlannerValidator:
         assert result.is_valid is False
         assert any("Only 1 steps" in issue for issue in result.issues)
 
-    def test_non_sequential_step_numbers(
-        self, validator: ImplementationPlannerValidator
-    ) -> None:
+    def test_non_sequential_step_numbers(self, validator: ImplementationPlannerValidator) -> None:
         """Test validation fails with non-sequential step numbers."""
         output = {
             "prerequisites": ["Prereq 1"],
@@ -1339,9 +1319,7 @@ class TestImplementationPlannerValidator:
         assert result.is_valid is False
         assert any("Estimated time is missing" in issue for issue in result.issues)
 
-    def test_placeholder_in_prerequisite(
-        self, validator: ImplementationPlannerValidator
-    ) -> None:
+    def test_placeholder_in_prerequisite(self, validator: ImplementationPlannerValidator) -> None:
         """Test validation detects placeholder in prerequisite."""
         output = {
             "prerequisites": ["[TBD - add prerequisites]"],
@@ -1359,9 +1337,7 @@ class TestImplementationPlannerValidator:
         assert result.is_valid is False
         assert any("placeholder text" in issue.lower() for issue in result.issues)
 
-    def test_placeholder_in_step_action(
-        self, validator: ImplementationPlannerValidator
-    ) -> None:
+    def test_placeholder_in_step_action(self, validator: ImplementationPlannerValidator) -> None:
         """Test validation detects placeholder in step action."""
         output = {
             "prerequisites": ["Prereq 1"],
@@ -1505,7 +1481,7 @@ class TestValidatorRegistry:
             "implementation_planner": ImplementationPlannerValidator,
         }
 
-        assert AGENT_VALIDATORS == expected_validators
+        assert expected_validators == AGENT_VALIDATORS
 
     def test_all_validators_have_correct_agent_type(self) -> None:
         """Test that all validators have correct agent_type class variable."""
@@ -1648,7 +1624,7 @@ class TestEdgeCases:
 
     def test_all_validators_have_get_correction_hints(self) -> None:
         """Test all validators implement get_correction_hints()."""
-        for agent_type in AGENT_VALIDATORS.keys():
+        for agent_type in AGENT_VALIDATORS:
             validator = get_validator(agent_type)
             assert validator is not None
 

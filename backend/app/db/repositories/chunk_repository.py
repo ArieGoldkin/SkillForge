@@ -43,11 +43,11 @@ Technical Notes:
 """
 
 from collections.abc import Iterable
-from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branded_ids import AnalysisID
 from app.core.constants import HYBRID_FETCH_MULTIPLIER
 from app.db.models.analysis_chunk import AnalysisChunk
 
@@ -289,7 +289,7 @@ class ChunkRepository:
 
     async def get_by_analysis_id(
         self,
-        analysis_id: str,
+        analysis_id: AnalysisID,
     ) -> list[AnalysisChunk]:
         """Get all chunks for an analysis, ordered by sequence.
 
@@ -297,7 +297,7 @@ class ChunkRepository:
         sequence_order field to maintain the original document structure.
 
         Args:
-            analysis_id: UUID of the parent analysis (as string)
+            analysis_id: UUID of the parent analysis
 
         Returns:
             List of AnalysisChunk objects ordered by sequence_order
@@ -357,7 +357,7 @@ class ChunkRepository:
         await self.session.flush()  # Flush to get IDs without committing
         return objects
 
-    async def list_by_analysis(self, analysis_id: UUID) -> list[AnalysisChunk]:
+    async def list_by_analysis(self, analysis_id: AnalysisID) -> list[AnalysisChunk]:
         """List all chunks for a given analysis ID.
 
         Args:
@@ -419,7 +419,7 @@ class ChunkRepository:
 
     async def get_existing_hashes(
         self,
-        analysis_id: UUID,
+        analysis_id: AnalysisID,
         hashes: list[str],
     ) -> set[str]:
         """Get hashes that already exist in the database for deduplication.

@@ -441,6 +441,8 @@ const sizeMap = {
 
 ### Branded Types for IDs
 
+**TypeScript Pattern** (Zod runtime validation):
+
 ```typescript
 import { z } from 'zod'
 
@@ -463,6 +465,48 @@ const analysisId: AnalysisId = AnalysisId.parse('...')
 deleteAnalysis(analysisId) // ✅ OK
 deleteAnalysis(userId)     // ❌ Error: UserId not assignable to AnalysisId
 ```
+
+**Python Pattern** (NewType compile-time safety):
+
+```python
+from typing import NewType
+from uuid import UUID
+
+# Define branded types (zero runtime overhead)
+AnalysisID = NewType("AnalysisID", UUID)
+ArtifactID = NewType("ArtifactID", UUID)
+SessionID = NewType("SessionID", UUID)
+TraceID = NewType("TraceID", str)
+
+# Factory functions for runtime validation
+def create_analysis_id(value: UUID | str) -> AnalysisID:
+    """Create typed AnalysisID with validation."""
+    if isinstance(value, str):
+        value = UUID(value)
+    return AnalysisID(value)
+
+def create_artifact_id(value: UUID | str) -> ArtifactID:
+    """Create typed ArtifactID with validation."""
+    if isinstance(value, str):
+        value = UUID(value)
+    return ArtifactID(value)
+
+# Type checker (mypy/ty) prevents mixing
+def delete_analysis(id: AnalysisID) -> None: ...
+def get_artifact(id: ArtifactID) -> Artifact: ...
+
+analysis_id = create_analysis_id("...")
+artifact_id = create_artifact_id("...")
+
+delete_analysis(analysis_id)  # ✅ OK
+delete_analysis(artifact_id)  # ❌ Error: ArtifactID not assignable to AnalysisID
+```
+
+**Why NewType for Python?**
+- **Zero runtime overhead** - compiled away, no wrapper object
+- **Mypy/Ty enforcement** - catches ID mixing at type-check time
+- **Explicit factories** - centralized validation logic
+- **Better than Pydantic** for this use case - no serialization needed
 
 ### Common Anti-Patterns
 
@@ -513,7 +557,8 @@ switch (status) {
 - ✅ Leverage inference with `typeof` and `ReturnType`
 - ✅ **Exhaustive switches**: Always use `assertNever` in default case
 - ✅ **Exhaustive records**: Use `satisfies Record<UnionType, Value>`
-- ✅ **Branded types**: Use Zod `.brand<>()` for distinct ID types
+- ✅ **Branded types (TypeScript)**: Use Zod `.brand<>()` for distinct ID types
+- ✅ **Branded types (Python)**: Use `NewType` for zero-overhead compile-time safety
 - ✅ **Python/Ty**: Use explicit annotations + `isinstance()` for dict extraction
 
 ### Performance
@@ -532,11 +577,17 @@ switch (status) {
 
 ---
 
-**Skill Version**: 1.1.0
-**Last Updated**: 2025-12-25
+**Skill Version**: 1.2.0
+**Last Updated**: 2025-12-27
 **Maintained by**: AI Agent Hub Team
 
 ## Changelog
+
+### v1.2.0 (2025-12-27)
+- Added Python `NewType` pattern for branded types (zero-overhead compile-time safety)
+- Added factory function pattern for typed ID creation
+- Updated branded types section with TypeScript vs Python comparison
+- Updated best practices to include Python NewType usage
 
 ### v1.1.0 (2025-12-25)
 - Added comprehensive exhaustive type checking section

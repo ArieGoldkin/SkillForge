@@ -742,18 +742,24 @@ def redact_api_keys(request):
 
 
 @pytest.fixture(scope="module")
-def vcr_config():
+def vcr_config(vcr_cassette_dir):
     """VCR configuration for HTTP recording/playback testing.
+
+    Args:
+        vcr_cassette_dir: Directory for cassettes (from fixture)
 
     Returns:
         Dict with VCR configuration options
 
     """
     # Use "none" mode in CI to fail fast on missing cassettes
-    record_mode = "none" if os.environ.get("CI") else "once"
+    # Check both CI env var and VCR_RECORD_MODE override
+    record_mode = os.environ.get("VCR_RECORD_MODE")
+    if not record_mode:
+        record_mode = "none" if os.environ.get("CI") else "once"
 
     return {
-        "cassette_library_dir": "tests/cassettes",
+        "cassette_library_dir": vcr_cassette_dir,
         "record_mode": record_mode,
         "match_on": ["method", "uri"],
         "filter_headers": [
@@ -772,7 +778,7 @@ def vcr_config():
     }
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def vcr_cassette_dir(request):
     """Return cassette directory based on test module.
 
@@ -783,4 +789,7 @@ def vcr_cassette_dir(request):
         Path to cassette directory for current test module
 
     """
-    return f"tests/cassettes/unit/{request.module.__name__.split('.')[-1]}"
+    # Get module name and remove 'test_' prefix for cleaner directory names
+    module_name = request.module.__name__.split(".")[-1]
+    module_name = module_name.removeprefix("test_")  # Remove 'test_' prefix
+    return f"tests/cassettes/unit/{module_name}"

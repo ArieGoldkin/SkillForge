@@ -1,0 +1,120 @@
+interactions:
+- request:
+    body: '{"api_key": "REDACTED", "query": "LangGraph workflow examples", "search_depth":
+      "advanced", "max_results": 5, "include_answer": true, "include_raw_content":
+      false, "include_images": false}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '208'
+      Content-Type:
+      - application/json
+      Host:
+      - api.tavily.com
+      User-Agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://api.tavily.com/search
+  response:
+    body:
+      string: "{\"query\":\"LangGraph workflow examples\",\"follow_up_questions\":null,\"answer\":\"LangGraph
+        is a tool for creating complex workflows using graph-based programming. It
+        supports stateful workflows, conditional logic, and multistep interactions.
+        It uses nodes and edges to define processes.\",\"images\":[],\"results\":[{\"url\":\"https://medium.com/@sitabjapal03/langgraph-part-1-automate-complex-workflows-using-genai-59bb8dc462aa\",\"title\":\"LangGraph(Part-1):
+        Automate complex workflows using ...\",\"content\":\"```\\nfrom IPython.display
+        import Image, displaytry: display(Image(main_work_flow.get_graph(xray=True).draw_mermaid_png()))except
+        Exception: pass\\n```\\n\\n### Conclusion:\\n\\nIf you have reached this point
+        I hope you clearly understand the use cases and basic constructs of LangGraph.
+        By walking you through various examples, I tried to build an understanding
+        of how to create nodes, define actions, and establish connections to form
+        complex workflows. [...] ```\\n# Import necessary componentsfrom langgraph.graph
+        import END, START, Graph# Initialize the graphworkflow = Graph() workflow.add_node(node=\\\"Node-1\\\",
+        action=node1) # Add Node-1 with actionworkflow.add_node(node=\\\"Node-2\\\",
+        action=node2) # Add Node-2 with actionworkflow.add_edge(START, \\\"Node-1\\\")
+        # Connect START to Node-1workflow.add_edge(\\\"Node-1\\\", \\\"Node-2\\\")
+        # Connect Node-1 to Node-2workflow.add_edge(\\\"Node-2\\\", END) # Connect
+        Node-2 to ENDbasic_graph = workflow.compile() # Compile the graph\\n``` [...]
+        from langgraph.graph import END, STARTworkflow = StateGraph(MessagesState)workflow.add_node(\\\"Node-1\\\",
+        node1)workflow.add_node(\\\"Node-2\\\", node2)workflow.add_node(\\\"tool\\\",
+        some_tool)workflow.add_edge(START, \\\"Node-1\\\")workflow.add_edge(\\\"Node-1\\\",
+        \\\"Node-2\\\")# We now add a conditional edgeworkflow.add_conditional_edges(
+        # First, we define the start node (The node from where we need branching).
+        We use `Node-2`. source=\\\"Node-2\\\", # Next, we pass in the router function
+        that will determine next Node. path =\",\"score\":0.9999263,\"raw_content\":null},{\"url\":\"https://www.ibm.com/think/tutorials/build-agentic-workflows-langgraph-granite\",\"title\":\"Building
+        Agentic Workflows with LangGraph and Granite\",\"content\":\"# Define LangGraph
+        \ \\n   \\n graph = StateGraph(dict)  \\n graph.add\\\\_node(\\\"select\\\\_genre\\\",
+        with\\\\_progress(select\\\\_genre\\\\_node, \\\"Select Genre\\\", 1, 4))
+        \ \\n graph.add\\\\_node(\\\"generate\\\\_outline\\\", with\\\\_progress(generate\\\\_outline\\\\_node,
+        \\\"Generate Outline\\\", 2, 4))  \\n graph.add\\\\_node(\\\"generate\\\\_scene\\\",
+        with\\\\_progress(generate\\\\_scene\\\\_node, \\\"Generate Scene\\\", 3,
+        4))  \\n graph.add\\\\_node(\\\"write\\\\_dialogue\\\", with\\\\_progress(write\\\\_dialogue\\\\_node,
+        \\\"Write Dialogue\\\", 4, 4)) [...] This cell defines the workflow logic
+        for generating a short animated story by using LangGraph, a compositional
+        graph-based programming framework designed for LLM workflows. Each step in
+        the graph represents a creative task and they are executed in a specific sequence
+        to produce the final screenplay.\\n\\nComponents of the workflow:StateGraph(dict)
+        \ - Initializes the workflow with a dictionary-based state (that is, the working
+        memory is a dict passed from node to node). [...] graph.set\\\\_entry\\\\_point(\\\"select\\\\_genre\\\")
+        \ \\n graph.add\\\\_edge(\\\"select\\\\_genre\\\", \\\"generate\\\\_outline\\\")
+        \ \\n graph.add\\\\_edge(\\\"generate\\\\_outline\\\", \\\"generate\\\\_scene\\\")
+        \ \\n graph.add\\\\_edge(\\\"generate\\\\_scene\\\", \\\"write\\\\_dialogue\\\")
+        \ \\n graph.set\\\\_finish\\\\_point(\\\"write\\\\_dialogue\\\")  \\n   \\n
+        workflow = graph.compile()\",\"score\":0.9998727,\"raw_content\":null},{\"url\":\"https://blog.langchain.com/langgraph-multi-agent-workflows/\",\"title\":\"LangGraph:
+        Multi-Agent Workflows - LangChain Blog\",\"content\":\"Last week we highlighted
+        LangGraph - a new package (available in both Python and JS) to better enable
+        creation of LLM workflows containing cycles, which are a critical component
+        of most agent runtimes. As a part of the launch, we highlighted two simple
+        runtimes: one that is the equivalent of the AgentExecutor in `langchain`,
+        and a second that was a version of that aimed at message passing and chat
+        models. [...] We've added three separate example of multi-agent workflows
+        to the `langgraph` repo. Each of these has slightly different answers for
+        the above two questions, which we will go over when we highlight the examples.
+        It's important to note that these three examples are only a few of the possible
+        examples we could highlight - there are almost assuredly other examples out
+        there and we look forward to seeing what the community comes up with!\\n\\n###
+        Multi Agent Collaboration\\n\\nCode links:\\n\\n Python\\n JS [...] Skip to
+        content\\n\\nSign in Subscribe\\n\\n# LangGraph: Multi-Agent Workflows\\n\\nBy
+        LangChain 6 min read\\n\\n Python Examples\\n JS Examples\\n YouTube\",\"score\":0.99982184,\"raw_content\":null},{\"url\":\"https://docs.langchain.com/oss/python/langgraph/workflows-agents\",\"title\":\"Workflows
+        and agents - Docs by LangChain\",\"content\":\"Orchestrator-worker workflows
+        are common and LangGraph has built-in support for them. The `Send` API lets
+        you dynamically create worker nodes and send them specific inputs. Each worker
+        has its own state, and all worker outputs are written to a shared state key
+        that is accessible to the orchestrator graph. This gives the orchestrator
+        access to all worker output and allows it to synthesize them into a final
+        output. The example below iterates over a list of sections and uses the `Send`
+        API to send\",\"score\":0.9998134,\"raw_content\":null},{\"url\":\"https://www.codecademy.com/article/building-ai-workflow-with-langgraph\",\"title\":\"LangGraph
+        Tutorial: Complete Guide to Building AI ...\",\"content\":\"Installing LangGraph
+        locally\\n Creating our first workflow\\n How to manage complex workflows?\\n
+        Why consider using LangGraph?\\n Key components of LangGraph\\n Real-world
+        applications of LangGraph\\n Conclusion\\n Frequently asked questions [...]
+        Skip to Content\\n\\n# LangGraph Tutorial: Complete Guide to Building AI Workflows\\n\\nLangGraph
+        is a powerful Python library that simplifies creating, managing, and visualizing
+        complex AI workflows. Built on the popular LangChain framework, LangGraph
+        makes it straightforward to handle stateful workflows, conditional logic,
+        loops, and multistep interactions. [...] In this guide, we explored how to
+        use LangGraph to easily build, visualize, and manage complex AI workflows\u2014from
+        simple setups and conditional branching to complete multistep research agents.
+        We covered installing dependencies, defining states, setting up nodes, and
+        structuring your workflows using LangGraph\u2019s graph-based approach.\",\"score\":0.99980897,\"raw_content\":null}],\"response_time\":0.0,\"request_id\":\"b5938524-27cd-4cc2-b184-0c96c748ce12\"}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '6671'
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 27 Dec 2025 17:03:16 GMT
+      content-security-policy:
+      - default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self';
+        style-src 'self';base-uri 'self';form-action 'self'; require-trusted-types-for
+        'script'; upgrade-insecure-requests;
+    status:
+      code: 200
+      message: OK
+version: 1

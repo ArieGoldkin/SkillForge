@@ -18,7 +18,7 @@ import { memo } from 'react'
 
 import { CheckCircle2, Circle, Loader2, MinusCircle, XCircle } from 'lucide-react'
 
-import { assertNever, cn } from '@lib/utils'
+import { cn } from '@lib/utils'
 
 import type { StageStatusEntry } from '../../hooks/stageConfig'
 
@@ -84,61 +84,67 @@ function formatStageName(stageName: string): string {
   return formatted
 }
 
-/** Status-specific styling with strong contrast and borders */
-const statusStyles: Record<
-  StageStatus,
-  { bg: string; text: string; icon: string; border: string }
-> = {
+/** Status configuration with styling and icons */
+const statusConfig = {
   complete: {
     bg: 'bg-[oklch(0.6959_0.1491_162.4796)]',
     text: 'text-white',
     icon: 'text-white',
     border: 'border border-[oklch(0.5959_0.1691_162.4796)]',
+    Icon: CheckCircle2,
+    iconClassName: '',
   },
   running: {
     bg: 'bg-[oklch(0.6232_0.2118_259.1492)]',
     text: 'text-white',
     icon: 'text-white',
     border: 'border border-[oklch(0.5232_0.2318_259.1492)]',
+    Icon: Loader2,
+    iconClassName: 'animate-spin',
   },
   failed: {
     bg: 'bg-[oklch(0.6369_0.2077_25.3313)]',
     text: 'text-white',
     icon: 'text-white',
     border: 'border border-[oklch(0.5369_0.2277_25.3313)]',
+    Icon: XCircle,
+    iconClassName: '',
   },
   skipped: {
     bg: 'bg-[oklch(0.5556_0.0001_286.3746)]/50',
     text: 'text-muted-foreground',
     icon: 'text-muted-foreground',
     border: 'border border-[oklch(0.5556_0.0001_286.3746)]/30',
+    Icon: MinusCircle,
+    iconClassName: '',
   },
   pending: {
     bg: 'bg-[oklch(0.5556_0.0001_286.3746)]/20',
     text: 'text-muted-foreground',
     icon: 'text-muted-foreground/70',
     border: 'border border-[oklch(0.5556_0.0001_286.3746)]/20',
+    Icon: Circle,
+    iconClassName: '',
   },
-}
-
-/** Status icons */
-const StatusIcon = ({ status, className }: { status: StageStatus; className?: string }) => {
-  const iconClass = cn('flex-shrink-0', className)
-
-  switch (status) {
-    case 'complete':
-      return <CheckCircle2 className={iconClass} aria-hidden="true" />
-    case 'running':
-      return <Loader2 className={cn(iconClass, 'animate-spin')} aria-hidden="true" />
-    case 'failed':
-      return <XCircle className={iconClass} aria-hidden="true" />
-    case 'skipped':
-      return <MinusCircle className={iconClass} aria-hidden="true" />
-    case 'pending':
-      return <Circle className={iconClass} aria-hidden="true" />
-    default:
-      return assertNever(status)
+} satisfies Record<
+  StageStatus,
+  {
+    bg: string
+    text: string
+    icon: string
+    border: string
+    Icon: typeof CheckCircle2
+    iconClassName: string
   }
+>
+
+/** Status icon component using config */
+const StatusIcon = ({ status, className }: { status: StageStatus; className?: string }) => {
+  const config = statusConfig[status]
+  const Icon = config.Icon
+  const iconClass = cn('flex-shrink-0', config.iconClassName, className)
+
+  return <Icon className={iconClass} aria-hidden="true" />
 }
 
 // ============================================================================
@@ -158,7 +164,7 @@ export const StageChip = memo(function StageChip({
   size = 'sm',
 }: StageChipProps) {
   const stageStatus = getStageStatus(status)
-  const styles = statusStyles[stageStatus]
+  const config = statusConfig[stageStatus]
   const label = formatStageName(stageName)
   const fullStageName = stageName
     .split('_')
@@ -178,15 +184,15 @@ export const StageChip = memo(function StageChip({
       className={cn(
         'inline-flex items-center gap-1.5 rounded-md font-medium',
         'transition-colors duration-200',
-        styles.bg,
-        styles.text,
-        styles.border,
+        config.bg,
+        config.text,
+        config.border,
         sizeClasses
       )}
       title={`${fullStageName}: ${stageStatus}`}
       aria-label={`${fullStageName}: ${stageStatus}`}
     >
-      <StatusIcon status={stageStatus} className={cn(iconSize, styles.icon)} />
+      <StatusIcon status={stageStatus} className={cn(iconSize, config.icon)} />
       <span className="truncate max-w-[120px]">{label}</span>
     </span>
   )

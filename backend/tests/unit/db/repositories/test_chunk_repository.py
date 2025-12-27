@@ -1,7 +1,7 @@
 """Unit tests for ChunkRepository database operations."""
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +11,7 @@ from app.db.repositories.chunk_repository import ChunkRepository
 
 
 def create_test_chunk(**kwargs):
-    """Helper to create AnalysisChunk with required fields."""
+    """Create AnalysisChunk with required fields for testing."""
     defaults = {
         "id": uuid.uuid4(),
         "analysis_id": uuid.uuid4(),
@@ -44,7 +44,7 @@ class TestChunkRepository:
     @pytest.fixture
     def sample_chunk(self):
         """Create a sample AnalysisChunk for testing."""
-        chunk = AnalysisChunk(
+        return AnalysisChunk(
             id=uuid.uuid4(),
             analysis_id=uuid.uuid4(),
             snippet="This is a sample chunk about machine learning algorithms.",
@@ -56,7 +56,6 @@ class TestChunkRepository:
             hash="abc123",
             vector=[0.1] * 1536,  # Mock embedding vector
         )
-        return chunk
 
     @pytest.mark.asyncio
     async def test_semantic_search_basic(self, repository, mock_session, sample_chunk):

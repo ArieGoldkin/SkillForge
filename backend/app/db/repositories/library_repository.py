@@ -13,6 +13,7 @@ from fastapi import Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branded_ids import AnalysisID
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.session import get_db
@@ -65,7 +66,7 @@ class ILibraryRepository(Protocol):
 
     async def get_search_snippet(
         self,
-        analysis_id: UUID,
+        analysis_id: AnalysisID,
         query: str,
     ) -> str | None:
         """Generate highlighted search snippet using ts_headline."""
@@ -378,7 +379,7 @@ class LibraryRepository:
 
     async def get_search_snippet(
         self,
-        analysis_id: UUID,
+        analysis_id: AnalysisID,
         query: str,
     ) -> str | None:
         """Generate highlighted search snippet using ts_headline.

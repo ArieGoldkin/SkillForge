@@ -27,9 +27,7 @@ async def async_call_impl(f):
 @pytest.mark.integration
 @patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
 @patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
-async def test_prompt_linkage_in_agent_invocation(
-    mock_resilience, mock_create_config
-):
+async def test_prompt_linkage_in_agent_invocation(mock_resilience, mock_create_config):
     """Test that prompt is passed to RunnableConfig metadata during agent invocation.
 
     Scenario: Agent has langfuse_prompt_client in metadata
@@ -110,7 +108,9 @@ async def test_prompt_linkage_graceful_degradation_langfuse_unavailable(
 
     # Config that raises exception when accessing metadata
     mock_config = MagicMock()
-    type(mock_config).metadata = property(lambda self: (_ for _ in ()).throw(RuntimeError("broken")))
+    type(mock_config).metadata = property(
+        lambda self: (_ for _ in ()).throw(RuntimeError("broken"))
+    )
     mock_agent.config = mock_config
 
     input_messages = {"messages": [{"role": "user", "content": "Analyze"}]}
@@ -354,9 +354,7 @@ async def test_prompt_linkage_with_agent_execution_error(mock_resilience, mock_c
 @patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
 @patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
 @patch("app.domains.analysis.workflows.agents.invocation.logger")
-async def test_prompt_linkage_logs_debug_message(
-    mock_logger, mock_resilience, mock_create_config
-):
+async def test_prompt_linkage_logs_debug_message(mock_logger, mock_resilience, mock_create_config):
     """Test that debug log is emitted when prompt is extracted.
 
     Scenario: Agent has valid prompt in metadata
@@ -403,9 +401,7 @@ async def test_prompt_linkage_logs_debug_message(
 @pytest.mark.integration
 @patch("app.domains.analysis.workflows.agents.invocation.create_runnable_config")
 @patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
-async def test_prompt_linkage_with_get_client_returning_none(
-    mock_resilience, mock_create_config
-):
+async def test_prompt_linkage_with_get_client_returning_none(mock_resilience, mock_create_config):
     """Test handling when langfuse_prompt_client key doesn't exist.
 
     Scenario: Agent metadata exists but has no langfuse_prompt_client key

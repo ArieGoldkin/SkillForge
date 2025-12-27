@@ -4,7 +4,7 @@ Tests UTF-8 sanitization in PDF content extraction pipeline.
 Tests pypdf 6.x features including extraction_mode="layout".
 """
 
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from pypdf import PdfReader
@@ -323,9 +323,7 @@ class TestPypdf6xLayoutMode:
         assert mock_page.extract_text.call_count == 2
         mock_page.extract_text.assert_called_with(extraction_mode="layout")
 
-    def test_multipage_extraction_all_use_layout_mode(
-        self, extractor: ArxivPDFExtractor
-    ) -> None:
+    def test_multipage_extraction_all_use_layout_mode(self, extractor: ArxivPDFExtractor) -> None:
         """Test that all pages use layout mode extraction."""
         # Arrange - 3-page document
         mock_pages = []
@@ -343,7 +341,7 @@ class TestPypdf6xLayoutMode:
             "app.shared.services.extraction.arxiv_pdf_extractor.PdfReader"
         ) as mock_pdf_reader:
             mock_pdf_reader.return_value = mock_reader
-            content, _title, page_count = extractor._extract_pdf_text(
+            _content, _title, page_count = extractor._extract_pdf_text(
                 b"fake pdf bytes", "2512.08296"
             )
 
@@ -352,9 +350,7 @@ class TestPypdf6xLayoutMode:
         for mock_page in mock_pages:
             mock_page.extract_text.assert_called_with(extraction_mode="layout")
 
-    def test_layout_mode_preserves_content_structure(
-        self, extractor: ArxivPDFExtractor
-    ) -> None:
+    def test_layout_mode_preserves_content_structure(self, extractor: ArxivPDFExtractor) -> None:
         """Test that layout mode extraction preserves page markers and structure."""
         # Arrange - simulate layout-preserved content
         mock_page = Mock()

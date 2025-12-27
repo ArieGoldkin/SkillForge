@@ -508,4 +508,6 @@ class TestFreshnessCheckerPromptManager:
             )
 
             # Verify PromptManager was called
-            mock_pm.get_prompt_with_langfuse_client.assert_called_once_with("analysis-agent-freshness-checker")
+            mock_pm.get_prompt_with_langfuse_client.assert_called_once_with(
+                "analysis-agent-freshness-checker"
+            )

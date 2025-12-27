@@ -1,9 +1,9 @@
 ---
 name: llm-caching-patterns
-description: Multi-level caching strategies for LLM applications - semantic caching (Redis), prompt caching (Claude native), cache hierarchies, and cost optimization for 70-95% cost reduction
-version: 1.0.0
+description: Multi-level caching strategies for LLM applications - semantic caching (Redis), prompt caching (Claude native), cache hierarchies, cost optimization, and Langfuse cost tracking with hierarchical trace rollup for 70-95% cost reduction
+version: 1.2.0
 author: SkillForge AI Agent Hub
-tags: [llm, caching, redis, cost-optimization, semantic-cache, prompt-cache, 2025]
+tags: [llm, caching, redis, cost-optimization, semantic-cache, prompt-cache, langfuse, trace-hierarchy, 2025]
 ---
 
 # LLM Caching Patterns
@@ -507,6 +507,370 @@ class CacheMetrics:
     false_negative_rate: float  # Missed valid cache hits
 ```
 
+### Langfuse Cost Tracking (2025 Best Practice)
+
+**Langfuse automatically tracks token usage and costs for all LLM calls.** This eliminates manual cost calculation and provides accurate cost attribution.
+
+#### Automatic Cost Tracking with Custom Trace IDs
+
+```python
+from langfuse.decorators import observe, langfuse_context
+from uuid import UUID
+
+@observe(as_type="generation")
+async def call_llm_with_cache(
+    prompt: str,
+    agent_type: str,
+    analysis_id: UUID | None = None
+) -> str:
+    """LLM call with automatic cost tracking via Langfuse.
+
+    CRITICAL: Always link to parent trace for cost attribution!
+    """
+
+    # Link to parent analysis trace (for cost rollup)
+    if analysis_id:
+        langfuse_context.update_current_trace(
+            name=f"{agent_type}_generation",
+            session_id=str(analysis_id),  # Group by analysis
+            tags=[agent_type, "cached"],
+            metadata={"analysis_id": str(analysis_id)}
+        )
+
+    # Langfuse decorator automatically:
+    # 1. Captures input/output tokens
+    # 2. Calculates costs using model pricing
+    # 3. Tags with agent_type for cost attribution
+    # 4. Records cache hit/miss status
+
+    # L1: Check exact cache
+    cache_key = hash_content(prompt)
+    if cache_key in lru_cache:
+        # Mark as cache hit (zero cost)
+        langfuse_context.update_current_observation(
+            metadata={"cache_layer": "L1", "cache_hit": True}
+        )
+        return lru_cache[cache_key]
+
+    # L2: Check semantic cache
+    embedding = await embed_text(prompt)
+    similar = await redis_cache.find_similar(embedding, agent_type)
+    if similar:
+        langfuse_context.update_current_observation(
+            metadata={"cache_layer": "L2", "cache_hit": True, "distance": similar.distance}
+        )
+        return similar.response
+
+    # L3/L4: LLM call with prompt caching
+    # Langfuse automatically tracks token usage and cost
+    response = await llm.generate(
+        messages=build_cached_messages(prompt),
+        model="claude-3-5-sonnet-20241022"
+    )
+
+    # Langfuse records:
+    # - input_tokens (total)
+    # - output_tokens
+    # - cache_creation_input_tokens (prompt cache breakpoints)
+    # - cache_read_input_tokens (cached prefix tokens)
+    # - total_cost (calculated from model pricing)
+
+    langfuse_context.update_current_observation(
+        metadata={
+            "cache_layer": "L3/L4",
+            "cache_hit": False,
+            "prompt_cache_hit": response.usage.cache_read_input_tokens > 0
+        }
+    )
+
+    # Store in L2 and L1 for future hits
+    await redis_cache.set(embedding, response.content, agent_type)
+    lru_cache[cache_key] = response.content
+
+    return response.content
+```
+
+#### Trace Hierarchy for Cost Attribution (SkillForge Pattern)
+
+```python
+from langfuse import Langfuse
+from langfuse.decorators import observe, langfuse_context
+from uuid import uuid4, UUID
+
+class AnalysisWorkflow:
+    """Multi-agent workflow with hierarchical cost tracking."""
+
+    @observe(as_type="trace")
+    async def run_analysis(self, url: str, analysis_id: UUID) -> dict:
+        """Parent trace - aggregates all child agent costs.
+
+        Trace Hierarchy:
+        run_analysis (trace)
+        ├── tech_comparator_generation (generation)
+        ├── security_auditor_generation (generation)
+        ├── implementation_planner_generation (generation)
+        └── synthesis_generation (generation)
+
+        Langfuse automatically rolls up costs to parent trace.
+        """
+
+        # Set trace metadata for filtering/grouping
+        langfuse_context.update_current_trace(
+            name="content_analysis",
+            session_id=str(analysis_id),
+            user_id=url,  # Group by URL for deduplication analysis
+            tags=["multi-agent", "production"],
+            metadata={
+                "analysis_id": str(analysis_id),
+                "url": url,
+                "agent_count": 8
+            }
+        )
+
+        # Each agent call creates a child generation
+        findings = {}
+        for agent in self.agents:
+            # Child generation auto-linked to parent trace
+            result = await self.run_agent(
+                agent=agent,
+                content=content,
+                analysis_id=analysis_id  # Links to parent
+            )
+            findings[agent.name] = result
+
+        # Synthesis also tracked as child generation
+        synthesis = await self.synthesize_findings(
+            findings=findings,
+            analysis_id=analysis_id
+        )
+
+        # Langfuse dashboard shows:
+        # - Total cost for this trace (sum of all child generations)
+        # - Token breakdown by agent type
+        # - Cache hit rate per agent
+        # - Latency per agent
+
+        return {"findings": findings, "synthesis": synthesis}
+
+    @observe(as_type="generation")
+    async def run_agent(
+        self,
+        agent: Agent,
+        content: str,
+        analysis_id: UUID
+    ) -> dict:
+        """Child generation - costs roll up to parent trace."""
+
+        langfuse_context.update_current_observation(
+            name=f"{agent.name}_generation",
+            metadata={
+                "agent_type": agent.name,
+                "content_length": len(content)
+            }
+        )
+
+        # LLM call automatically tracked
+        response = await agent.analyze(content)
+
+        return response
+```
+
+#### Cost Rollup Query Pattern
+
+```python
+from langfuse import Langfuse
+from datetime import datetime, timedelta
+
+async def get_analysis_costs(analysis_id: UUID) -> dict:
+    """Get total cost for an analysis (parent trace + all child generations)."""
+
+    langfuse = Langfuse()
+
+    # Fetch parent trace by session_id
+    traces = langfuse.get_traces(
+        session_id=str(analysis_id),
+        limit=1
+    )
+
+    if not traces.data:
+        return {"error": "Trace not found"}
+
+    trace = traces.data[0]
+
+    # Langfuse automatically aggregates child costs
+    return {
+        "trace_id": trace.id,
+        "total_cost": trace.total_cost,  # Sum of all child generations
+        "input_tokens": trace.usage.input_tokens,
+        "output_tokens": trace.usage.output_tokens,
+        "cache_read_tokens": trace.usage.cache_read_input_tokens,
+        "observations_count": trace.observation_count,  # Number of child LLM calls
+        "latency_ms": trace.latency,
+        "created_at": trace.timestamp
+    }
+
+async def get_daily_costs_by_agent() -> list[dict]:
+    """Get cost breakdown by agent type for last 30 days."""
+
+    langfuse = Langfuse()
+
+    # Fetch all generations from last 30 days
+    from_date = datetime.now() - timedelta(days=30)
+    generations = langfuse.get_generations(
+        from_timestamp=from_date,
+        limit=10000
+    )
+
+    # Group by agent type (from metadata)
+    costs_by_agent = {}
+    for gen in generations.data:
+        agent_type = gen.metadata.get("agent_type", "unknown")
+        cost = gen.calculated_total_cost or 0.0
+
+        if agent_type not in costs_by_agent:
+            costs_by_agent[agent_type] = {
+                "agent_type": agent_type,
+                "total_cost": 0.0,
+                "call_count": 0,
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "cache_hits": 0
+            }
+
+        costs_by_agent[agent_type]["total_cost"] += cost
+        costs_by_agent[agent_type]["call_count"] += 1
+        costs_by_agent[agent_type]["total_input_tokens"] += gen.usage.input or 0
+        costs_by_agent[agent_type]["total_output_tokens"] += gen.usage.output or 0
+
+        if gen.metadata.get("cache_hit"):
+            costs_by_agent[agent_type]["cache_hits"] += 1
+
+    # Calculate averages
+    results = []
+    for stats in costs_by_agent.values():
+        stats["avg_cost_per_call"] = stats["total_cost"] / stats["call_count"]
+        stats["cache_hit_rate"] = stats["cache_hits"] / stats["call_count"]
+        results.append(stats)
+
+    # Sort by total cost descending
+    results.sort(key=lambda x: x["total_cost"], reverse=True)
+
+    return results
+```
+
+#### Cost Attribution by Agent Type
+
+```python
+# Langfuse dashboard query:
+# GROUP BY metadata.agent_type
+# SUM(total_cost) AS cost_per_agent
+#
+# Results show:
+# - security_auditor: $12.45 (35% cache hit rate)
+# - implementation_planner: $8.23 (42% cache hit rate)
+# - tech_comparator: $5.67 (58% cache hit rate)
+```
+
+#### Cache Effectiveness Analysis
+
+```python
+from langfuse import Langfuse
+
+langfuse = Langfuse()
+
+# Query all generations with cache metadata
+generations = langfuse.get_generations(
+    limit=1000,
+    from_timestamp=datetime.now() - timedelta(days=7)
+)
+
+cache_hits = 0
+cache_misses = 0
+total_cost = 0.0
+cost_saved = 0.0
+
+for gen in generations:
+    metadata = gen.metadata or {}
+    is_cache_hit = metadata.get("cache_hit", False)
+
+    if is_cache_hit:
+        cache_hits += 1
+        # Estimate saved cost (cost of equivalent full LLM call)
+        cost_saved += gen.calculated_total_cost or 0  # Would be higher without cache
+    else:
+        cache_misses += 1
+        total_cost += gen.calculated_total_cost or 0
+
+hit_rate = cache_hits / (cache_hits + cache_misses)
+print(f"Cache Hit Rate: {hit_rate:.1%}")
+print(f"Cost Saved: ${cost_saved:.2f}")
+print(f"Total Cost: ${total_cost:.2f}")
+print(f"Savings Rate: {(cost_saved / (cost_saved + total_cost)):.1%}")
+```
+
+#### Model Pricing Registry
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class ModelInfo:
+    """Model configuration with pricing."""
+
+    model_id: str
+    display_name: str
+    max_tokens: int
+    input_cost_per_1m: float  # USD per 1M input tokens
+    output_cost_per_1m: float  # USD per 1M output tokens
+
+    def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
+        """Calculate total cost for token usage."""
+        input_cost = (input_tokens / 1_000_000) * self.input_cost_per_1m
+        output_cost = (output_tokens / 1_000_000) * self.output_cost_per_1m
+        return input_cost + output_cost
+
+# Claude 3.5 Sonnet (Updated March 2025)
+MODEL_REGISTRY = {
+    "claude-3-5-sonnet-20241022": ModelInfo(
+        model_id="claude-3-5-sonnet-20241022",
+        display_name="Claude 3.5 Sonnet (New)",
+        max_tokens=8192,
+        input_cost_per_1m=3.00,  # $3 per 1M tokens
+        output_cost_per_1m=15.00,  # $15 per 1M tokens
+    ),
+    "gpt-4-turbo-2024-04-09": ModelInfo(
+        model_id="gpt-4-turbo-2024-04-09",
+        display_name="GPT-4 Turbo",
+        max_tokens=4096,
+        input_cost_per_1m=10.00,
+        output_cost_per_1m=30.00,
+    ),
+}
+```
+
+#### Langfuse Dashboard Views
+
+Access cost insights at `http://localhost:3000`:
+
+**Cost Dashboard**:
+- Total cost by day/week/month
+- Cost breakdown by model
+- Cost attribution by agent type
+- Cache hit rate impact on costs
+- Top 10 most expensive traces
+
+**Cache Effectiveness**:
+- L1/L2/L3 hit rates over time
+- Cost savings from semantic cache
+- Cost savings from prompt cache
+- False positive rate (wrong cache hits)
+
+**Agent Performance**:
+- Average cost per agent invocation
+- Token usage distribution
+- Cache hit rate by agent type
+- Quality score vs. cost correlation
+
 ### RedisInsight Dashboard
 
 Access Redis cache visualization at `http://localhost:8001`:
@@ -534,3 +898,36 @@ See:
 - `templates/semantic-cache-service.py` - Production-ready service
 - `templates/prompt-cache-wrapper.py` - Claude caching wrapper
 - `examples/skillforge-integration.md` - SkillForge specific patterns
+
+---
+
+**Skill Version**: 1.2.0
+**Last Updated**: 2025-12-27
+**Maintained by**: SkillForge AI Agent Hub
+
+## Changelog
+
+### v1.2.0 (2025-12-27)
+- Added hierarchical trace pattern for multi-agent cost rollup
+- Added `session_id` linking pattern for cost attribution to parent analysis
+- Added cost rollup query patterns with Langfuse API
+- Added daily cost breakdown by agent type example
+- Updated automatic cost tracking with custom trace ID support
+- Added SkillForge-specific multi-agent workflow cost tracking pattern
+
+### v1.1.0 (2025-12-27)
+- Added comprehensive Langfuse cost tracking section
+- Added automatic cost tracking with `@observe` decorator
+- Added cost attribution by agent type patterns
+- Added cache effectiveness analysis with Langfuse API
+- Added model pricing registry with `calculate_cost()` method
+- Added Langfuse dashboard views for cost insights
+- Updated monitoring section with cost tracking best practices
+
+### v1.0.0 (2025-12-14)
+- Initial skill with double caching architecture (L1/L2/L3/L4)
+- Redis semantic cache implementation with RedisVL
+- Claude prompt caching patterns
+- Cache warming strategies
+- Similarity threshold tuning guidelines
+- Optimization techniques (reranking, metadata filtering, quality-based eviction)

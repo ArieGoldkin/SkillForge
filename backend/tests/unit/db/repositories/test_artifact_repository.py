@@ -136,7 +136,9 @@ class TestArtifactRepository:
         mock_session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_artifact_by_analysis_id_found(self, repository, mock_session, sample_artifact):
+    async def test_get_artifact_by_analysis_id_found(
+        self, repository, mock_session, sample_artifact
+    ):
         """Test get_artifact_by_analysis_id when artifact exists."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = sample_artifact
@@ -199,7 +201,9 @@ class TestArtifactRepository:
         assert result == new_artifact
 
     @pytest.mark.asyncio
-    async def test_get_artifact_with_analysis_found(self, repository, mock_session, sample_artifact, sample_analysis):
+    async def test_get_artifact_with_analysis_found(
+        self, repository, mock_session, sample_artifact, sample_analysis
+    ):
         """Test get_artifact_with_analysis when both exist."""
         mock_result = MagicMock()
         mock_result.one_or_none.return_value = (sample_artifact, sample_analysis)
@@ -286,7 +290,7 @@ class TestArtifactRepository:
 
         mock_session.execute.side_effect = [mock_count_result, mock_list_result]
 
-        results, total = await repository.list_artifacts(page=3, limit=10)
+        _results, total = await repository.list_artifacts(page=3, limit=10)
 
         assert total == 100
         # Page 3 with limit 10 should skip 20 items

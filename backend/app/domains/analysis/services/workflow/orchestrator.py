@@ -1,8 +1,8 @@
 """Workflow orchestration service for analysis workflows."""
 
-import uuid
 from typing import Any
 
+from app.core.branded_ids import AnalysisID
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.timeout_config import create_runnable_config
@@ -44,7 +44,7 @@ class WorkflowOrchestrator:
     )
     async def run(  # noqa: PLR0911, PLR0912, PLR0915
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         url: str,
         skill_level: str = "intermediate",
         analysis_mode: str = "standard",

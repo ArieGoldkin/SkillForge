@@ -3,8 +3,6 @@
 Tests Issue #507: Agent self-correction prompt generation.
 """
 
-import pytest
-
 from app.domains.analysis.workflows.agents.validation.correction_prompts import (
     AGENT_CORRECTION_TEMPLATES,
     build_correction_context,

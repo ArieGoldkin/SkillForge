@@ -54,9 +54,7 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
     Even if average score is high, if relevance < 0.5, gate should FAIL.
     """
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -106,9 +104,7 @@ async def test_quality_gate_aspect_minimums_enforced(base_state: AnalysisState):
 async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
     """Test that quality gate passes when all aspects meet minimums."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -153,9 +149,7 @@ async def test_quality_gate_all_aspect_minimums_pass(base_state: AnalysisState):
 async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when depth is below minimum (0.4)."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -195,9 +189,7 @@ async def test_quality_gate_depth_below_minimum(base_state: AnalysisState):
 async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when coherence is below minimum (0.4)."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -237,9 +229,7 @@ async def test_quality_gate_coherence_below_minimum(base_state: AnalysisState):
 async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisState):
     """Test that quality gate fails when multiple aspects are below minimums."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -261,10 +251,10 @@ async def test_quality_gate_multiple_aspects_below_minimum(base_state: AnalysisS
             def evaluator(*, input, output, _expected_output=None):
                 if criterion == "relevance":
                     return MockEvaluation(value=0.4, comment="4/10 - poor quality")
-                elif criterion == "depth":
+                if criterion == "depth":
                     return MockEvaluation(value=0.3, comment="3/10 - poor quality")
-                else:  # coherence
-                    return MockEvaluation(value=0.2, comment="2/10 - poor quality")
+                # coherence
+                return MockEvaluation(value=0.2, comment="2/10 - poor quality")
 
             return evaluator
 
@@ -360,9 +350,7 @@ def test_should_retry_synthesis_pass_continues():
 async def test_quality_gate_logs_failed_aspects(base_state: AnalysisState):
     """Test that quality gate logs which aspects failed minimum thresholds."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),

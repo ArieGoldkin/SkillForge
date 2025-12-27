@@ -195,7 +195,7 @@ class TestPromptManagerWithLangfuseClient:
         mock_prompt.label = "production"
         mock_langfuse.get_prompt.return_value = mock_prompt
 
-        content, client = await manager.get_prompt_with_langfuse_client(
+        _content, client = await manager.get_prompt_with_langfuse_client(
             name="test-prompt",
             variables={},
             label="production",
@@ -315,7 +315,7 @@ class TestPromptManagerWithLangfuseClient:
         mock_prompt.name = "my-prompt"
         mock_langfuse.get_prompt.return_value = mock_prompt
 
-        content, client = await manager.get_prompt_with_langfuse_client(
+        _content, client = await manager.get_prompt_with_langfuse_client(
             name="my-prompt",
             variables={},
             label="production",

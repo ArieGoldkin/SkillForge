@@ -1,0 +1,120 @@
+interactions:
+- request:
+    body: '{"api_key": "REDACTED", "query": "PostgreSQL indexing", "search_depth":
+      "advanced", "max_results": 5, "include_answer": false, "include_raw_content":
+      false, "include_images": false}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '201'
+      Content-Type:
+      - application/json
+      Host:
+      - api.tavily.com
+      User-Agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://api.tavily.com/search
+  response:
+    body:
+      string: "{\"query\":\"PostgreSQL indexing\",\"follow_up_questions\":null,\"answer\":null,\"images\":[],\"results\":[{\"url\":\"https://www.mydbops.com/blog/postgresql-indexing-best-practices-guide\",\"title\":\"PostgreSQL
+        Index Best Practices for Faster Queries\",\"content\":\"Indexes are a powerful
+        tool for optimizing query performance in PostgreSQL, but they require careful
+        planning and management. Understanding different index types, applying them
+        strategically, and following best practices such as avoiding over-indexing
+        and regularly maintaining indexes can significantly enhance database efficiency.
+        To ensure optimal performance, monitor index usage, test query execution plans,
+        and make adjustments as needed. With a well-structured indexing strategy,
+        PostgreSQL [...] Indexing in PostgreSQL is a technique used to speed up data
+        retrieval operations by creating pointers to rows in a table. Indexes significantly
+        improve query performance, especially for large datasets. Without indexes,
+        PostgreSQL has to perform full table scans, which can slow down response times.\\n\\n###
+        Which index type should I use in PostgreSQL?\\n\\nIt depends on your use case:\",\"score\":0.99990463,\"raw_content\":null},{\"url\":\"https://www.tigerdata.com/learn/postgresql-performance-tuning-optimizing-database-indexes\",\"title\":\"PostgreSQL
+        Performance Tuning: Optimizing Database ...\",\"content\":\"Efficient data
+        retrieval is essential for achieving peak PostgreSQL application performance,
+        particularly when dealing with vast datasets. Indexing is a robust solution
+        that accelerates the retrieval of specific rows. This article will explore
+        PostgreSQL indexing, starting with a general introduction and building up
+        to the best practices for optimizing index performance. [...] Postgres supports
+        many index types, from the default b-tree indexes to more exotic types like
+        hash, GIN, GiST, or BRIN. They are well documented in the PostgreSQL docs,
+        but here\u2019s a quick summary:\\n\\n### B-Tree indexes (default index type
+        in PostgreSQL)\\n\\n`CREATE INDEX index_product_id ON products (product_id);`\\n\\n
+        Default index type in PostgreSQL.\\n Supports <, <=, =, >=, >, BETWEEN, IN,
+        IS NULL, IS NOT NULL.\\n Organizes entries in ascending order.\\n\\n### Hash
+        indexes [...] Similarly, in PostgreSQL, indexes act like a GPS for the database
+        engine, enabling it to efficiently locate and retrieve specific rows without
+        scanning the entire table. Simply put, an index is a pointer to data within
+        a table.\",\"score\":0.9998535,\"raw_content\":null},{\"url\":\"https://medium.com/autodesk-tlv/mastering-postgresql-indexes-for-optimal-performance-5e4b0dc293e5\",\"title\":\"Mastering
+        PostgreSQL Indexes for Optimal Performance\",\"content\":\"Becoming professional
+        in indexing is a must skill when working with the PostgreSQL database management
+        system. By knowing which columns to index and understanding how indexing really
+        works, you\u2019ll have the tools to make your queries faster and more efficient.
+        Don\u2019t hesitate to experiment with various types of indexes, monitor their
+        performance, and leverage included columns to create efficient covering indexes.
+        Armed with these practical examples, you\u2019ll be well-prepared to enhance
+        the [...] PostgreSQL spoils you with index types, each tailored to specific
+        scenarios. Let\u2019s explore a couple:\\n\\n B-tree Index: Your go-to choice.
+        Great for range queries and equality comparisons.\\n\\n```\\n-- Create a B-tree
+        index on a single columnCREATE INDEX idx_column_name ON table_name (column_name);\\n```\\n\\n```\\n--
+        Create a B-tree composite index on multiple columnsCREATE INDEX idx_multi_column
+        ON table_name (column1, column2);\\n``` [...] In the dynamic realm of relational
+        databases, PostgreSQL stands tall as a versatile powerhouse. When it comes
+        to optimizing database performance, there is a crucial tool that every developer
+        and database admin relies on \u2014 indexes. In this blog post, we\u2019ll
+        take a closer look at PostgreSQL indexes \u2014 a handy tool for improving
+        database performance. From demystifying what they are to mastering their creation,
+        understanding when to use them, and ensuring they\u2019re finely tuned, we\u2019ll
+        cover it all,\",\"score\":0.999826,\"raw_content\":null},{\"url\":\"https://www.enterprisedb.com/postgres-tutorials/overview-postgresql-indexes\",\"title\":\"An
+        Overview of PostgreSQL Indexes\",\"content\":\"In a BRIN index, PostgreSQL
+        reads your selected column's maximum and minimum values for each 8k-size page
+        of stored data, and then stores that information (page number and minimum
+        and maximum values of column) into the BRIN index. [...] In this example CREATE
+        INDEX can be used to create an index on the \u201CName\u201D column for the
+        table \u201CArtist\u201D. By default a B-tree index will get created.\\n\\n##
+        Types Of Indexes\\n\\nPostgreSQL server provides following types of indexes,
+        which each uses a different algorithm:\\n\\nB-tree\\n\\nHash\\n\\nGiST\\n\\nSP-GiST\\n\\nGIN\\n\\nBRIN
+        [...] GIN stands for \u201CGeneralized Inverted Index.\u201D These are the
+        \u201CInverted Indexes\u201D that get used for multiple component values such
+        as arrays.\\n\\nThe standard distribution of PostgreSQL includes a GIN operator
+        class for arrays, which supports indexed queries using these operators: <@,
+        @>, =, and &&.\\n\\nThe built-in operator classes provided by GIN can be searched
+        on the PostgreSQL documentation site: .\",\"score\":0.9997695,\"raw_content\":null},{\"url\":\"https://neon.com/postgresql/postgresql-indexes\",\"title\":\"PostgreSQL
+        Indexes\",\"content\":\"And you issue the following query to find a contact
+        by name:\\n\\nWithout an index, PostgreSQL must scan the entire `contacts`
+        table to find `\\\"John Doe\\\"`. If the table contains many rows, this becomes
+        slow \u2014 just like reading a whole book to find a single line.\\n\\nHowever,
+        with an index on the `name` column, PostgreSQL can locate the matching rows
+        much faster.\\n\\nTo create an index, you use the `CREATE INDEX` statement:
+        [...] When you execute the following `SELECT` statement, PostgreSQL can use
+        the `contacts_name` index to quickly find the matching rows:\\n\\nAfter the
+        index is created, PostgreSQL must keep it synchronized with the table.\\n\\nFor
+        example, when inserting, updating, or deleting rows in the `contacts` table,
+        PostgreSQL also updates the index so that it remains accurate. [...] List
+        indexes \u2013 Learn how to list all indexes in a table or database.\\n Drop
+        Index \u2013 Show you how to delete an index.\\n Index Types \u2013 Discuss
+        various PostgreSQL index types in detail.\\n Full Text Search \u2013 Show
+        you how to use the GIN index to enable full-text search in PostgreSQL.\\n
+        JSON index \u2013 Learn how to index a JSONB column for enhanced query performance.\",\"score\":0.99970406,\"raw_content\":null}],\"response_time\":0.0,\"request_id\":\"508be0e4-06b8-4f54-93d1-0dcb0bd96345\"}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '6688'
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 27 Dec 2025 17:03:16 GMT
+      content-security-policy:
+      - default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self';
+        style-src 'self';base-uri 'self';form-action 'self'; require-trusted-types-for
+        'script'; upgrade-insecure-requests;
+    status:
+      code: 200
+      message: OK
+version: 1

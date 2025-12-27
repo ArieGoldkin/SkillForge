@@ -11,6 +11,7 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branded_ids import AnalysisID, ArtifactID
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.models.artifact import Artifact
@@ -29,25 +30,25 @@ class IArtifactRepository(Protocol):
         """Create a new artifact in the database."""
         ...
 
-    async def get_artifact_by_id(self, artifact_id: uuid.UUID) -> Artifact | None:
+    async def get_artifact_by_id(self, artifact_id: ArtifactID) -> Artifact | None:
         """Get artifact by ID."""
         ...
 
-    async def get_artifact_by_analysis_id(self, analysis_id: uuid.UUID) -> Artifact | None:
+    async def get_artifact_by_analysis_id(self, analysis_id: AnalysisID) -> Artifact | None:
         """Get artifact by analysis ID."""
         ...
 
-    async def get_latest_artifact_by_analysis(self, analysis_id: uuid.UUID) -> Artifact | None:
+    async def get_latest_artifact_by_analysis(self, analysis_id: AnalysisID) -> Artifact | None:
         """Get the most recent artifact for an analysis."""
         ...
 
     async def get_artifact_with_analysis(
-        self, artifact_id: uuid.UUID
+        self, artifact_id: ArtifactID
     ) -> tuple[Artifact, Analysis] | None:
         """Get artifact with associated analysis in a single query."""
         ...
 
-    async def increment_download_count(self, artifact_id: uuid.UUID) -> None:
+    async def increment_download_count(self, artifact_id: ArtifactID) -> None:
         """Increment download count for an artifact."""
         ...
 
@@ -57,15 +58,15 @@ class IArtifactRepository(Protocol):
         """List artifacts with pagination."""
         ...
 
-    async def soft_delete(self, artifact_id: uuid.UUID) -> bool:
+    async def soft_delete(self, artifact_id: ArtifactID) -> bool:
         """Soft delete an artifact."""
         ...
 
-    async def restore(self, artifact_id: uuid.UUID) -> bool:
+    async def restore(self, artifact_id: ArtifactID) -> bool:
         """Restore a soft-deleted artifact."""
         ...
 
-    async def generate_etag(self, artifact_id: uuid.UUID) -> str | None:
+    async def generate_etag(self, artifact_id: ArtifactID) -> str | None:
         """Generate ETag for caching."""
         ...
 
@@ -111,19 +112,19 @@ class ArtifactRepository:
 
         return artifact
 
-    async def get_artifact_by_id(self, artifact_id: uuid.UUID) -> Artifact | None:
+    async def get_artifact_by_id(self, artifact_id: ArtifactID) -> Artifact | None:
         """Get artifact by ID."""
         result = await self.session.execute(select(Artifact).where(Artifact.id == artifact_id))
         return result.scalar_one_or_none()
 
-    async def get_artifact_by_analysis_id(self, analysis_id: uuid.UUID) -> Artifact | None:
+    async def get_artifact_by_analysis_id(self, analysis_id: AnalysisID) -> Artifact | None:
         """Get artifact by analysis ID."""
         result = await self.session.execute(
             select(Artifact).where(Artifact.analysis_id == analysis_id)
         )
         return result.scalar_one_or_none()
 
-    async def get_latest_artifact_by_analysis(self, analysis_id: uuid.UUID) -> Artifact | None:
+    async def get_latest_artifact_by_analysis(self, analysis_id: AnalysisID) -> Artifact | None:
         """Get the most recent artifact for an analysis."""
         result = await self.session.execute(
             select(Artifact)
@@ -134,7 +135,7 @@ class ArtifactRepository:
         return result.scalar_one_or_none()
 
     async def get_artifact_with_analysis(
-        self, artifact_id: uuid.UUID
+        self, artifact_id: ArtifactID
     ) -> tuple[Artifact, Analysis] | None:
         """Get artifact with associated analysis in a single query."""
         result = await self.session.execute(
@@ -145,7 +146,7 @@ class ArtifactRepository:
         row = result.one_or_none()
         return (row[0], row[1]) if row else None
 
-    async def increment_download_count(self, artifact_id: uuid.UUID) -> None:
+    async def increment_download_count(self, artifact_id: ArtifactID) -> None:
         """Increment download count atomically."""
         from sqlalchemy import update
 
@@ -181,7 +182,7 @@ class ArtifactRepository:
 
         return artifacts, total
 
-    async def soft_delete(self, artifact_id: uuid.UUID) -> bool:
+    async def soft_delete(self, artifact_id: ArtifactID) -> bool:
         """Soft delete an artifact."""
         from datetime import UTC, datetime
 
@@ -194,7 +195,7 @@ class ArtifactRepository:
         await self.session.commit()
         return True
 
-    async def restore(self, artifact_id: uuid.UUID) -> bool:
+    async def restore(self, artifact_id: ArtifactID) -> bool:
         """Restore a soft-deleted artifact."""
         result = await self.session.execute(select(Artifact).where(Artifact.id == artifact_id))
         artifact = result.scalar_one_or_none()
@@ -206,7 +207,7 @@ class ArtifactRepository:
         await self.session.commit()
         return True
 
-    async def generate_etag(self, artifact_id: uuid.UUID) -> str | None:
+    async def generate_etag(self, artifact_id: ArtifactID) -> str | None:
         """Generate ETag for caching."""
         import hashlib
 

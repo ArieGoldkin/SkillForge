@@ -4,12 +4,12 @@ Handles session CRUD operations, following repository pattern.
 """
 
 from typing import Protocol
-from uuid import UUID
 
 from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branded_ids import AnalysisID, SessionID
 from app.core.logging import get_logger
 from app.db.models.tutoring import TutoringSession
 from app.db.session import get_db
@@ -22,20 +22,20 @@ class ITutorSessionRepository(Protocol):
 
     async def create_session(
         self,
-        analysis_id: UUID | None = None,
+        analysis_id: AnalysisID | None = None,
         user_level: str = "intermediate",
         session_metadata: dict[str, object] | None = None,
     ) -> TutoringSession:
         """Create a new tutoring session."""
         ...
 
-    async def get_session(self, session_id: UUID) -> TutoringSession | None:
+    async def get_session(self, session_id: SessionID) -> TutoringSession | None:
         """Get a tutoring session by ID."""
         ...
 
     async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
-        session_id: UUID,
+        session_id: SessionID,
         syllabus: dict[str, object] | None = None,
         current_section: int | None = None,
         current_lesson: int | None = None,
@@ -62,7 +62,7 @@ class TutorSessionRepository:
 
     async def create_session(
         self,
-        analysis_id: UUID | None = None,
+        analysis_id: AnalysisID | None = None,
         user_level: str = "intermediate",
         session_metadata: dict[str, object] | None = None,
     ) -> TutoringSession:
@@ -86,7 +86,7 @@ class TutorSessionRepository:
 
         return session
 
-    async def get_session(self, session_id: UUID) -> TutoringSession | None:
+    async def get_session(self, session_id: SessionID) -> TutoringSession | None:
         """Get a tutoring session by ID."""
         result = await self.session.execute(
             select(TutoringSession).where(TutoringSession.id == session_id)
@@ -95,7 +95,7 @@ class TutorSessionRepository:
 
     async def update_session_state(  # noqa: PLR0913 - Repository method needs many optional parameters
         self,
-        session_id: UUID,
+        session_id: SessionID,
         syllabus: dict[str, object] | None = None,
         current_section: int | None = None,
         current_lesson: int | None = None,

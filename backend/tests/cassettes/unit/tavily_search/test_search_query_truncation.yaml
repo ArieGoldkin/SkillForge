@@ -1,0 +1,136 @@
+interactions:
+- request:
+    body: '{"api_key": "REDACTED", "query": "Python programming best practices Python
+      programming best practices Python programming best practices Python programming
+      best practices Python programming best practices Python programming best practices
+      Python programming best practices Python programming best practices Python programming
+      best practices Python programming best practices Python programming best practices
+      Python programming best pr", "search_depth": "advanced", "max_results": 5, "include_answer":
+      true, "include_raw_content": false, "include_images": false}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '581'
+      Content-Type:
+      - application/json
+      Host:
+      - api.tavily.com
+      User-Agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://api.tavily.com/search
+  response:
+    body:
+      string: "{\"query\":\"Python programming best practices Python programming best
+        practices Python programming best practices Python programming best practices
+        Python programming best practices Python programming best practices Python
+        programming best practices Python programming best practices Python programming
+        best practices Python programming best practices Python programming best practices
+        Python programming best pr\",\"follow_up_questions\":null,\"answer\":\"Follow
+        PEP 8 guidelines, use descriptive names, and write modular, reusable code
+        for Python best practices.\",\"images\":[],\"results\":[{\"url\":\"https://dev.to/devasservice/python-best-practices-writing-clean-efficient-and-maintainable-code-34bj\",\"title\":\"Python
+        Best Practices: Writing Clean, Efficient, and ...\",\"content\":\"Skip to
+        content\\n\\nLog in    Create account\\n\\n## DEV Community\\n\\nDeveloper
+        Service\\n\\nPosted on \u2022 Originally published at developer-service.blog\\n\\n#
+        Python Best Practices: Writing Clean, Efficient, and Maintainable Code\\n\\n#python
+        #bestpractices\\n\\nPython is one of the most popular programming languages
+        due to its simplicity, readability, and versatility. [...] I find it helpful
+        to emphasize the importance of following Python best practices for clean and
+        maintainable code. From adhering to PEP 8 guidelines and using descriptive
+        variable names to leveraging Python's built-in functions and handling exceptions
+        smoothly, these tips can significantly enhance your coding experience.\\n\\nFor
+        Python/Django software development, consider exploring sdh.global/services/python-django-...
+        [...] ## Conclusion\\n\\nBy following these Python best practices, you can
+        write code that is clean, efficient, and maintainable.\\n\\nWhether you\u2019re
+        writing a small script or developing a large application, these principles
+        will help you create better, more professional Python code.\\n\\nRemember,
+        coding is not just about making things work; it\u2019s about making them work
+        well, now and in the future.\\n\\n## Top comments (3)\\n\\nSubscribe\\n\\nEric
+        Walter \\n\\nEric Walter\",\"score\":0.8452414,\"raw_content\":null},{\"url\":\"https://medium.com/red-buffer/python-production-level-coding-practices-4c39246e0233\",\"title\":\"Python:
+        Production-Level Coding Practices\",\"content\":\"I also love to use Jupyter
+        Notebook for Python. The interface is really convenient and the line-by-line
+        coding really simplifies things and helps in quickly testing algorithms, but
+        when you are writing a production-level code, the best practice is to use
+        a good IDE. I prefer PyCharm. The reason is that it\u2019s specifically built
+        for Python and your scope gets a lot widened when you use it. It is easier
+        to write a more modular, reusable code and make a proper project structure.
+        [...] > Using an IDE (Integrated Development Environment), specifically for
+        your Python codes, is very important and much better than using notebooks.
+        [...] > Making a great project structure is one of the most important things
+        because that actually aligns your tasks in proper order, and you can make
+        sure that modules are separated from each other properly.\",\"score\":0.8312667,\"raw_content\":null},{\"url\":\"https://www.codingdojo.com/blog/python-best-practices\",\"title\":\"15
+        Python Best Practices Developers Must Know\",\"content\":\"A critical part
+        of Python best practices is documenting and commenting on all code properly.
+        This point is significant if multiple parties are working on the same piece
+        of code at any time. Without clear documentation and concise comments, confusion
+        can set in and leave everyone scratching their heads as they try to contribute
+        their code.\\n\\n### 6. Fix Code Issues Promptly [...] Using Python and these
+        best practices makes all your code highly readable and easy to understand.\\n
+        It\u2019ll increase your productivity. With a list of steps, every developer
+        can be highly efficient with their time.\\n It\u2019s faster. By pulling from
+        existing code on the PyPI, developers can finish projects sooner.\\n You\u2019ll
+        learn to double-check errors by making sure to fix all bugs and keep project
+        timelines nice and tight. [...] A typical saying in Python programming is
+        \u201Cdo a lot with a little,\u201D which every developer should remember
+        when writing code. A common practice when writing Python code is to write
+        a single piece of code per line, with the new line marking the end of the
+        first piece of code. Ultimately, this means that every part of Python code
+        is way more potent and prevents unnecessary code from being written.\\n\\n###
+        10. Use a Proper Naming Convention\",\"score\":0.81665546,\"raw_content\":null},{\"url\":\"https://www.appacademy.io/blog/python-coding-best-practices/\",\"title\":\"8
+        Python Best Practices Every Developer Should Know\",\"content\":\"Python programming
+        is incredibly versatile. It can be used to help build everything from a simple
+        command prompt to a complex game development, AI, and more.\\n\\nLearn More:
+        What is Python Used For?\\n\\nFollowing Python coding best practices ensures
+        that your code is consistently clean and readable. It encourages code reusability,
+        reduces the likelihood of bugs (not to mention, makes it easier to discover
+        and repair bugs), and makes it easier to maintain and restructure. [...] Python
+        best practices for code quality include using four spaces for each indentation
+        level. It also outlines that tabs and white spaces should not be intermixed
+        (spaces should be used, not tabs). And lastly, indent consistently from start
+        to finish.\\n\\n#### Line Spacing\\n\\nLine spacing guidelines for Python
+        include using blank lines sparingly. Top-level functions and class definitions
+        should be separated with two blank lines while method definitions should be
+        separated by one. [...] Testing your code is yet another essential component
+        of Python best practices for code quality. It ensures a quality completed
+        code, can help catch bugs early, and ensures the code behaves as expected.
+        You can utilize automated testing libraries and frameworks as well as best
+        practices to ensure you\u2019re testing effectively.\",\"score\":0.79901963,\"raw_content\":null},{\"url\":\"https://gist.github.com/ruimaranhao/4e18cbe3dad6f68040c32ed6709090a3\",\"title\":\"A
+        Guide of Best Practices for Python\",\"content\":\"# A Guide of Best Practices
+        for Python\\n\\nA guide of best practices to developing in Python (meant for
+        the first year students of the Instituto Superior T\xE9cnico, University of
+        Lisbon). Do you want to have a hard-cover book on this, check this list out.\\n\\nInspired
+        in Steve Sloria's gist.\\n\\n## In General\\n\\n> \\\"Beautiful is better
+        than ugly.\\\" - PEP 20\\n\\n### General Development Guidelines [...] Star
+        \ 37 (37) You must be signed in to star a gist\\n Fork  4 (4) You must be
+        signed in to fork a gist\\n\\n Save ruimaranhao/4e18cbe3dad6f68040c32ed6709090a3
+        to your computer and use it in GitHub Desktop.\\n\\nSave ruimaranhao/4e18cbe3dad6f68040c32ed6709090a3
+        to your computer and use it in GitHub Desktop.\\n\\nDownload ZIP\\n\\nA guide
+        of best practices to developing in Python (meant for the first year students
+        of Instituto Superior T\xE9cnico, U.Lisboa).\\n\\nRaw\\n\\npython-guide-ist.md
+        [...] Functional tests are higher level tests that are closer to how an end-user
+        would interact with your application. They are typically used for web and
+        GUI applications.\\n\\n Write tests as scenarios. Testcase and test method
+        names should read like a scenario description.\\n Use comments to write out
+        stories, before writing the test code.\",\"score\":0.67911536,\"raw_content\":null}],\"response_time\":0.0,\"request_id\":\"81fd7841-c3a5-4d77-a7ca-f0081be51d49\"}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '7482'
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 27 Dec 2025 17:03:16 GMT
+      content-security-policy:
+      - default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self';
+        style-src 'self';base-uri 'self';form-action 'self'; require-trusted-types-for
+        'script'; upgrade-insecure-requests;
+    status:
+      code: 200
+      message: OK
+version: 1

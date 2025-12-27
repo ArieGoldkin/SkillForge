@@ -86,9 +86,7 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
     """Test single evaluator timeout - should use default 0.5 score (Issue #442)."""
     # Mock create_quality_evaluator to return timeout evaluator for one aspect
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -133,7 +131,9 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
         # GAP5 multi-judge: Verify timeout was logged in multi_judge module
         mock_multi_judge_logger.warning.assert_called()
         warning_calls = list(mock_multi_judge_logger.warning.call_args_list)
-        timeout_logs = [call for call in warning_calls if call[0][0] == "multi_judge_evaluation_failed"]
+        timeout_logs = [
+            call for call in warning_calls if call[0][0] == "multi_judge_evaluation_failed"
+        ]
         assert len(timeout_logs) >= 1
 
         # Gate should still pass (0.5 + 0.8 + 0.8) / 3 = 0.7 >= 0.7 (threshold)
@@ -147,9 +147,7 @@ async def test_quality_gate_evaluator_timeout(base_state: AnalysisState):
 async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
     """Test all evaluators timeout - should still pass gate with default scores."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -164,6 +162,7 @@ async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
         def create_evaluator_side_effect(*args, **kwargs):
             def timeout_evaluator(*, input, output, _expected_output=None):
                 raise TimeoutError("Evaluation timed out")
+
             return timeout_evaluator
 
         mock_create.side_effect = create_evaluator_side_effect
@@ -190,7 +189,9 @@ async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
 
         # GAP5 multi-judge: Verify all timeouts were logged in multi_judge module
         warning_calls = list(mock_multi_judge_logger.warning.call_args_list)
-        timeout_logs = [call for call in warning_calls if call[0][0] == "multi_judge_evaluation_failed"]
+        timeout_logs = [
+            call for call in warning_calls if call[0][0] == "multi_judge_evaluation_failed"
+        ]
         assert len(timeout_logs) == 3  # One for each aspect
 
 
@@ -198,9 +199,7 @@ async def test_quality_gate_all_evaluators_timeout(base_state: AnalysisState):
 async def test_quality_gate_partial_timeout(base_state: AnalysisState):
     """Test some evaluators succeed, some timeout - should combine scores."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -285,9 +284,7 @@ async def test_quality_gate_division_by_zero_protection(base_state: AnalysisStat
 async def test_quality_gate_timeout_logging(base_state: AnalysisState):
     """Test timeout is logged with correct fields."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -302,6 +299,7 @@ async def test_quality_gate_timeout_logging(base_state: AnalysisState):
         def create_evaluator_side_effect(*args, **kwargs):
             def timeout_evaluator(*, input, output, _expected_output=None):
                 raise TimeoutError("Evaluation timed out")
+
             return timeout_evaluator
 
         mock_create.side_effect = create_evaluator_side_effect
@@ -313,7 +311,9 @@ async def test_quality_gate_timeout_logging(base_state: AnalysisState):
 
         # GAP5 multi-judge: Logs "multi_judge_evaluation_failed" instead of "quality_evaluator_timeout"
         warning_calls = list(mock_multi_judge_logger.warning.call_args_list)
-        timeout_logs = [call for call in warning_calls if call[0][0] == "multi_judge_evaluation_failed"]
+        timeout_logs = [
+            call for call in warning_calls if call[0][0] == "multi_judge_evaluation_failed"
+        ]
 
         assert len(timeout_logs) == 3  # One for each aspect (relevance, depth, coherence)
 
@@ -330,9 +330,7 @@ async def test_quality_gate_timeout_logging(base_state: AnalysisState):
 async def test_quality_gate_sse_event_on_timeout(base_state: AnalysisState):
     """Test error event is emitted when gate fails due to evaluator timeouts."""
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_error_event", new_callable=AsyncMock
         ) as mock_error_event,
@@ -433,7 +431,9 @@ async def test_quality_gate_fail_closed_on_exception(base_state: AnalysisState):
 
         # GAP5 multi-judge: Mock run_multi_judge_evaluation to raise exception
         # This simulates a critical failure in the evaluation orchestration
-        mock_run_multi_judge.side_effect = ValueError("Unexpected error during multi-judge evaluation")
+        mock_run_multi_judge.side_effect = ValueError(
+            "Unexpected error during multi-judge evaluation"
+        )
 
         # Should raise WorkflowStageError with stage context
         with pytest.raises(WorkflowStageError) as exc_info:
@@ -577,9 +577,7 @@ async def test_quality_gate_coverage_adjusted_threshold_passes(low_coverage_stat
     This allows honest partial analysis to pass the gate.
     """
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -622,9 +620,7 @@ async def test_quality_gate_normal_threshold_fails_low_score(high_coverage_state
     Issue #299-304: When coverage_score >= 0.5, normal thresholds (0.7) are used.
     """
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_error_event", new_callable=AsyncMock
         ) as mock_error_event,
@@ -667,9 +663,7 @@ async def test_quality_gate_adjusted_aspect_minimums(low_coverage_state: Analysi
     - coherence: 0.4 (vs 0.4)
     """
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -733,9 +727,7 @@ async def test_quality_gate_aspect_minimum_failure_with_adjusted():
     }
 
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -785,9 +777,7 @@ async def test_quality_gate_logs_coverage_context(low_coverage_state: AnalysisSt
     Issue #299-304: Logs should include coverage_score and adjusted threshold info.
     """
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),
@@ -839,9 +829,7 @@ async def test_quality_gate_default_coverage_score():
     }
 
     with (
-        patch(
-            "app.shared.services.g_eval.multi_judge.create_g_eval_evaluator"
-        ) as mock_create,
+        patch("app.shared.services.g_eval.multi_judge.create_g_eval_evaluator") as mock_create,
         patch(
             "app.shared.services.messaging.sse_helpers.emit_streaming_event", new_callable=AsyncMock
         ),

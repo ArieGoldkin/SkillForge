@@ -5,11 +5,11 @@ transition validation to prevent race conditions and invalid state changes.
 """
 
 import asyncio
-import uuid
 from collections.abc import Mapping
 
 from sqlalchemy import select
 
+from app.core.branded_ids import AnalysisID
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
@@ -21,7 +21,7 @@ _locks: dict[str, asyncio.Lock] = {}
 _locks_lock = asyncio.Lock()  # Protects _locks dict itself
 
 
-async def _get_lock(analysis_id: uuid.UUID) -> asyncio.Lock:
+async def _get_lock(analysis_id: AnalysisID) -> asyncio.Lock:
     """Get or create a lock for the given analysis_id.
 
     Thread-safe lock creation using a global lock to protect the locks dict.
@@ -88,7 +88,7 @@ def _is_valid_transition(from_status: str, to_status: str) -> bool:
 class StatusUpdater:
     """Service for updating analysis status in database with locking and validation."""
 
-    async def update(self, analysis_id: uuid.UUID, status: str) -> None:
+    async def update(self, analysis_id: AnalysisID, status: str) -> None:
         """Update analysis status in database with locking and transition validation.
 
         Uses database-level locking (SELECT FOR UPDATE) and validates status transitions

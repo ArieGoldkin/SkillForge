@@ -2,34 +2,51 @@
 
 This directory contains recorded HTTP responses for deterministic testing.
 
-## Recording New Cassettes
+## Quick Start
 
+### Record new cassettes (first time)
 ```bash
-# Set API keys in environment
+cd backend
 export TAVILY_API_KEY=your-key
-export JINA_API_KEY=your-key
-
-# Record all cassettes (or specific test)
-VCR_RECORD_MODE=all pytest tests/unit/services/external/ -v
-
-# Or record specific test
-VCR_RECORD_MODE=all pytest tests/unit/services/external/test_tavily.py::test_search -v
+VCR_RECORD_MODE=all pytest tests/unit/services/tools/test_tavily_search.py -v
 ```
 
-## Refreshing Stale Cassettes
+### Run tests with cassettes (no API key needed)
+```bash
+cd backend
+poetry run pytest tests/unit/services/tools/test_tavily_search.py -v
+```
 
+### Update stale cassettes
 ```bash
 # Delete specific cassette
 rm tests/cassettes/unit/tavily_search/test_search_success.yaml
 
 # Re-record
-VCR_RECORD_MODE=all pytest tests/unit/services/external/test_tavily.py::test_search_success -v
+VCR_RECORD_MODE=all TAVILY_API_KEY=your-key pytest tests/unit/services/tools/test_tavily_search.py::test_search_success -v
+```
+
+## Full Documentation
+
+See **[VCR_TESTING_GUIDE.md](./VCR_TESTING_GUIDE.md)** for:
+- Complete workflow examples
+- Security best practices
+- Troubleshooting guide
+- CI/CD integration
+- Cassette organization
+
+## Security
+
+API keys are automatically filtered from cassettes:
+- `authorization`, `x-api-key`, `api-key` headers → "REDACTED"
+- `api_key`, `token` query params → "REDACTED"
+
+Always verify before committing:
+```bash
+grep -r "sk-" tests/cassettes/
+grep -r "tvly-" tests/cassettes/
 ```
 
 ## CI Behavior
 
-In CI (`CI=true`), cassettes are read-only. Tests fail if cassette is missing.
-
-## Security
-
-API keys are automatically filtered. Never commit real secrets.
+In CI (`CI=true`), record mode is `none` - tests fail if cassettes are missing or incomplete.

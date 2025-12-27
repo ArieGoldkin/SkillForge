@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -370,7 +369,9 @@ class TestLangfuseScoreSubmission:
         ):
             # Mock Langfuse service with failing submit_score method
             mock_service = MagicMock()
-            mock_service.submit_score = MagicMock(side_effect=Exception("Langfuse connection error"))
+            mock_service.submit_score = MagicMock(
+                side_effect=Exception("Langfuse connection error")
+            )
             mock_get_service.return_value = mock_service
 
             # Mock agent rubrics to return only the criteria we're testing

@@ -271,7 +271,7 @@ class TestBulkheadTimeoutBehavior:
         can_finish.set()
         try:
             await asyncio.wait_for(task1, timeout=0.5)
-        except (asyncio.TimeoutError, BulkheadTimeoutError):
+        except (TimeoutError, BulkheadTimeoutError):
             pass  # Expected
 
     @pytest.mark.asyncio

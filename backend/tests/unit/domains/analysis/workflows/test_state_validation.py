@@ -4,6 +4,9 @@ Tests defensive state access in graph_builder.py, evaluator.py, and state_access
 to ensure graceful handling of missing state fields instead of raising KeyErrors.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -15,8 +18,10 @@ from app.domains.analysis.workflows.graph_builder import (
     _generate_embedding_node,
     _supervisor_node,
 )
-from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.state_accessors import get_analysis_id
+
+if TYPE_CHECKING:
+    from app.domains.analysis.workflows.state import AnalysisState
 
 # Test UUID for analysis_id
 TEST_ANALYSIS_ID = str(uuid4())

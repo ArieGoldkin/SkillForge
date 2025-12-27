@@ -4,11 +4,12 @@ These schemas handle request/response validation for the feedback
 and annotation queue API endpoints.
 """
 
-import uuid
 from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
+
+from app.core.branded_ids import ArtifactID
 
 
 class FeedbackType(str, Enum):
@@ -21,7 +22,7 @@ class FeedbackType(str, Enum):
 class SubmitFeedbackRequest(BaseModel):
     """Request schema for submitting user feedback."""
 
-    artifact_id: uuid.UUID = Field(..., description="ID of the artifact")
+    artifact_id: ArtifactID = Field(..., description="ID of the artifact")
     trace_id: str | None = Field(None, description="Langfuse trace ID (optional)")
     feedback: FeedbackType = Field(..., description="User feedback type")
     comment: str | None = Field(
@@ -54,7 +55,7 @@ class SubmitFeedbackResponse(BaseModel):
 class FlagForReviewRequest(BaseModel):
     """Request schema for flagging artifact for review."""
 
-    artifact_id: uuid.UUID = Field(..., description="ID of the artifact to flag")
+    artifact_id: ArtifactID = Field(..., description="ID of the artifact to flag")
     reason: str = Field(
         ...,
         min_length=10,
@@ -74,7 +75,7 @@ class AnnotationQueueItemResponse(BaseModel):
     """Response schema for annotation queue entry."""
 
     id: int = Field(..., description="Queue entry ID")
-    artifact_id: uuid.UUID = Field(..., description="Artifact ID")
+    artifact_id: ArtifactID = Field(..., description="Artifact ID")
     trace_id: str | None = Field(None, description="Langfuse trace ID")
     reason: str = Field(..., description="Reason for queuing")
     status: str = Field(..., description="Queue status")

@@ -85,10 +85,12 @@ async def wait_for_event_persistence(
     Note: Under heavy pytest-xdist parallel load (16+ workers), database connections
     may be contended. This function uses retry logic and longer poll intervals
     to handle connection pool exhaustion gracefully.
+
     """
     import time
 
-    from sqlalchemy.exc import OperationalError, TimeoutError as SQLAlchemyTimeoutError
+    from sqlalchemy.exc import OperationalError
+    from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 
     # Use time.time() instead of event_loop.time() to avoid issues during cleanup
     start_time = time.time()

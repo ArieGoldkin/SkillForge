@@ -1,6 +1,5 @@
 """Artifact download endpoints."""
 
-import uuid
 from math import ceil
 from typing import Annotated
 
@@ -9,6 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, stat
 from fastapi.responses import Response
 
 from app.api.schemas.errors import ErrorResponse
+from app.core.branded_ids import AnalysisID, ArtifactID
 from app.core.logging import get_logger
 from app.db.repositories.artifact_repository import IArtifactRepository, get_artifact_repository
 from app.domains.analysis.schemas.api import ArtifactMetadataResponse
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
     },
 )
 async def get_artifact_by_analysis(
-    analysis_id: Annotated[uuid.UUID, Path(description="Analysis UUID")],
+    analysis_id: Annotated[AnalysisID, Path(description="Analysis UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> ArtifactMetadataResponse:
     """Retrieve the latest artifact for an analysis (metadata + markdown)."""
@@ -57,7 +57,7 @@ async def get_artifact_by_analysis(
     },
 )
 async def get_artifact_by_id(
-    artifact_id: Annotated[uuid.UUID, Path(description="Artifact UUID")],
+    artifact_id: Annotated[ArtifactID, Path(description="Artifact UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
     if_none_match: Annotated[str | None, Header(alias="If-None-Match")] = None,
 ) -> Response:
@@ -109,7 +109,7 @@ async def get_artifact_by_id(
     },
 )
 async def download_artifact(
-    artifact_id: Annotated[uuid.UUID, Path(description="Artifact UUID")],
+    artifact_id: Annotated[ArtifactID, Path(description="Artifact UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> Response:
     """Download artifact as markdown file.
@@ -228,7 +228,7 @@ async def list_artifacts(
 
 @router.delete("/artifacts/{artifact_id}")
 async def delete_artifact(
-    artifact_id: Annotated[uuid.UUID, Path(description="Artifact UUID")],
+    artifact_id: Annotated[ArtifactID, Path(description="Artifact UUID")],
     repo: Annotated[IArtifactRepository, Depends(get_artifact_repository)],
 ) -> dict:
     """Soft delete an artifact."""

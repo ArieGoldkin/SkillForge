@@ -85,23 +85,52 @@ const formatDuration = (ms: number): string => {
 }
 
 /**
+ * Status configuration for icons and badge variants
+ */
+const statusConfig = {
+  completed: {
+    Icon: CheckCircle2,
+    iconClassName: 'text-status-success',
+    badgeVariant: 'success' as const,
+  },
+  'in-progress': {
+    Icon: Loader2,
+    iconClassName: 'animate-spin text-status-warning',
+    badgeVariant: 'warning' as const,
+  },
+  failed: {
+    Icon: XCircle,
+    iconClassName: 'text-destructive',
+    badgeVariant: 'destructive' as const,
+  },
+  skipped: {
+    Icon: Circle,
+    iconClassName: 'text-muted-foreground opacity-50',
+    badgeVariant: 'secondary' as const,
+  },
+  pending: {
+    Icon: Circle,
+    iconClassName: 'text-muted-foreground',
+    badgeVariant: 'default' as const,
+  },
+} satisfies Record<
+  AnalysisStepStatus,
+  {
+    Icon: typeof CheckCircle2
+    iconClassName: string
+    badgeVariant: 'default' | 'success' | 'warning' | 'destructive' | 'secondary'
+  }
+>
+
+/**
  * Get icon component for step status
  */
 const getStatusIcon = (status: AnalysisStepStatus): React.ReactNode => {
   const iconClasses = 'h-5 w-5'
+  const config = statusConfig[status]
+  const Icon = config.Icon
 
-  switch (status) {
-    case 'completed':
-      return <CheckCircle2 className={cn(iconClasses, 'text-status-success')} />
-    case 'in-progress':
-      return <Loader2 className={cn(iconClasses, 'animate-spin text-status-warning')} />
-    case 'failed':
-      return <XCircle className={cn(iconClasses, 'text-destructive')} />
-    case 'skipped':
-      return <Circle className={cn(iconClasses, 'text-muted-foreground opacity-50')} />
-    case 'pending':
-      return <Circle className={cn(iconClasses, 'text-muted-foreground')} />
-  }
+  return <Icon className={cn(iconClasses, config.iconClassName)} />
 }
 
 /**
@@ -110,18 +139,7 @@ const getStatusIcon = (status: AnalysisStepStatus): React.ReactNode => {
 const getStatusBadgeVariant = (
   status: AnalysisStepStatus
 ): 'default' | 'success' | 'warning' | 'destructive' | 'secondary' => {
-  switch (status) {
-    case 'completed':
-      return 'success'
-    case 'in-progress':
-      return 'warning'
-    case 'failed':
-      return 'destructive'
-    case 'skipped':
-      return 'secondary'
-    case 'pending':
-      return 'default'
-  }
+  return statusConfig[status].badgeVariant
 }
 
 /**

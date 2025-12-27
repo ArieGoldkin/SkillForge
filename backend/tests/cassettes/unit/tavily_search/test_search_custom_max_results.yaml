@@ -1,0 +1,229 @@
+interactions:
+- request:
+    body: '{"api_key": "REDACTED", "query": "TypeScript best practices", "search_depth":
+      "advanced", "max_results": 10, "include_answer": true, "include_raw_content":
+      false, "include_images": false}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '207'
+      Content-Type:
+      - application/json
+      Host:
+      - api.tavily.com
+      User-Agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://api.tavily.com/search
+  response:
+    body:
+      string: "{\"query\":\"TypeScript best practices\",\"follow_up_questions\":null,\"answer\":\"Enable
+        strict mode in `tsconfig.json`, avoid `any`, and use utility types for best
+        TypeScript practices.\",\"images\":[],\"results\":[{\"url\":\"https://dev.to/mitu_mariam/typescript-best-practices-in-2025-57hb\",\"title\":\"TypeScript
+        Best Practices in 2025 - DEV Community\",\"content\":\"In 2025, TypeScript
+        is not just a tool; it's a standard for building scalable, maintainable, and
+        performant applications. By following these best practices\u2014focusing on
+        type safety, leveraging advanced features, optimizing for performance, and
+        integrating with modern tools and frameworks\u2014developers can ensure their
+        TypeScript codebase remains resilient, adaptable, and future-proof. The key
+        to success is continuous learning and adapting as the language evolves and
+        the landscape shifts toward [...] As TypeScript continues to gain momentum
+        in modern web development, its adoption is increasingly vital for large-scale
+        applications. For front-end developers, staying ahead of the curve in 2025
+        requires embracing best practices that not only boost productivity but also
+        ensure robust, maintainable, and scalable code. Here are some key TypeScript
+        best practices to follow in 2025, with a focus on the latest trends, tools,
+        and methodologies.\\n\\n### 1. Type Safety First: Never Compromise on Types
+        [...] TypeScript's core value proposition is type safety. In 2025, it's more
+        important than ever to leverage this feature to avoid runtime errors and ensure
+        predictable behavior.\\n\\n Use Explicit Types: Avoid relying on `any`. Always
+        define types explicitly to make the code more readable and safer.\\n\\n```\\nlet
+        user:{name: string; age: number};\\n```\\n\\n Leverage `unknown` Instead of
+        `any`: If you need a variable that could hold any value, opt for `unknown`
+        over `any` for safer handling.\",\"score\":0.90593183,\"raw_content\":null},{\"url\":\"https://www.w3schools.com/typescript/typescript_best_practices.php\",\"title\":\"TypeScript
+        Best Practices\",\"content\":\"## TypeScript Exercises\\n\\nTS Editor TS Exercises
+        TS Quiz TS Syllabus TS Study Plan TS Certificate\\n\\n# TypeScript Best Practices\\n\\n\u276E
+        Previous Next \u276F\\n\\nThis guide covers essential TypeScript best practices
+        to help you write clean, maintainable, and type-safe code. Following these
+        practices will improve code quality and developer experience.\\n\\n## Project
+        Configuration\\n\\n### Enable Strict Mode\\n\\nAlways enable `strict` mode
+        in your `tsconfig.json` for maximum type safety: [...] {  \\n   \\\"compilerOptions\\\":
+        {  \\n     /\\\\ Additional strict checks \\\\/  \\n     \\\"noImplicitAny\\\":
+        true,  \\n     \\\"strictNullChecks\\\": true,  \\n     \\\"strictFunctionTypes\\\":
+        true,  \\n     \\\"strictBindCallApply\\\": true,  \\n     \\\"strictPropertyInitialization\\\":
+        true,  \\n     \\\"noImplicitThis\\\": true,  \\n     \\\"alwaysStrict\\\":
+        true  \\n   }  \\n }\\n\\n## Type System Best Practices\\n\\n### Use Type
+        Inference Where Possible\\n\\nLet TypeScript infer types when the type is
+        obvious from the assignment: [...] ### File Naming Conventions\\n\\nFollow
+        consistent file naming patterns:\\n\\n// Good  \\n user.service.ts // Service
+        classes  \\n user.model.ts // Type definitions  \\n user.controller.ts //
+        Controllers  \\n user.component.ts // Components  \\n user.utils.ts // Utility
+        functions  \\n user.test.ts // Test files  \\n   \\n // Bad  \\n UserService.ts
+        // Avoid PascalCase for file names  \\n user\\\\_service.ts // Avoid snake\\\\_case
+        \ \\n userService.ts // Avoid camelCase for file names\\n\\n## Best Practices\",\"score\":0.86713725,\"raw_content\":null},{\"url\":\"https://github.com/andredesousa/typescript-best-practices\",\"title\":\"andredesousa/typescript-best-practices\",\"content\":\"|
+        Name | Name | Last commit message | Last commit date |\\n ---  --- |\\n| Latest
+        commit   History5 Commits |\\n| LICENSE | LICENSE |  |  |\\n| README.md |
+        README.md |  |  |\\n|  |\\n\\n## Repository files navigation\\n\\n# TypeScript
+        Best Practices\\n\\nThis is a guideline of best practices that we can apply
+        to our TypeScript project. These tips are based on TypeScript documentation,
+        books, articles and professional experience. Most of these recommendations
+        also apply to JavaScript.\\n\\n## Table of Contents [...] 1. Follow conventions\\n2.
+        Testing\\n3. Strict configuration\\n4. Avoid any. Type everything\\n5. Strings
+        should be safe\\n6. Call things by their name\\n7. Use utility types\\n8.
+        Use const and let\\n9. Use === instead of ==\\n10. Use shortcut notation sparingly\\n11.
+        Avoid globals\\n12. Avoid mixing with other technologies\\n13. Avoid heavy
+        nesting\\n14. Avoid long functions\\n15. Reduce function parameters\\n16.
+        Do not use flags as function parameters\\n17. Comment as much as needed but
+        not more [...] ## Use utility types\\n\\nTypeScript already has a few utility
+        types built-in, such as `Partial`, which makes all properties of `T` optional,
+        or `Readonly`, which makes `T` read-only. They will help make our code much
+        easier to understand. As a side note, only try to break interfaces or types
+        into smaller nested interfaces/types if it makes sense from our code's domain
+        point-of-view. Once they are aggressively split up, it's hard to see the structure,
+        especially when using code completion.\",\"score\":0.8576849,\"raw_content\":null},{\"url\":\"https://medium.com/@techsolutionsx/mastering-typescript-the-ultimate-guide-to-best-practices-for-scalable-and-maintainable-code-6f63080ef1ad\",\"title\":\"Mastering
+        TypeScript: The Ultimate Guide to Best Practices ...\",\"content\":\"TypeScript
+        is a powerful tool for JavaScript developers, providing type safety, improved
+        IDE support, and better code organization for large projects. But mastering
+        TypeScript goes beyond understanding its syntax; it requires knowing best
+        practices to write clean, efficient, and maintainable code. In this guide,
+        we\u2019ll explore 12 essential TypeScript best practices that will help you
+        improve your workflow, avoid common pitfalls, and make the most of TypeScript\u2019s
+        unique features. [...] TypeScript\u2019s capabilities extend far beyond basic
+        type-checking, offering robust tools for writing clean, safe, and efficient
+        code. By adopting these 12 best practices, you\u2019ll enhance code quality,
+        improve team collaboration, and make future development easier. TypeScript
+        can be your most powerful ally in building scalable applications \u2014 when
+        used thoughtfully, it becomes a foundation for resilient, maintainable software.\\n\\nTypescript\\n\\nProgramming\\n\\nWeb
+        Development\\n\\nTypescript Best Practices [...] Switching from `any` to `unknown`
+        makes your codebase safer and leverages TypeScript\u2019s type-checking abilities
+        more effectively.\\n\\n## 3. Embrace `readonly` for Immutable Data Structures\\n\\nWhen
+        defining types, using `readonly` for properties that shouldn\u2019t change
+        helps prevent accidental mutations. This practice is beneficial in large applications
+        where data integrity is crucial.\\n\\nExample:\",\"score\":0.8536326,\"raw_content\":null},{\"url\":\"https://docs.aws.amazon.com/prescriptive-guidance/latest/best-practices-cdk-typescript-iac/typescript-best-practices.html\",\"title\":\"Follow
+        TypeScript best practices\",\"content\":\"Follow TypeScript best practices
+        - AWS Prescriptive Guidance\\n\\nDocumentationAWS Prescriptive GuidanceBest
+        practices for using the AWS CDK in TypeScript to create IaC projects\\n\\nDescribe
+        your dataUse enumsUse interfacesExtend interfacesAvoid empty interfacesUse
+        factoriesUse destructuring on propertiesDefine standard naming conventionsDon't
+        use the var keywordConsider using ESLint and PrettierUse access modifiersUse
+        utility types\\n\\n# Follow TypeScript best practices [...] TypeScript is
+        a language that extends the capabilities of JavaScript. It's a strongly typed
+        and object-oriented language. You can use TypeScript to specify the types
+        of data being passed within your code and has the ability to report errors
+        when the types don't match. This section provides an overview of TypeScript
+        best practices.\\n\\n## Describe your data [...] Use camelCase for variable
+        and function names.\\n Use UPPER\\\\_CASE for global constants to clearly
+        indicate immutable compile-time values.\\n Use PascalCase for class names
+        and interface names.\\n Use camelCase for interface members.\\n Use PascalCase
+        for type names and enum names.\\n Name files with camelCase (for example,
+        `ebsVolumes.tsx` or `storage.ts`)\\n\\nThe following shows examples of these
+        recommended naming conventions:\\n\\n```\\n{{{{\\n```\\n\\n## Don't use the
+        var keyword\",\"score\":0.8335554,\"raw_content\":null},{\"url\":\"https://cursor.directory/optimized-nextjs-typescript-best-practices-modern-ui-ux\",\"title\":\"Optimized
+        Next.js TypeScript Best Practices with Modern UI/UX\",\"content\":\"Structure
+        - Write concise, technical TypeScript code with accurate examples. - Use functional
+        and declarative programming patterns; avoid classes. - Favor iteration and
+        modularization over code duplication. - Use descriptive variable names with
+        auxiliary verbs (e.g., `isLoading`, `hasError`). - Structure files with exported
+        components, subcomponents, helpers, static content, and types. - Use lowercase
+        with dashes for directory names (e.g., `components/auth-wizard`). ### Optimization
+        and Best [...] the problem with analytical rigor. Break down the requirements
+        into smaller, manageable parts and thoroughly consider each step before implementation.
+        2. Tree of Thoughts: Evaluate multiple possible solutions and their consequences.
+        Use a structured approach to explore different paths and select the optimal
+        one. 3. Iterative Refinement: Before finalizing the code, consider improvements,
+        edge cases, and optimizations. Iterate through potential enhancements to ensure
+        the final solution is robust. [...] improvement. 5. Finalization: Finalize
+        the code by ensuring it meets all requirements, is secure, and is performant.`\",\"score\":0.83225065,\"raw_content\":null},{\"url\":\"https://medium.com/@eshagarg1996/best-practices-for-typescript-coding-8b1ea98d02f8\",\"title\":\"Best
+        practices for Typescript coding | by Esha Garg - Medium\",\"content\":\"12.
+        Always log the errors and relevant information. This helps in debugging the
+        code in case of errors. The following log levels can be used to add logging
+        in your code:\\n\\n`console.error('This is an error log')`\\n`console.warn('This
+        is an warning log')`\\n`console.info('This is an info log')`\\n`console.debug('This
+        is a debug log')`\\n`console.trace('This is a trace log')`\\n\\n13. Add TODOs
+        for pending code blocks.  \\nExample:\\n\\n14. Reuse the code as much as possible
+        and remove unnecessary code blocks. [...] Sign up\\n\\nSign in\\n\\nSign up\\n\\nSign
+        in\\n\\n# Best practices for Typescript coding\\n\\nEsha Garg\\n\\n--\\n\\n2\\n\\nListen\\n\\nShare\\n\\nCoding
+        standards are basically a few sets of guidelines or programming styles to
+        be followed while writing the source code of any application. Almost all the
+        software companies follow these basic set of guidelines to have a well defined
+        code.\\n\\nSo let\u2019s get started\u2026\\n\\n`firstNumber = 12`\\n`const
+        FIRST_NUMBER = 18`\\n`sumOfTwoNumbers()`\\n`export class EmployeeDetails {}`\\n`employee-details`
+        [...] 5. Add method documentation for methods as well as parameters passed
+        (Press /\\\\\\\\ + enter wherever method documentation needs to be added)Example:\\n\\n6.
+        Keep method/variable names as informative as possible.\\n\\n`firstName: string`\\n\\n7.
+        Use data access specifiers while declaring variables/methods (Like public/private
+        etc)  \\nExample:  \\nIf we declare a variable \u2018firstNumber\u2019 and
+        it is used only inside the class say \u2018Addition\u2019, it is marked as
+        private.`private firstNumber: number`\",\"score\":0.79958355,\"raw_content\":null},{\"url\":\"https://www.mtechzilla.com/blogs/typescript-ultimate-guide\",\"title\":\"Complete
+        TypeScript Guide: Features & Best Practices - MTechZilla\",\"content\":\"\\\"isolatedModules\\\":
+        true, \\\"verbatimModuleSyntax\\\": false, // Type Checking \\\"strict\\\":
+        true, \\\"noImplicitAny\\\": true, \\\"strictNullChecks\\\": true, \\\"strictFunctionTypes\\\":
+        true, \\\"strictBindCallApply\\\": true, \\\"strictPropertyInitialization\\\":
+        true, \\\"noImplicitThis\\\": true, \\\"useUnknownInCatchVariables\\\": true,
+        \\\"alwaysStrict\\\": true, \\\"noUnusedLocals\\\": true, \\\"noUnusedParameters\\\":
+        true, \\\"exactOptionalPropertyTypes\\\": true, \\\"noImplicitReturns\\\":
+        true, \\\"noFallthroughCasesInSwitch\\\": true, \\\"noUncheckedIndexedAccess\\\":
+        [...] \\\"dynamicPriority\\\", \\\"synchronousWatchDirectory\\\": false, \\\"excludeDirectories\\\":
+        [\\\"/node_modules\\\", \\\"/.git\\\"], \\\"excludeFiles\\\": [\\\"/.spec.ts\\\",
+        \\\"/.test.ts\\\"], // Performance \\\"skipLibCheck\\\": true, \\\"skipDefaultLibCheck\\\":
+        true, // Path Mapping \\\"baseUrl\\\": \\\".\\\", \\\"paths\\\": { \\\"@/\\\":
+        [\\\"./src/\\\"], \\\"@/components/\\\": [\\\"./src/components/\\\"], \\\"@/lib/\\\":
+        [\\\"./src/lib/\\\"], \\\"@/types/\\\": [\\\"./src/types/\\\"], \\\"@/utils/\\\":
+        [\\\"./src/utils/\\\"], \\\"@/hooks/\\\": [\\\"./src/hooks/\\\"], \\\"@/services/\\\":
+        [\\\"./src/services/\\\"], \\\"@/stores/\\\": [\\\"./src/stores/\\\"], [...]
+        \\\"esModuleInterop\\\": true, // Emit \\\"declaration\\\": true, \\\"declarationMap\\\":
+        true, \\\"emitDeclarationOnly\\\": false, \\\"importHelpers\\\": true, \\\"importsNotUsedAsValues\\\":
+        \\\"error\\\", \\\"inlineSourceMap\\\": false, \\\"inlineSources\\\": false,
+        \\\"mapRoot\\\": \\\"\\\", \\\"newLine\\\": \\\"lf\\\", \\\"noEmit\\\": false,
+        \\\"noEmitHelpers\\\": false, \\\"noEmitOnError\\\": true, \\\"outDir\\\":
+        \\\"./dist\\\", \\\"preserveConstEnums\\\": false, \\\"preserveValueImports\\\":
+        false, \\\"removeComments\\\": true, \\\"sourceMap\\\": true, \\\"sourceRoot\\\":
+        \\\"\\\", \\\"stripInternal\\\": true, // Interop Constraints\",\"score\":0.7890553,\"raw_content\":null},{\"url\":\"https://google.github.io/styleguide/tsguide.html\",\"title\":\"Google
+        TypeScript Style Guide\",\"content\":\"Limit symbol visibility as much as
+        possible.\\n Consider converting private methods to non-exported functions
+        within the same file but outside of any class, and moving private properties
+        into a separate, non-exported class.\\n TypeScript symbols are public by default.
+        Never use the `public` modifier except when declaring non-readonly public
+        parameter properties (in constructors). [...] ```\\n// BAD: side effect of
+        incrementing the counter let globalCounter = 0; function newId(index = globalCounter++)
+        {} // BAD: exposes shared mutable state, which can introduce unintended coupling
+        // between function calls class Foo { private readonly defaultPaths: string[];
+        frobnicate(paths = defaultPaths) {} } \\n```\\n\\nUse default parameters sparingly.
+        Prefer destructuring to create readable APIs when there are more than a small
+        handful of optional parameters that do not have a natural order. [...] //
+        Top level functions use function declarations. function someFunction() { //
+        Block bodies are fine: const receipts = books.map((b: Book) => { const receipt
+        = payMoney(b.price); recordTransaction(receipt); return receipt; }); // Concise
+        bodies are fine, too, if the return value is used: const longThings = myValues.filter(v
+        => v.length > 1000).map(v => String(v)); function payMoney(amount: number)
+        { // function declarations are fine, but must not access `this`. } // Nested
+        arrow functions may\",\"score\":0.7458619,\"raw_content\":null},{\"url\":\"https://success.vanillaforums.com/kb/articles/226-coding-standard-typescript\",\"title\":\"Coding
+        Standard - Typescript - The Success Community\",\"content\":\"All new files
+        in the `vanilla/vanilla` repo MUST be in Typescript.\\n New code MUST NOT
+        use JQuery. Instead, native browser APIs and utility functions from `@core/dom`
+        may be used.\\n All files MUST be formatted with Prettier.\\n Files SHOULD
+        NOT declare more than one class in a single file.\\n Files with a default
+        export MUST be named equivalently to the symbol (class, function, interface,
+        constant) that they export.\",\"score\":0.68344116,\"raw_content\":null}],\"response_time\":0.0,\"request_id\":\"07b80020-1a90-467b-9597-a36c7e2862ee\"}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '15575'
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 27 Dec 2025 17:03:16 GMT
+      content-security-policy:
+      - default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self';
+        style-src 'self';base-uri 'self';form-action 'self'; require-trusted-types-for
+        'script'; upgrade-insecure-requests;
+    status:
+      code: 200
+      message: OK
+version: 1

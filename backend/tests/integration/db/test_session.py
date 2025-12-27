@@ -1,5 +1,7 @@
 """Tests for database session management."""
 
+from contextlib import aclosing
+
 import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -61,12 +63,13 @@ async def test_get_db_dependency_yields_session(
     requires_database, reset_engine_connections, check_database_available
 ):
     """Test get_db dependency yields async session."""
-    async for session in get_db():
-        assert isinstance(session, AsyncSession)
-        # Test connection
-        result = await session.execute(text("SELECT 1"))
-        assert result.scalar() == 1
-        break  # Only test first yield
+    async with aclosing(get_db()) as db_gen:
+        async for session in db_gen:
+            assert isinstance(session, AsyncSession)
+            # Test connection
+            result = await session.execute(text("SELECT 1"))
+            assert result.scalar() == 1
+            break  # Only test first yield
 
 
 @pytest.mark.asyncio
@@ -76,20 +79,20 @@ async def test_get_db_commits_on_success(
     """Test get_db commits session on successful operation."""
     from app.db.models import Analysis
 
-    # Use get_db generator properly - consume it fully so commit happens
-    gen = get_db()
-    session = await gen.__anext__()
-    try:
-        # Create analysis
-        analysis = Analysis(url="https://test.com", content_type="article", status="pending")
-        session.add(analysis)
-        # Generator will commit when we exit the try block normally
-    finally:
-        # Close generator - this triggers commit in get_db's try block
+    # Use get_db generator properly with aclosing - consume it fully so commit happens
+    async with aclosing(get_db()) as gen:
+        session = await gen.__anext__()
         try:
-            await gen.__anext__()
-        except StopAsyncIteration:
-            pass  # Generator exhausted, commit should have happened
+            # Create analysis
+            analysis = Analysis(url="https://test.com", content_type="article", status="pending")
+            session.add(analysis)
+            # Generator will commit when we exit the try block normally
+        finally:
+            # Close generator - this triggers commit in get_db's try block
+            try:
+                await gen.__anext__()
+            except StopAsyncIteration:
+                pass  # Generator exhausted, commit should have happened
 
     # Verify analysis was committed (session is closed, so check in new session)
     async with AsyncSessionLocal() as session:
@@ -114,13 +117,14 @@ async def test_get_db_rolls_back_on_exception(
     from app.db.models import Analysis
 
     try:
-        async for session in get_db():
-            # Create analysis
-            analysis = Analysis(url="https://test-exception.com", content_type="article")
-            session.add(analysis)
-            # Raise exception (should trigger rollback)
-            msg = "Test exception"
-            raise ValueError(msg)
+        async with aclosing(get_db()) as db_gen:
+            async for session in db_gen:
+                # Create analysis
+                analysis = Analysis(url="https://test-exception.com", content_type="article")
+                session.add(analysis)
+                # Raise exception (should trigger rollback)
+                msg = "Test exception"
+                raise ValueError(msg)
     except ValueError:
         pass
 
@@ -139,9 +143,10 @@ async def test_get_db_closes_session_in_finally():
     """Test get_db closes session in finally block."""
     session_closed = False
 
-    async for _session in get_db():
-        assert not session_closed
-        break
+    async with aclosing(get_db()) as db_gen:
+        async for _session in db_gen:
+            assert not session_closed
+            break
 
     # Session should be closed after exiting context
     # Verify by checking it's not accessible

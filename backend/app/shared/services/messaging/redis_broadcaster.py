@@ -64,11 +64,14 @@ class RedisEventBroadcaster:
 
     Example:
         ```python
+        from contextlib import aclosing
+
         broadcaster = await RedisEventBroadcaster.create()
 
         # Subscribe to channel - receives buffered events first
-        async for event in broadcaster.subscribe("workflow:123"):
-            print(event)
+        async with aclosing(broadcaster.subscribe("workflow:123")) as events:
+            async for event in events:
+                print(event)
 
         # Publish to channel (from another coroutine)
         await broadcaster.publish("workflow:123", {"type": "progress"})

@@ -35,15 +35,13 @@ function formatDate(dateString: string | null): string {
   }).format(date)
 }
 
+const STATUS_BADGE_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
+  pending: 'default',
+  reviewed: 'secondary',
+}
+
 function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'outline' {
-  switch (status) {
-    case 'pending':
-      return 'default'
-    case 'reviewed':
-      return 'secondary'
-    default:
-      return 'outline'
-  }
+  return STATUS_BADGE_VARIANTS[status] ?? 'outline'
 }
 
 export function QueueTable({ items, onMarkReviewed, isMarkingReviewed }: QueueTableProps) {

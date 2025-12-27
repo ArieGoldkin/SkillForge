@@ -1,0 +1,97 @@
+interactions:
+- request:
+    body: '{"api_key": "REDACTED", "query": "Python best practices 2025", "search_depth":
+      "advanced", "max_results": 5, "include_answer": true, "include_raw_content":
+      false, "include_images": false}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '207'
+      Content-Type:
+      - application/json
+      Host:
+      - api.tavily.com
+      User-Agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://api.tavily.com/search
+  response:
+    body:
+      string: "{\"query\":\"Python best practices 2025\",\"follow_up_questions\":null,\"answer\":\"Follow
+        PEP 8 for style, use virtual environments, and adopt GitFlow for version control.\",\"images\":[],\"results\":[{\"url\":\"https://www.carmatec.com/blog/python-logging-best-practices-complete-guide/\",\"title\":\"Python
+        Logging Best Practices: Complete Guide 2025 - Carmatec\",\"content\":\"20
+        Data Analysis Project Ideas For Beginners In 2025\\n 5 Node.js HTTP Request
+        Methods Every Developer Should Master [...] ``` [...] ```\",\"score\":0.9995627,\"raw_content\":null},{\"url\":\"https://gist.github.com/ruimaranhao/4e18cbe3dad6f68040c32ed6709090a3\",\"title\":\"A
+        Guide of Best Practices for Python\",\"content\":\"\U0001F4D1 The Hitchiker's
+        Guide to Python \u26A0\uFE0F\\n PEP 20 (The Zen of Python)\\n PEP 8 (Style
+        Guide for Python)\\n Khan Academy Development Docs\\n Python Best Practice
+        Patterns\\n Pythonic Sensibilities\\n The Pragmatic Programmer\\n 20 Elite
+        Python Developers\\n and many other bits and bytes\\n\\nCopy link\\n\\n###
+        lreverchuk commented Jul 23, 2025\\n\\nGreat guide! I'd suggest adding one
+        more source of inspiration - a list of today's most influential Python developers.\\n\\nCopy
+        link\\n\\n### ruimaranhao commented Jul 24, 2025 [...] # A Guide of Best Practices
+        for Python\\n\\nA guide of best practices to developing in Python (meant for
+        the first year students of the Instituto Superior T\xE9cnico, University of
+        Lisbon). Do you want to have a hard-cover book on this, check this list out.\\n\\nInspired
+        in Steve Sloria's gist.\\n\\n## In General\\n\\n> \\\"Beautiful is better
+        than ugly.\\\" - PEP 20\\n\\n### General Development Guidelines [...] Skip
+        to content   \\n\\nSign in   Sign up\\n\\nYou signed in with another tab or
+        window. Reload to refresh your session. You signed out in another tab or window.
+        Reload to refresh your session. You switched accounts on another tab or window.
+        Reload to refresh your session. Dismiss alert\\n\\n{{ message }}\\n\\nInstantly
+        share code, notes, and snippets.\\n\\n# ruimaranhao/python-guide-ist.md\\n\\nLast
+        active December 14, 2025 13:10\\n\\nShow Gist options \\n\\n Download ZIP\",\"score\":0.99760324,\"raw_content\":null},{\"url\":\"https://levelup.gitconnected.com/the-python-developers-survival-kit-15-best-practices-that-separate-pros-from-beginners-7d87ba661814\",\"title\":\"The
+        Python Developer's Survival Kit \u2014 15 Best Practices That ...\",\"content\":\"Sitemap\\n\\nOpen
+        in app\\n\\nSign in\\n\\nWrite\\n\\nSearch\\n\\nSign in\\n\\n## Level Up Coding\\n\\n\xB7\\n\\nCoding
+        tutorials and news. The developer homepage gitconnected.com && skilled.dev
+        && levelup.dev\\n\\nMember-only story\\n\\n# The Python Developer\u2019s Survival
+        Kit \u2014 15 Best Practices That Separate Pros from Beginners\\n\\n## How
+        I went from writing embarrassing Python code to leading a team of 12 developers
+        (and the hard-learned lessons that made the difference)\\n\\nGirish Dhamane\\n\\n7
+        min read\\n\\n\xB7\\n\\nAug 7, 2025\\n\\n--\",\"score\":0.9964619,\"raw_content\":null},{\"url\":\"https://www.youtube.com/watch?v=K5KVEU3aaeQ\",\"title\":\"Python
+        Full Course for Beginners [2025]\",\"content\":\"when you save the changes
+        autopep8 kicks in and it automatically reformats your code but that aside
+        you should always give yourself the habit of writing clean code without relying
+        too much on the tooling so these are all the best practices about naming your
+        variables next we're going to look at strings in more detail so here we have
+        this course variable set to Python Programming as I told you before whenever
+        you work with text you should surround your text with quotes you can either
+        use double\",\"score\":0.9961456,\"raw_content\":null},{\"url\":\"https://www.netclues.com/blog/python-software-development-2025-guide\",\"title\":\"Python
+        for Software Development: 2025 Guide & Use Cases\",\"content\":\"Last Modified
+        On 5 July 2025\\n\\n## Python for Software Development: Everything You Need
+        to Know\\n\\nAnyone seeking to make applications that are robust, scalable,
+        and fast generally decides to use Python. With the passage of years, Python
+        has moved from being a generic scripting tool to leading web apps, creating
+        software for large firms, assisting with automation, and working with machine
+        learning models. [...] Designed in 1990 by Guido van Rossum, simplicity and
+        readability were the key principles behind developing Python. Today, this
+        philosophy remains in place, making Python suitable for learners and advanced
+        users. [...] Setting up the Environment: Create a virtual environment using
+        venv or virtualenv and install dependencies through pip or Poetry.\\n Structuring
+        Code: The code is modularized, packaged, and concerns itself with separate
+        aspects (e.g., UI, business logic, data handling).\\n Develop Features: Fusion
+        of core modules: backend logic, frontend interface (if web-based), and integrations.\\n
+        Version Control: Using GitFlow or other Git branching strategies, completing
+        updates, hotfixes, and releases.\",\"score\":0.99611557,\"raw_content\":null}],\"response_time\":0.0,\"request_id\":\"efffe83a-7c20-4329-abc1-91b7173100af\"}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '4922'
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 27 Dec 2025 17:03:16 GMT
+      content-security-policy:
+      - default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self';
+        style-src 'self';base-uri 'self';form-action 'self'; require-trusted-types-for
+        'script'; upgrade-insecure-requests;
+    status:
+      code: 200
+      message: OK
+version: 1

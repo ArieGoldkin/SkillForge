@@ -4,7 +4,6 @@ This module implements the repository pattern for analysis database operations,
 including two-stage vector search using pgvector 0.4.1 binary quantization.
 """
 
-import uuid
 from typing import TYPE_CHECKING, Annotated, Protocol
 
 from fastapi import Depends
@@ -13,6 +12,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.branded_ids import AnalysisID, ArtifactID
 from app.core.constants import EMBEDDING_DIMENSIONS
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
@@ -28,14 +28,14 @@ logger = get_logger(__name__)
 class IAnalysisRepository(Protocol):
     """Protocol interface for analysis repository operations."""
 
-    async def get_by_id(self, analysis_id: uuid.UUID, validate: bool = True) -> Analysis | None:
+    async def get_by_id(self, analysis_id: AnalysisID, validate: bool = True) -> Analysis | None:
         """Get a single analysis by ID with optional validation."""
         ...
 
     async def create_analysis(
         self,
         *,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         url: str,
         content_type: str,
         status: str,
@@ -67,7 +67,7 @@ class IAnalysisRepository(Protocol):
 
     async def mark_failed(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         error_code: str,
         error_message: str,
         failed_at_stage: str = "extraction",
@@ -77,7 +77,7 @@ class IAnalysisRepository(Protocol):
 
     async def record_error(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         error_code: str,
         error_message: str,
         stage: str,
@@ -85,13 +85,13 @@ class IAnalysisRepository(Protocol):
         """Record error details for an analysis without changing status."""
         ...
 
-    async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:
+    async def get_progress_events(self, analysis_id: AnalysisID) -> list[AnalysisProgress]:
         """Get all progress events for an analysis."""
         ...
 
     async def prepare_for_retry(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         restart_stage: str,
     ) -> None:
         """Prepare analysis for retry by clearing error state and updating retry tracking."""
@@ -99,9 +99,9 @@ class IAnalysisRepository(Protocol):
 
     async def prepare_for_rerun(
         self,
-        analysis_id: uuid.UUID,
-        current_artifact_id: uuid.UUID | None,
-    ) -> tuple[int, uuid.UUID | None]:
+        analysis_id: AnalysisID,
+        current_artifact_id: ArtifactID | None,
+    ) -> tuple[int, ArtifactID | None]:
         """Prepare analysis for rerun by archiving current state and resetting for re-analysis."""
         ...
 
@@ -118,7 +118,7 @@ class AnalysisRepository:
         """
         self.session = session
 
-    async def get_by_id(self, analysis_id: uuid.UUID, validate: bool = True) -> Analysis | None:
+    async def get_by_id(self, analysis_id: AnalysisID, validate: bool = True) -> Analysis | None:
         """Get analysis by ID with optional validation.
 
         Args:
@@ -189,7 +189,7 @@ class AnalysisRepository:
     async def create_analysis(
         self,
         *,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         url: str,
         content_type: str,
         status: str,
@@ -358,7 +358,7 @@ class AnalysisRepository:
 
     async def mark_failed(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         error_code: str,
         error_message: str,
         failed_at_stage: str = "extraction",
@@ -406,7 +406,7 @@ class AnalysisRepository:
 
     async def record_error(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         error_code: str,
         error_message: str,
         stage: str,
@@ -451,7 +451,7 @@ class AnalysisRepository:
             stage=stage,
         )
 
-    async def get_progress_events(self, analysis_id: uuid.UUID) -> list[AnalysisProgress]:
+    async def get_progress_events(self, analysis_id: AnalysisID) -> list[AnalysisProgress]:
         """Get all progress events for an analysis, ordered by creation time.
 
         Returns the stored SSE events from the analysis_progress table,
@@ -473,7 +473,7 @@ class AnalysisRepository:
 
     async def prepare_for_retry(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         restart_stage: str,
     ) -> None:
         """Prepare analysis for retry by clearing error state and updating retry tracking.
@@ -521,9 +521,9 @@ class AnalysisRepository:
 
     async def prepare_for_rerun(
         self,
-        analysis_id: uuid.UUID,
-        current_artifact_id: uuid.UUID | None,
-    ) -> tuple[int, uuid.UUID | None]:
+        analysis_id: AnalysisID,
+        current_artifact_id: ArtifactID | None,
+    ) -> tuple[int, ArtifactID | None]:
         """Prepare analysis for rerun by archiving current state and resetting for re-analysis.
 
         Archives the current artifact (if exists), increments rerun_count, clears error state,

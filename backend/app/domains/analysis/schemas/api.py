@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
+from app.core.branded_ids import AnalysisID, ArtifactID
+
 
 class AnalysisStatus(str, Enum):
     """Analysis status values with semantic meaning.
@@ -172,7 +174,7 @@ class AnalyzeCreateResponse(BaseModel):
 
     """
 
-    analysis_id: str = Field(..., description="Unique identifier for the analysis")
+    analysis_id: AnalysisID = Field(..., description="Unique identifier for the analysis")
     url: str = Field(..., description="Source URL that was analyzed")
     content_type: str = Field(..., description="Detected content type (article, video, repo)")
     status: str = Field(
@@ -207,12 +209,12 @@ class AnalyzeStatusResponse(BaseModel):
 
     """
 
-    analysis_id: str = Field(..., description="Unique identifier for the analysis")
+    analysis_id: AnalysisID = Field(..., description="Unique identifier for the analysis")
     url: str = Field(..., description="Source URL that was analyzed")
     content_type: str = Field(..., description="Detected content type")
     status: str = Field(..., description="Analysis status")
     title: str | None = Field(None, description="Extracted title if available")
-    artifact_id: str | None = Field(None, description="Latest artifact id if generated")
+    artifact_id: ArtifactID | None = Field(None, description="Latest artifact id if generated")
     created_at: str = Field(..., description="Timestamp when analysis was created")
     updated_at: str = Field(..., description="Timestamp when analysis was last updated")
 
@@ -240,7 +242,7 @@ class ProgressEventResponse(BaseModel):
 class AnalysisProgressResponse(BaseModel):
     """Response schema for analysis progress events."""
 
-    analysis_id: str = Field(..., description="Analysis identifier")
+    analysis_id: AnalysisID = Field(..., description="Analysis identifier")
     events: list[ProgressEventResponse] = Field(
         ..., description="Progress events ordered by timestamp"
     )
@@ -253,12 +255,12 @@ class AnalysisRerunResponse(BaseModel):
     updated agents while preserving the original extraction.
     """
 
-    analysis_id: str = Field(..., description="Analysis identifier")
+    analysis_id: AnalysisID = Field(..., description="Analysis identifier")
     status: str = Field(
         default="analyzing", description="New analysis status (always 'analyzing' on rerun)"
     )
     rerun_count: int = Field(..., description="Number of times this analysis has been rerun")
-    previous_artifact_id: str | None = Field(
+    previous_artifact_id: ArtifactID | None = Field(
         None, description="ID of the artifact from the previous run (archived for comparison)"
     )
     sse_endpoint: str = Field(..., description="SSE endpoint URL for streaming progress updates")
@@ -345,8 +347,8 @@ class ArtifactMetadataSchema(BaseModel):
 class ArtifactSummary(BaseModel):
     """Lightweight artifact for list responses."""
 
-    artifact_id: str
-    analysis_id: str
+    artifact_id: ArtifactID
+    analysis_id: AnalysisID
     title: str | None = None
     created_at: str
     download_count: int = 0
@@ -367,8 +369,8 @@ class ArtifactListResponse(BaseModel):
 class ArtifactMetadataResponse(BaseModel):
     """Metadata and content for an artifact."""
 
-    artifact_id: str = Field(..., description="Artifact identifier")
-    analysis_id: str = Field(..., description="Parent analysis identifier")
+    artifact_id: ArtifactID = Field(..., description="Artifact identifier")
+    analysis_id: AnalysisID = Field(..., description="Parent analysis identifier")
     markdown_content: str = Field(..., description="Artifact markdown content")
     artifact_metadata: dict[str, object] | None = Field(
         None, description="Optional artifact metadata"
@@ -532,7 +534,7 @@ class AnalysisRetryResponse(BaseModel):
 
     """
 
-    analysis_id: str = Field(..., description="Analysis identifier")
+    analysis_id: AnalysisID = Field(..., description="Analysis identifier")
     status: str = Field(..., description="New status after retry preparation")
     retry_count: int = Field(..., description="Number of retry attempts")
     sse_endpoint: str = Field(..., description="SSE endpoint URL for streaming progress updates")

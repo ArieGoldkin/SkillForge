@@ -1,85 +1,176 @@
-# Code Quality Review - Annotation Workflow Implementation
+# Code Review Report: Issue #433 - Missing Tests
 
-**Date**: 2025-12-19  
-**Agent**: Code Quality Reviewer  
-**Status**: CONDITIONAL APPROVAL ⚠️
+## Executive Summary
 
-## Review Summary
+Found **3 categories of NEW code from Issue #433 without tests**:
 
-Conducted comprehensive code quality review of annotation workflow implementation (9 files, 1,423 lines of code). Found **3 critical bugs** requiring immediate fixes before approval.
-
-### Quality Score: 82/100
-
-**Breakdown**:
-- Security: 95/100 (missing rate limiting)
-- Error Handling: 100/100
-- Performance: 100/100
-- Type Safety: 75/100 (2 critical bugs)
-- Test Coverage: 88/100 (37 tests, 3 failing)
-- Accessibility: 100/100
+1. **Streaming cost tracking** (backend) - MISSING TESTS
+2. **Frontend stageStatusConfig** - MISSING TESTS  
+3. **API branded types** - ALREADY TESTED
 
 ---
 
-## Critical Issues (BLOCKING)
+## Detailed Findings
 
-### 1. CRITICAL: API Endpoint Returns Wrong Type
+### 1. Streaming Cost Tracking (HIGH PRIORITY)
 
-**File**: `backend/app/db/repositories/annotation_repository.py:131-145`
+**Location:** `backend/app/domains/analysis/workflows/agents/streaming.py:232-257`
 
-**Issue**: `mark_as_reviewed()` returns `None` but API expects `AnnotationQueue`. This causes endpoint to **always return 404**.
-
-**Fix Required**:
+**Uncommitted Code:**
 ```python
-async def mark_as_reviewed(self, queue_id: int) -> AnnotationQueue | None:
-    await self.session.execute(
-        update(AnnotationQueue)
-        .where(AnnotationQueue.id == queue_id)
-        .values(status="reviewed", reviewed_at=datetime.now(UTC))
-    )
-    await self.session.commit()
-    
-    # Fetch and return updated entry
-    result = await self.session.execute(
-        select(AnnotationQueue).where(AnnotationQueue.id == queue_id)
-    )
-    return result.scalar_one_or_none()
+# Calculate and submit cost to Langfuse (graceful degradation)
+if model_name != "unknown" and input_tokens > 0:
+    try:
+        cost_usd = calculate_llm_cost(
+            model=model_name,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
+
+        # Submit cost as Langfuse score
+        langfuse_service = get_langfuse_service()
+        langfuse_service.submit_score(
+            name="cost_usd",
+            value=cost_usd,
+            comment=f"{model_name}: {input_tokens}in + {output_tokens}out = ${cost_usd:.6f}",
+        )
+        logger.debug("streaming_cost_tracked", ...)
+    except Exception as e:
+        logger.debug("streaming_cost_tracking_failed", error=str(e))
 ```
 
+**Issue:**
+- Added December 27, 2025 (today) - UNCOMMITTED
+- No tests verify the Langfuse `submit_score()` integration in streaming context
+- `calculate_llm_cost()` has tests (30/30 passing in `test_tracing_constants.py`)
+- BUT: No tests for the streaming.py code path that calls it
+
+**Required Tests:**
+1. Verify cost calculated correctly from streaming token counts
+2. Verify `langfuse_service.submit_score()` called with correct args
+3. Verify graceful degradation when cost tracking fails (exception handling)
+4. Verify no cost submission when `model_name == "unknown"`
+5. Verify no cost submission when `input_tokens == 0`
+
+**Recommended Test File:** 
+`backend/tests/unit/domains/analysis/workflows/agents/test_streaming_cost_tracking.py`
+
 ---
 
-### 2. CRITICAL: Pydantic Validation Error
+### 2. Frontend stageStatusConfig (MEDIUM PRIORITY)
 
-**File**: `backend/app/schemas/annotations.py:73-85`
+**Location:** `frontend/src/features/analysis/config/stageStatusConfig.tsx`
 
-**Issue**: Schema field `metadata` doesn't match model field `queue_metadata`.
+**Uncommitted File (Created Dec 27, 2025):**
+- 158 lines of configuration logic
+- Enum-driven pattern for stage status display
+- 4 helper functions exported:
+  - `getStatusIcon(status, iconClasses)` 
+  - `getStatusBadgeVariant(status)`
+  - `formatStatus(status)`
+  - `formatAgentName(agent)`
 
-**Fix Required**:
-```python
-metadata: dict | None = Field(None, alias="queue_metadata", description="Additional metadata")
+**Issue:**
+- File is UNTRACKED in git (brand new)
+- No test file exists (searched all of `frontend/src/**/*.test.*`)
+- Used by 4+ components (AccordionStageItem, MiniGroupCard, StageChip, StageItem)
 
-model_config = {"from_attributes": True, "populate_by_name": True}
+**Required Tests:**
+1. Exhaustive coverage: All 8 StageStatus values handled
+2. `getStatusIcon()` returns correct icon component for each status
+3. `getStatusBadgeVariant()` returns correct variant for each status
+4. `formatStatus()` returns correct label for each status
+5. `formatAgentName()` converts snake_case to Title Case
+6. TypeScript compile-time exhaustiveness (use `assertNever` pattern)
+
+**Recommended Test File:**
+`frontend/src/features/analysis/config/__tests__/stageStatusConfig.test.tsx`
+
+---
+
+### 3. API Branded Types (ALREADY TESTED)
+
+**Location:** 
+- `backend/app/api/v1/analysis/artifacts.py`
+- `backend/app/api/v1/analysis/endpoints.py`
+
+**Changes:**
+- Replaced `uuid.UUID` with branded types `AnalysisID` and `ArtifactID`
+- Added `create_analysis_id()` factory function usage
+
+**Test Coverage:**
+- Already tested in `test_artifacts.py` (20 test cases)
+- Already tested in `test_branded_ids.py` (UNCOMMITTED but comprehensive)
+- Existing tests cover the API surface area
+
+**No additional tests required.**
+
+---
+
+## Summary Table
+
+| Code Area | Location | Status | Priority | Tests Needed |
+|-----------|----------|--------|----------|--------------|
+| **Streaming Cost Tracking** | `streaming.py:232-257` | UNCOMMITTED | HIGH | 5 test cases |
+| **stageStatusConfig** | `frontend/.../stageStatusConfig.tsx` | UNTRACKED | MEDIUM | 6 test cases |
+| **API Branded Types** | `artifacts.py`, `endpoints.py` | MODIFIED | N/A | Already covered |
+
+---
+
+## Recommendations
+
+### Immediate Actions (Before Commit)
+
+1. BLOCK COMMIT on streaming.py until cost tracking tests added
+2. BLOCK COMMIT on stageStatusConfig.tsx until config tests added
+3. Run full test suite to verify no regressions
+
+### Test Implementation Priority
+
+1. **HIGH**: `test_streaming_cost_tracking.py` (5 test cases, ~1 hour)
+2. **MEDIUM**: `stageStatusConfig.test.tsx` (6 test cases, ~1 hour)
+
+### Quality Gate Compliance
+
+Current Issue #433 status shows:
+- Phase 1: Error Handling (39/39 tests passing)
+- Phase 2: Result Types (30/30 tests passing)
+
+New uncommitted code:
+- Streaming cost tracking: 0 tests
+- stageStatusConfig: 0 tests
+
+**Coverage Impact:** Adding these features without tests will drop coverage below 80% threshold.
+
+---
+
+## Evidence
+
+**Git Status:**
+```
+?? frontend/src/features/analysis/config/stageStatusConfig.tsx
+M  backend/app/domains/analysis/workflows/agents/streaming.py
 ```
 
----
+**Blame Output:**
+```
+000000000 (Not Committed Yet 2025-12-27 18:36:00) calculate_llm_cost
+000000000 (Not Committed Yet 2025-12-27 18:36:00) submit_score
+```
 
-### 3. CRITICAL: Frontend Linting Errors
-
-**Fix Required**:
+**Test Search Results:**
 ```bash
-cd frontend && npm run lint -- --fix
+# No tests for streaming cost tracking
+grep -rn "submit_score" backend/tests/ --include="*.py"
+# (no results)
+
+# No tests for stageStatusConfig
+find frontend -name "*.test.*" | xargs grep -l "stageStatusConfig"
+# (no results)
 ```
 
 ---
 
-## Detailed Report
-
-Full report: `docs/validation/annotation-workflow-code-review.md`
-
-**Test Results**: 37/40 passed (92.5%)  
-**Security**: 0 vulnerabilities  
-**Performance**: No N+1 queries, 5 indexes created
-
----
-
-**Approval Conditions**: Fix 3 critical issues above  
-**ETA**: 30 minutes
+**Generated:** December 27, 2025  
+**Reviewer:** code-quality-reviewer agent  
+**Severity:** MEDIUM (blocks commit quality gates)

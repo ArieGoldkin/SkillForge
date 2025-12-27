@@ -1,10 +1,10 @@
 """Event emission service for workflow events."""
 
-import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
+from app.core.branded_ids import AnalysisID
 from app.core.exceptions import WorkflowStageError
 from app.core.logging import get_logger
 from app.db.models.progress import AnalysisProgress
@@ -18,7 +18,7 @@ class WorkflowEventEmitter:
     """Service for emitting SSE events during workflow execution."""
 
     async def _check_recent_error_event(
-        self, analysis_id: uuid.UUID, lookback_seconds: int = 30
+        self, analysis_id: AnalysisID, lookback_seconds: int = 30
     ) -> bool:
         """Check if an error event was recently emitted for this analysis.
 
@@ -58,7 +58,7 @@ class WorkflowEventEmitter:
 
     async def emit_error(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         error: BaseException | Exception,
         stage: str | None = None,
     ) -> None:
@@ -119,7 +119,7 @@ class WorkflowEventEmitter:
 
     async def emit_completion(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         artifact_id: str | None,
         trace_id: str | None,
     ) -> None:

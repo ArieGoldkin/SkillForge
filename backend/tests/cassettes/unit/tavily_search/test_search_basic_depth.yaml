@@ -1,0 +1,98 @@
+interactions:
+- request:
+    body: '{"api_key": "REDACTED", "query": "FastAPI async patterns", "search_depth":
+      "basic", "max_results": 5, "include_answer": true, "include_raw_content": false,
+      "include_images": false}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, zstd
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '200'
+      Content-Type:
+      - application/json
+      Host:
+      - api.tavily.com
+      User-Agent:
+      - python-httpx/0.28.1
+    method: POST
+    uri: https://api.tavily.com/search
+  response:
+    body:
+      string: "{\"query\":\"FastAPI async patterns\",\"follow_up_questions\":null,\"answer\":\"FastAPI
+        supports asynchronous programming with `async`/`await` for non-blocking I/O
+        operations. Use async patterns to handle many requests concurrently. Avoid
+        blocking operations in async functions.\",\"images\":[],\"results\":[{\"url\":\"https://medium.com/@ThinkingLoop/7-fastapi-async-patterns-that-handle-1m-requests-smoothly-c32da57155c7\",\"title\":\"7
+        FastAPI Async Patterns That Handle 1M+ Requests ...\",\"content\":\"# 7 FastAPI
+        Async Patterns That Handle 1M+ Requests Smoothly. ## Unlock battle-tested
+        async techniques that keep your FastAPI apps blazing fast under massive traffic.
+        *Learn 7 FastAPI async patterns that handle millions of requests without bottlenecks.
+        But with the right **async design patterns in FastAPI**, you can process **millions
+        of requests per day** \u2014 without throwing hardware at the problem. Think
+        of it like highway traffic: if every car (request) tries to pass through a
+        single toll booth (synchronous I/O), you\u2019ll get gridlock. But async patterns
+        open multiple smart lanes, where requests can flow freely, waiting only when
+        truly necessary. In this article, I\u2019ll walk you through **seven async
+        patterns** that top teams use to scale **FastAPI** smoothly to **1M+ requests
+        daily**. Mixing **blocking synchronous functions** in an async stack. from
+        fastapi import FastAPIimport httpx app = FastAPI()@app.get(\\\"/data\\\")async
+        def get_data(): async with\u2026. At Thinking Loop, we dive into AI, systems
+        design, productivity, and the curious patterns of how we think and build.\",\"score\":0.91795975,\"raw_content\":null},{\"url\":\"https://dev.to/dhrumitdk/asynchronous-programming-with-fastapi-building-efficient-apis-nj1\",\"title\":\"Asynchronous
+        Programming with FastAPI: Building ...\",\"content\":\"FastAPI, a modern Python
+        web framework, provides native support for asynchronous programming, making
+        it a fantastic choice for building high-performance APIs. In this blog post,
+        we will explore how asynchronous programming works in FastAPI and why it's
+        crucial for building efficient APIs. Asynchronous programming enables your
+        code to perform tasks like I/O operations (e.g., database queries, file reads,
+        or network calls) without blocking the main thread of execution. FastAPI makes
+        it simple to build asynchronous APIs. The framework supports asynchronous
+        route handlers using Python\u2019s `async`/`await` syntax. from fastapi import
+        FastAPI import asyncio app = FastAPI()# Simulate a long-running I/O-bound
+        task async def fake_db_query(): await asyncio. The `get_users` route fetches
+        data asynchronously from the database, allowing FastAPI to continue processing
+        other requests while waiting for the result. Asynchronous programming in FastAPI
+        is a powerful tool for building efficient and scalable APIs. By using `async`
+        and `await`, FastAPI allows you to handle many requests concurrently and perform
+        non-blocking I/O operations.\",\"score\":0.7811474,\"raw_content\":null},{\"url\":\"https://blog.stackademic.com/a-deep-dive-into-asynchronous-request-handling-and-concurrency-patterns-in-fastapi-699393bb3845\",\"title\":\"A
+        Deep Dive into Asynchronous Request Handling and ...\",\"content\":\"Welcome
+        to the world of asynchronous programming in FastAPI, where concurrency patterns
+        and best practices come together to create blazing-fast,\",\"score\":0.7797419,\"raw_content\":null},{\"url\":\"https://python.plainenglish.io/common-fastapi-anti-patterns-what-to-avoid-for-production-ready-apis-651066b6aab1\",\"title\":\"Common
+        FastAPI Anti-Patterns: What to Avoid for ...\",\"content\":\"# Common FastAPI
+        Anti-Patterns: What to Avoid for Production-Ready APIs. FastAPI is a powerful
+        and flexible framework that can help you build high-performance APIs rapidly.
+        A very common mistake is defining endpoints as `async def` but inside them
+        performing **blocking operations** like:. * Use sync endpoints (`def`) when
+        calling blocking code. * Use FastAPI\u2019s built-in exception handlers to
+        customize API error responses clearly. Doing time-consuming tasks (sending
+        emails, file processing) inside the main request handler blocks the response,
+        leading to slow client experiences and lower throughput. Building JSON-like
+        dicts and serializing manually adds unnecessary overhead and error margin,
+        and it undermines FastAPI\u2019s automatic validation and serialization pipelines.
+        * Use FastAPI\u2019s `response_model` parameter to validate and serialize
+        responses automatically. * Use structured logging libraries like **Loguru**
+        or configure Python\u2019s logging with JSON outputs. Pay attention to your
+        async code, database usage, validation, and dependency management from the
+        start \u2014 it will save you hours of debugging and refactoring later.\",\"score\":0.7407191,\"raw_content\":null},{\"url\":\"https://fastapi.tiangolo.com/async/\",\"title\":\"Concurrency
+        and async / await\",\"content\":\"... patterns in your own code. And even
+        if you were not using FastAPI, you could also write your own async applications
+        with AnyIO to be highly compatible and\",\"score\":0.7402687,\"raw_content\":null}],\"response_time\":0.0,\"request_id\":\"1e01ce40-d2a5-4f43-a13b-5b0b4703bbb4\"}"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '5098'
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 27 Dec 2025 17:03:16 GMT
+      content-security-policy:
+      - default-src 'none'; script-src 'self'; connect-src 'self'; img-src 'self';
+        style-src 'self';base-uri 'self';form-action 'self'; require-trusted-types-for
+        'script'; upgrade-insecure-requests;
+    status:
+      code: 200
+      message: OK
+version: 1

@@ -3,10 +3,9 @@
 Production-grade persister with validation before write and fail-fast error handling.
 """
 
-import uuid
-
 from sqlalchemy import select
 
+from app.core.branded_ids import AnalysisID
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
@@ -74,7 +73,7 @@ class DataPersister:
 
     async def persist(
         self,
-        analysis_id: uuid.UUID,
+        analysis_id: AnalysisID,
         workflow_result: dict | WorkflowResult,
         validate: bool = True,
     ) -> bool:

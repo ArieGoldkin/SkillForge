@@ -1,7 +1,8 @@
 """API request/response schemas for tutor endpoints."""
 
-from pydantic import UUID4 as UUID
 from pydantic import BaseModel, Field
+
+from app.core.branded_ids import AnalysisID, SessionID
 
 
 class CreateSessionRequest(BaseModel):
@@ -13,7 +14,7 @@ class CreateSessionRequest(BaseModel):
 
     """
 
-    analysis_id: UUID | None = Field(None, description="Optional analysis ID")
+    analysis_id: AnalysisID | None = Field(None, description="Optional analysis ID")
     user_level: str = Field(
         default="intermediate",
         description="User skill level: beginner, intermediate, advanced",
@@ -30,7 +31,7 @@ class CreateSessionResponse(BaseModel):
 
     """
 
-    session_id: UUID = Field(..., description="Session ID")
+    session_id: SessionID = Field(..., description="Session ID")
     status: str = Field(..., description="Session status")
     sse_endpoint: str = Field(..., description="SSE endpoint path")
 
@@ -53,8 +54,8 @@ class GetSessionResponse(BaseModel):
 
     """
 
-    session_id: UUID = Field(..., description="Session ID")
-    analysis_id: UUID | None = Field(None, description="Optional analysis ID")
+    session_id: SessionID = Field(..., description="Session ID")
+    analysis_id: AnalysisID | None = Field(None, description="Optional analysis ID")
     status: str = Field(..., description="Session status")
     syllabus: dict[str, object] | None = Field(None, description="Generated syllabus")
     current_section: int = Field(..., description="Current section index")
