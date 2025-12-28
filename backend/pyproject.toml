@@ -45,6 +45,8 @@ orjson = "^3.11.5"
 # Rate limiting middleware
 slowapi = "^0.1.9"
 langgraph-checkpoint-redis = {version = ">=0.3.1", python = ">=3.13,<3.14"}
+# Rich console output for structlog traceback formatting (Issue #535)
+rich = "^13.9.4"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
