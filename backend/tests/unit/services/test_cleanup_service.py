@@ -94,7 +94,7 @@ class TestOrphanCleaner:
         assert deleted == 0
 
     async def test_delete_orphans_batch_single_batch(self, orphan_cleaner, mock_session):
-        """Test delete with single batch."""
+        """Test delete with single batch (always hard delete)."""
         orphan_ids = [uuid.uuid4() for _ in range(50)]
 
         # Mock delete result
@@ -102,7 +102,8 @@ class TestOrphanCleaner:
         mock_result.rowcount = 50
         mock_session.execute.return_value = mock_result
 
-        deleted = await orphan_cleaner.delete_orphans_batch(orphan_ids, hard_delete=True)
+        # Note: delete_orphans_batch always hard deletes (no parameter needed)
+        deleted = await orphan_cleaner.delete_orphans_batch(orphan_ids)
 
         assert deleted == 50
         assert mock_session.execute.called

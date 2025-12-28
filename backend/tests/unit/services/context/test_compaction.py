@@ -387,35 +387,36 @@ class TestContextCompiler:
             assert result[1]["content"] == "Previous conversation summary: Summary"
 
 
+@pytest.mark.asyncio
 class TestWorkflowFactory:
-    """Tests for workflow-specific compiler factory."""
+    """Tests for workflow-specific compiler factory (Issue #414: Now async)."""
 
-    def test_create_tutor_compiler(self) -> None:
+    async def test_create_tutor_compiler(self) -> None:
         """Test creating tutor workflow compiler."""
-        compiler = create_workflow_compiler("tutor")
+        compiler = await create_workflow_compiler("tutor")
 
         assert isinstance(compiler, ContextCompiler)
         assert "Socratic tutor" in compiler.system_prompt
         assert compiler.agent_identity is not None
         assert "patient" in compiler.agent_identity.lower()
 
-    def test_create_analysis_compiler(self) -> None:
+    async def test_create_analysis_compiler(self) -> None:
         """Test creating analysis workflow compiler."""
-        compiler = create_workflow_compiler("analysis")
+        compiler = await create_workflow_compiler("analysis")
 
         assert isinstance(compiler, ContextCompiler)
         assert "technical content analysis" in compiler.system_prompt
         assert compiler.agent_identity is not None
         assert "analyst" in compiler.agent_identity.lower()
 
-    def test_create_unknown_workflow_raises_error(self) -> None:
+    async def test_create_unknown_workflow_raises_error(self) -> None:
         """Test creating compiler for unknown workflow raises ValueError."""
         with pytest.raises(ValueError, match="Unknown workflow type"):
-            create_workflow_compiler("unknown")
+            await create_workflow_compiler("unknown")
 
-    def test_create_with_custom_config(self) -> None:
+    async def test_create_with_custom_config(self) -> None:
         """Test creating compiler with custom compaction config."""
         config = CompactionConfig(max_turns_full=3)
-        compiler = create_workflow_compiler("tutor", config=config)
+        compiler = await create_workflow_compiler("tutor", config=config)
 
         assert compiler.compactor.config.max_turns_full == 3

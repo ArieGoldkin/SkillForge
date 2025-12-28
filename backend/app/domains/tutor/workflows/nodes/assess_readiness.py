@@ -35,11 +35,14 @@ logger = get_logger(__name__)
 _tutor_compiler = None
 
 
-def _get_tutor_compiler():
-    """Get or create tutor compiler instance (lazy initialization)."""
+async def _get_tutor_compiler():
+    """Get or create tutor compiler instance (lazy initialization).
+
+    Issue #414: Now async since create_workflow_compiler uses PromptManager.
+    """
     global _tutor_compiler  # noqa: PLW0603
     if _tutor_compiler is None:
-        _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
+        _tutor_compiler = await create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
     return _tutor_compiler
 
 
@@ -129,7 +132,7 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
 
         # Get LLM model and compiler
         model = get_chat_model()
-        compiler = _get_tutor_compiler()
+        compiler = await _get_tutor_compiler()
 
         # Create parser for ReadinessAssessment
         parser = JsonOutputParser(pydantic_object=ReadinessAssessment)
