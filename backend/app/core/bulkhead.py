@@ -103,8 +103,8 @@ class BulkheadTimeoutError(Exception):
 # Tier 3: 4 agents → 4 workers (100% + 6 queue for burst)
 TIER_DEFAULTS = {
     Tier.CRITICAL: {"max_concurrent": 5, "queue_size": 10, "timeout": 300.0},
-    Tier.STANDARD: {"max_concurrent": 8, "queue_size": 12, "timeout": 240.0},
-    Tier.OPTIONAL: {"max_concurrent": 4, "queue_size": 6, "timeout": 180.0},
+    Tier.STANDARD: {"max_concurrent": 8, "queue_size": 12, "timeout": 120.0},
+    Tier.OPTIONAL: {"max_concurrent": 4, "queue_size": 6, "timeout": 60.0},
 }
 
 

@@ -126,7 +126,12 @@ async def test_implementation_planner_does_not_emit_failed_on_success(
 async def test_dependency_mapper_handles_timeout_error_with_specific_code(
     mock_emit, mock_record, mock_state
 ):
-    """Test that dependency_mapper handles TimeoutError with specific error code (2025 best practice)."""
+    """Test that dependency_mapper handles TimeoutError with specific error code.
+
+    Issue #588: With the resilience wrapper, TimeoutError from the runner is caught
+    by the bulkhead and converted to BulkheadTimeoutError. The error is recorded
+    via record_agent_execution with AGENT_BULKHEAD_REJECTED error code.
+    """
     with patch(
         "app.domains.analysis.workflows.nodes.agents.dependency_mapper_node.run_dependency_mapper_with_session",
         side_effect=TimeoutError("Execution timeout"),
@@ -136,15 +141,14 @@ async def test_dependency_mapper_handles_timeout_error_with_specific_code(
         # Verify empty findings returned (graceful degradation)
         assert result == {"agent_findings": []}
 
-        # Verify specific timeout error was emitted
-        assert mock_emit.called
-        call_args = mock_emit.call_args
-        assert call_args[0][1] == "dependency_mapper"  # agent_type parameter
-        assert call_args[0][2] == "failed"  # status parameter
-        call_kwargs = call_args[1] if len(call_args) > 1 else {}
-        assert call_kwargs.get("error") == "Agent execution timed out"
-        assert call_kwargs.get("error_code") == "DEPENDENCY_MAPPER_TIMEOUT"
-        assert "processing_time_ms" in call_kwargs
+        # Issue #588: Bulkhead converts TimeoutError to BulkheadTimeoutError
+        # This is handled via record_agent_execution, not emit_agent_progress
+        assert mock_record.called
+        call_args = mock_record.call_args
+        # Check the error_code is AGENT_BULKHEAD_REJECTED
+        assert call_args.kwargs.get("error_code") == "AGENT_BULKHEAD_REJECTED"
+        assert call_args.kwargs.get("agent_type") == "dependency_mapper"
+        assert "processing_time_ms" in call_args.kwargs
 
 
 @pytest.mark.asyncio

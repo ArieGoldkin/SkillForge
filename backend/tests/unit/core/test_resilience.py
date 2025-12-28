@@ -38,20 +38,26 @@ class TestBulkheadTiers:
         assert bulkhead.tier == Tier.CRITICAL
 
     def test_standard_tier_defaults(self) -> None:
-        """Test STANDARD tier has correct default configuration."""
+        """Test STANDARD tier has correct default configuration.
+
+        Issue #588: Updated for parallel fan-out capacity (8 agents → 8 workers).
+        """
         bulkhead = Bulkhead(name="test-standard", tier=Tier.STANDARD)
 
-        assert bulkhead.max_concurrent == 3
-        assert bulkhead.queue_size == 5
+        assert bulkhead.max_concurrent == 8
+        assert bulkhead.queue_size == 12
         assert bulkhead.timeout == 120.0
         assert bulkhead.tier == Tier.STANDARD
 
     def test_optional_tier_defaults(self) -> None:
-        """Test OPTIONAL tier has correct default configuration."""
+        """Test OPTIONAL tier has correct default configuration.
+
+        Issue #588: Updated for parallel fan-out capacity (4 agents → 4 workers).
+        """
         bulkhead = Bulkhead(name="test-optional", tier=Tier.OPTIONAL)
 
-        assert bulkhead.max_concurrent == 2
-        assert bulkhead.queue_size == 3
+        assert bulkhead.max_concurrent == 4
+        assert bulkhead.queue_size == 6
         assert bulkhead.timeout == 60.0
         assert bulkhead.tier == Tier.OPTIONAL
 
@@ -76,7 +82,8 @@ class TestBulkheadConcurrencyControl:
     @pytest.mark.asyncio
     async def test_allows_concurrent_up_to_limit(self) -> None:
         """Test bulkhead allows concurrent execution up to max_concurrent."""
-        bulkhead = Bulkhead(name="test", tier=Tier.OPTIONAL)  # max_concurrent=2
+        # Use explicit config to isolate test from tier default changes
+        bulkhead = Bulkhead(name="test", tier=Tier.OPTIONAL, max_concurrent=2)
 
         execution_count = 0
         max_concurrent_seen = 0
@@ -99,7 +106,8 @@ class TestBulkheadConcurrencyControl:
     @pytest.mark.asyncio
     async def test_blocks_when_limit_exceeded(self) -> None:
         """Test bulkhead blocks when max_concurrent is exceeded."""
-        bulkhead = Bulkhead(name="test", tier=Tier.OPTIONAL)  # max_concurrent=2
+        # Use explicit config to isolate test from tier default changes
+        bulkhead = Bulkhead(name="test", tier=Tier.OPTIONAL, max_concurrent=2)
 
         execution_count = 0
         max_concurrent_seen = 0
@@ -634,7 +642,10 @@ class TestResilienceManagerAgentExecution:
 
     @pytest.mark.asyncio
     async def test_execute_agent_respects_bulkhead_limits(self) -> None:
-        """Test execute_agent respects bulkhead concurrency limits."""
+        """Test execute_agent respects bulkhead concurrency limits.
+
+        Issue #588: OPTIONAL tier now allows 4 concurrent (was 2).
+        """
         manager = get_resilience_manager()
 
         execution_count = 0
@@ -649,7 +660,7 @@ class TestResilienceManagerAgentExecution:
             execution_count -= 1
             return "done"
 
-        # Start multiple OPTIONAL tier agents (max_concurrent=2)
+        # Start multiple OPTIONAL tier agents (max_concurrent=4 per Issue #588)
         tasks = [
             asyncio.create_task(
                 manager.execute_agent(
@@ -658,13 +669,13 @@ class TestResilienceManagerAgentExecution:
                     fn=slow_agent,
                 )
             )
-            for _ in range(4)
+            for _ in range(6)  # More than max_concurrent to test limiting
         ]
 
         await asyncio.sleep(0.1)
 
-        # Should not exceed bulkhead limit
-        assert max_concurrent_seen <= 2
+        # Should not exceed bulkhead limit (Issue #588: now 4)
+        assert max_concurrent_seen <= 4
 
         # Clean up
         can_finish.set()
@@ -701,7 +712,11 @@ class TestResilienceManagerAgentExecution:
 
     @pytest.mark.asyncio
     async def test_execute_agent_with_bulkhead_rejection(self) -> None:
-        """Test execute_agent handles bulkhead queue full."""
+        """Test execute_agent handles bulkhead queue full.
+
+        Issue #588: OPTIONAL tier now has max_concurrent=4, queue_size=6.
+        Need 10 tasks to fill (4 active + 6 queued).
+        """
         manager = get_resilience_manager()
 
         # Reset circuit breaker to avoid interference from other tests
@@ -714,7 +729,7 @@ class TestResilienceManagerAgentExecution:
             await can_finish.wait()
             return "done"
 
-        # Fill OPTIONAL tier bulkhead (max_concurrent=2, queue_size=3)
+        # Fill OPTIONAL tier bulkhead (max_concurrent=4, queue_size=6 per Issue #588)
         tasks = [
             asyncio.create_task(
                 manager.execute_agent(
@@ -723,7 +738,7 @@ class TestResilienceManagerAgentExecution:
                     fn=blocking_func,
                 )
             )
-            for _ in range(5)  # 2 active + 3 queued
+            for _ in range(10)  # 4 active + 6 queued = full
         ]
 
         await asyncio.sleep(0.1)
@@ -908,7 +923,7 @@ class TestResilienceConcurrentAgents:
             await can_finish_critical.wait()
             return "critical_done"
 
-        # Fill OPTIONAL tier (max_concurrent=2)
+        # Fill OPTIONAL tier (max_concurrent=4 per Issue #588)
         optional_tasks = [
             asyncio.create_task(
                 manager.execute_agent(
