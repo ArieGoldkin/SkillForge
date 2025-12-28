@@ -19,6 +19,7 @@ from typing import Any, cast
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.core.exceptions import WorkflowError
 from app.core.logging import get_logger
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.base import create_structured_agent
@@ -435,7 +436,7 @@ async def _attempt_synthesis(  # noqa: PLR0913
     )
 
     # Extract structured response
-    return extract_structured_response(final_result, "aggregation")
+    return extract_structured_response(final_result, "aggregation", analysis_id=str(analysis_id))
 
 
 async def get_minimal_system_prompt() -> str:
@@ -544,7 +545,9 @@ async def synthesize_trend_summary(
         )
 
         # Extract structured response
-        result = extract_structured_response(final_result, "trend_summary")
+        result = extract_structured_response(
+            final_result, "trend_summary", analysis_id=str(analysis_id)
+        )
 
         # Ensure metadata exists and add trend-summary markers
         if isinstance(result, dict):
@@ -817,4 +820,4 @@ async def synthesize_with_fallback_chain(
 
     # Should never reach here due to static fallback, but just in case
     msg = "Fallback chain exhausted unexpectedly"
-    raise RuntimeError(msg)
+    raise WorkflowError(msg)

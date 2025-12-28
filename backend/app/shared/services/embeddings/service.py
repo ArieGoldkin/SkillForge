@@ -34,7 +34,7 @@ from app.core.constants import (
     RETRY_MIN_WAIT_EMBEDDING,
     RETRY_MULTIPLIER_EMBEDDING,
 )
-from app.core.exceptions import EmbeddingError
+from app.core.exceptions import EmbeddingError, ServiceException
 from app.core.logging import get_logger
 from app.core.types import EmbeddingVector
 from app.shared.services.backpressure import (
@@ -192,7 +192,7 @@ class EmbeddingService:
         # as we called asyncio.to_thread above
         if self._encoding is None:
             msg = "Encoding failed to initialize"
-            raise RuntimeError(msg)
+            raise ServiceException(msg)
         tokens = self._encoding.encode(text)
         original_token_count = len(tokens)
         truncated = False

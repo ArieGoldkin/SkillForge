@@ -67,21 +67,28 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
     logger.info("workflow_embedding_started", content_length=len(content))
     embedding_service = EmbeddingService()
     try:
-        embedding_result = await embedding_service.generate_embedding(content)
-        embedding: EmbeddingVector = list(embedding_result)
+        from app.core.exception_utils import async_exception_context
 
-        # Emit SSE event: embedding complete
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
-            status="complete",
-        )
+        async with async_exception_context(
+            operation="generate_embedding",
+            analysis_id=str(analysis_id),
+            content_length=len(content),
+        ):
+            embedding_result = await embedding_service.generate_embedding(content)
+            embedding: EmbeddingVector = list(embedding_result)
 
-        logger.info(
-            "workflow_embedding_complete",
-            embedding_dimensions=len(embedding),
-        )
+            # Emit SSE event: embedding complete
+            await emit_streaming_event(
+                "progress",
+                analysis_id=analysis_id,
+                stage=get_stage_name("embedding"),
+                status="complete",
+            )
+
+            logger.info(
+                "workflow_embedding_complete",
+                embedding_dimensions=len(embedding),
+            )
     except Exception as e:
         # Record error to database before emitting events
         from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED
@@ -158,24 +165,31 @@ async def generate_embeddings_batch(
     results: list[tuple[EmbeddingVector, dict]] = []
 
     try:
-        for chunk in payloads:
-            embedding_result = await embedding_service.generate_embedding(
-                chunk.text, normalize=normalize
+        from app.core.exception_utils import async_exception_context
+
+        async with async_exception_context(
+            operation="generate_embeddings_batch",
+            analysis_id=str(analysis_id),
+            batch_size=len(payloads),
+        ):
+            for chunk in payloads:
+                embedding_result = await embedding_service.generate_embedding(
+                    chunk.text, normalize=normalize
+                )
+                results.append((list(embedding_result), chunk.__dict__))
+
+            await emit_streaming_event(
+                "progress",
+                analysis_id=analysis_id,
+                stage=get_stage_name("embedding"),
+                status="complete",
             )
-            results.append((list(embedding_result), chunk.__dict__))
 
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
-            status="complete",
-        )
-
-        logger.info(
-            "workflow_embedding_batch_complete",
-            count=len(results),
-            normalize=normalize,
-        )
+            logger.info(
+                "workflow_embedding_batch_complete",
+                count=len(results),
+                normalize=normalize,
+            )
     except Exception as e:
         # Record error to database before emitting events
         from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED

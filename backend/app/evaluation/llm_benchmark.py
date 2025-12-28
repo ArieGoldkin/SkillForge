@@ -60,6 +60,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import tiktoken
 
 from app.core.config import settings
+from app.core.exceptions import EvaluationError
 from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
@@ -510,7 +511,7 @@ class LLMBenchmark:
                     duration_seconds=duration,
                     exc_info=True,
                 )
-                raise RuntimeError(f"Experiment failed: {e}") from e
+                raise EvaluationError(f"Experiment '{experiment_name}' failed: {e}") from e
 
         duration = time.time() - start_time
 
@@ -624,7 +625,7 @@ class LLMBenchmark:
 
         if not experiments:
             msg = "All experiments failed"
-            raise RuntimeError(msg)
+            raise EvaluationError(msg)
 
         # Determine winners by metric
         winner_by_metric = self._find_winners_by_metric(experiments)

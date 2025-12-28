@@ -44,6 +44,7 @@ from uuid import uuid4
 from openai import AsyncOpenAI
 
 from app.core.config import settings
+from app.core.exceptions import ExternalServiceError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -556,7 +557,7 @@ async def batch_embeddings(
     for result in sorted(results, key=lambda r: int(r["custom_id"].split("-")[1])):
         if "error" in result:
             msg = f"Embedding failed for request {result['custom_id']}: {result['error']}"
-            raise RuntimeError(msg)
+            raise ExternalServiceError(service_name="openai_batch", message=msg)
 
         embedding = result["response"]["body"]["data"][0]["embedding"]
         embeddings.append(embedding)
@@ -666,7 +667,7 @@ async def batch_chat_completions(
     for result in sorted(results, key=lambda r: int(r["custom_id"].split("-")[1])):
         if "error" in result:
             msg = f"Completion failed for request {result['custom_id']}: {result['error']}"
-            raise RuntimeError(msg)
+            raise ExternalServiceError(service_name="openai_batch", message=msg)
 
         completion_text = result["response"]["body"]["choices"][0]["message"]["content"]
         completions.append(completion_text)

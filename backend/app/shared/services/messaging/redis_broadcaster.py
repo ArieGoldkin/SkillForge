@@ -35,6 +35,7 @@ from typing import TYPE_CHECKING
 import redis.asyncio as aioredis
 
 from app.core.config import get_settings
+from app.core.exceptions import CacheError
 from app.core.logging import get_logger
 
 if TYPE_CHECKING:
@@ -193,7 +194,8 @@ class RedisEventBroadcaster:
                 error=str(e),
                 exc_info=True,
             )
-            raise
+            msg = f"Failed to publish to Redis channel '{channel}': {e}"
+            raise CacheError(msg) from e
 
     async def subscribe(self, channel: ChannelName) -> AsyncIterator[EventData]:  # noqa: PLR0912
         """Subscribe to channel with buffer replay.
@@ -248,7 +250,14 @@ class RedisEventBroadcaster:
                         events_replayed=buffered_count,
                     )
 
-            except Exception as e:  # noqa: BLE001 - Graceful fallback for buffer read
+            except Exception as e:  # noqa: BLE001 - Cache failures must not block operations
+                logger.debug(
+                    "cache_operation_failed",
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    operation="buffer_read",
+                    channel=channel,
+                )
                 logger.warning(
                     "redis_buffer_read_failed",
                     channel=channel,
@@ -294,7 +303,14 @@ class RedisEventBroadcaster:
                 try:
                     await pubsub.unsubscribe(channel)
                     await pubsub.close()
-                except Exception as e:  # noqa: BLE001 - Cleanup must not fail
+                except Exception as e:  # noqa: BLE001 - Cache failures must not block operations
+                    logger.debug(
+                        "cache_operation_failed",
+                        error=str(e),
+                        error_type=type(e).__name__,
+                        operation="pubsub_cleanup",
+                        channel=channel,
+                    )
                     logger.warning(
                         "redis_pubsub_cleanup_error",
                         channel=channel,
@@ -337,7 +353,14 @@ class RedisEventBroadcaster:
             if result:
                 return int(result[0][1])
             return 0
-        except Exception as e:  # noqa: BLE001 - Return 0 on any error
+        except Exception as e:  # noqa: BLE001 - Cache failures must not block operations
+            logger.debug(
+                "cache_operation_failed",
+                error=str(e),
+                error_type=type(e).__name__,
+                operation="subscriber_count",
+                channel=channel,
+            )
             logger.warning(
                 "redis_subscriber_count_failed",
                 channel=channel,
@@ -362,7 +385,14 @@ class RedisEventBroadcaster:
                     "redis_buffer_cleared",
                     channel=channel,
                 )
-        except Exception as e:  # noqa: BLE001 - Buffer clear is best-effort
+        except Exception as e:  # noqa: BLE001 - Cache failures must not block operations
+            logger.debug(
+                "cache_operation_failed",
+                error=str(e),
+                error_type=type(e).__name__,
+                operation="buffer_clear",
+                channel=channel,
+            )
             logger.warning(
                 "redis_buffer_clear_failed",
                 channel=channel,
@@ -375,7 +405,13 @@ class RedisEventBroadcaster:
             await self._redis.aclose()
             self._connected = False
             logger.info("redis_broadcaster_closed")
-        except Exception as e:  # noqa: BLE001 - Close must not fail
+        except Exception as e:  # noqa: BLE001 - Cache failures must not block operations
+            logger.debug(
+                "cache_operation_failed",
+                error=str(e),
+                error_type=type(e).__name__,
+                operation="close",
+            )
             logger.warning(
                 "redis_broadcaster_close_error",
                 error=str(e),

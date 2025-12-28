@@ -627,6 +627,8 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
         # Step 6: LLM Synthesis - choose mode based on data sufficiency (Issue #487)
         # If recommended_mode is "fallback", use trend-summary synthesis instead
         # of normal synthesis to prevent hallucinating implementation details
+        from app.core.exception_utils import async_exception_context
+
         if data_sufficiency_result.recommended_mode == "fallback":
             logger.info(
                 "workflow_using_trend_summary_synthesis",
@@ -635,24 +637,35 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
                 reason=data_sufficiency_result.recommendation_reason,
             )
             # Use trend-summary synthesis for low-coverage content
-            aggregated_insights_dict = await synthesize_trend_summary(
-                validated_findings=validated_findings,
-                analysis_id=analysis_id,
+            async with async_exception_context(
+                operation="synthesize_trend_summary",
+                analysis_id=str(analysis_id),
                 coverage_score=coverage_score,
-                source_context=source_context,
-            )
+            ):
+                aggregated_insights_dict = await synthesize_trend_summary(
+                    validated_findings=validated_findings,
+                    analysis_id=analysis_id,
+                    coverage_score=coverage_score,
+                    source_context=source_context,
+                )
         else:
             # Normal synthesis with tiered fallback chain (Issue #299-304)
             # The synthesize_with_llm NEVER raises exceptions - it falls back
             # through tiers (FULL -> REDUCED -> MINIMAL -> STATIC) until one succeeds.
             # Issue #487: Now includes source_context to prevent hallucinations
-            aggregated_insights_dict = await synthesize_with_llm(
-                validated_findings=validated_findings,
-                conflicts=conflicts,
-                confidence_scores=confidence_scores,
-                analysis_id=analysis_id,
-                source_context=source_context,
-            )
+            async with async_exception_context(
+                operation="synthesize_with_llm",
+                analysis_id=str(analysis_id),
+                findings_count=len(validated_findings),
+                conflicts_count=len(conflicts),
+            ):
+                aggregated_insights_dict = await synthesize_with_llm(
+                    validated_findings=validated_findings,
+                    conflicts=conflicts,
+                    confidence_scores=confidence_scores,
+                    analysis_id=analysis_id,
+                    source_context=source_context,
+                )
 
         # Step 7: Post-processing and validation
         aggregated_insights_dict = validate_and_format_aggregated_insights(aggregated_insights_dict)

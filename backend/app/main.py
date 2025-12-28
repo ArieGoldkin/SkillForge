@@ -36,7 +36,7 @@ from app.api.v1.analysis import router as analysis_router  # noqa: E402
 from app.api.v1.tutor import router as tutor_router  # noqa: E402
 from app.core.api_key_validation import log_api_key_configuration  # noqa: E402
 from app.core.config import settings  # noqa: E402
-from app.core.exceptions import SkillForgeException  # noqa: E402
+from app.core.exceptions import ConfigurationError, SkillForgeException  # noqa: E402
 from app.core.langfuse_service import (  # noqa: E402
     configure_langfuse_service,
     get_langfuse_service,
@@ -145,7 +145,7 @@ async def lifespan(app: FastAPI):
                 public_key_set=bool(public_key),
                 secret_key_set=bool(secret_key),
             )
-            raise RuntimeError(error_msg)
+            raise ConfigurationError(error_msg)
         else:
             logger.info(
                 "langfuse_configured",

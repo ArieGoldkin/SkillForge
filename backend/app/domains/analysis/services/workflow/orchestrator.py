@@ -4,6 +4,7 @@ from typing import Any
 
 from app.core.branded_ids import AnalysisID
 from app.core.config import settings
+from app.core.exception_utils import async_exception_context
 from app.core.logging import get_logger
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import get_current_trace_id, robust_traceable, update_current_trace
@@ -241,7 +242,14 @@ class WorkflowOrchestrator:
                 thread_id=str(analysis_id),
                 callbacks_enabled=callbacks_enabled,
             )
-            result = await self.workflow.ainvoke(input_state, config=config)
+            async with async_exception_context(
+                operation="workflow_execution",
+                analysis_id=str(analysis_id),
+                url=url,
+                analysis_mode=analysis_mode,
+                start_from_stage=start_from_stage or "pending",
+            ):
+                result = await self.workflow.ainvoke(input_state, config=config)
             logger.debug(
                 "workflow_execution_completed",
                 analysis_id=str(analysis_id),

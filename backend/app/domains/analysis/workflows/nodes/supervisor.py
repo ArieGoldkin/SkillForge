@@ -446,11 +446,19 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         )
 
         # Invoke with LCEL chain (fallback built-in, retry at LangChain level)
-        selection = await _invoke_supervisor_with_retry(
-            structured_model,
-            user_prompt,
-            analysis_id,
-        )
+        from app.core.exception_utils import async_exception_context
+
+        async with async_exception_context(
+            operation="supervisor_route",
+            analysis_id=str(analysis_id),
+            content_type=content_type,
+            content_length=len(content),
+        ):
+            selection = await _invoke_supervisor_with_retry(
+                structured_model,
+                user_prompt,
+                analysis_id,
+            )
 
         # ═══════════════════════════════════════════════════════════════════
         # ISSUE #544: Force-inject Tier 1 (UNIVERSAL) agents as safety net
