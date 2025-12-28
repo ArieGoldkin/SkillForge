@@ -14,6 +14,7 @@ from typing import cast
 
 from langfuse import observe
 
+from app.core.bulkhead import BulkheadFullError, BulkheadTimeoutError
 from app.core.logging import get_logger
 from app.core.tracing import get_current_trace_id, update_current_trace
 from app.domains.analysis.agents.registry import get_agent_metadata
@@ -161,7 +162,14 @@ async def performance_analyst_node(state: AnalysisState) -> dict[str, object]:
 
         # Return findings as single-item list (aggregate will collect from all nodes)
         return {"agent_findings": [result]}
-    except (GeneratorExit, TimeoutError, ValueError, Exception) as e:  # noqa: BLE001 - Intentional: catch all exceptions for graceful degradation
+    except (
+        BulkheadFullError,
+        BulkheadTimeoutError,
+        GeneratorExit,
+        TimeoutError,
+        ValueError,
+        Exception,  # noqa: BLE001
+    ) as e:
         # Centralized error handling via shared helper (reduces return statements)
         duration = time.time() - start_time
         return await handle_agent_node_error(

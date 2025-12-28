@@ -23,7 +23,7 @@ const STAGE_STATUS_MAP = {
 } as const satisfies Record<StageStatus, AnalysisStepStatus>
 
 export function mapStageStatus(status: StageStatus): AnalysisStepStatus {
-  return STAGE_STATUS_MAP[status]
+  return STAGE_STATUS_MAP[status] ?? 'pending'
 }
 
 /**

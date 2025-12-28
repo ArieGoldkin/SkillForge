@@ -15,11 +15,13 @@ from typing import cast
 
 from langfuse import get_client, observe
 
+from app.core.bulkhead import BulkheadFullError, BulkheadTimeoutError
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
 from app.core.tracing import get_current_trace_id, update_current_trace
 from app.domains.analysis.agents.registry import get_agent_metadata
 from app.domains.analysis.constants.error_codes import (
+    AGENT_BULKHEAD_REJECTED,
     AGENT_CANCELLED,
     AGENT_LLM_ERROR,
     AGENT_NO_CONTENT,
@@ -49,7 +51,7 @@ logger = get_logger(__name__)
     capture_input=True,
     capture_output=True,
 )
-async def learning_path_advisor_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915 - Agent node requires comprehensive error handling
+async def learning_path_advisor_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Learning path advisor agent node.
 
     Executes personalized learning path creation using memory (prior_memory) and
@@ -198,6 +200,28 @@ async def learning_path_advisor_node(state: AnalysisState) -> dict[str, object]:
 
         # Return findings as single-item list (aggregate will collect from all nodes)
         return {"agent_findings": [result]}
+    except (BulkheadFullError, BulkheadTimeoutError) as e:
+        # Issue #588: Bulkhead rejection - graceful degradation
+        duration = time.time() - start_time
+        processing_time_ms = int(duration * 1000)
+        logger.warning(
+            "agent_bulkhead_rejected",
+            agent_type="learning_path_advisor",
+            analysis_id=str(analysis_id),
+            error_type=type(e).__name__,
+            error=str(e),
+            duration_seconds=duration,
+            trace_id=trace_id,
+        )
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type="learning_path_advisor",
+            status=AgentStatus.FAILED,
+            error_code=AGENT_BULKHEAD_REJECTED,
+            error_message=str(e)[:500],
+            processing_time_ms=processing_time_ms,
+        )
+        return {"agent_findings": []}
     except GeneratorExit:
         # GeneratorExit during execution (cancellation/timeout) - return empty for
         # graceful degradation. Cleanup GeneratorExit is handled by robust_traceable wrapper

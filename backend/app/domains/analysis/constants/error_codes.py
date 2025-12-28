@@ -22,6 +22,7 @@ AGENT_PARSE_ERROR = "AGENT_PARSE_ERROR"  # Output parsing failed
 AGENT_SKIPPED_ABORT = "AGENT_SKIPPED_ABORT"  # Workflow is aborting
 AGENT_LOW_SPECIFICITY = "AGENT_LOW_SPECIFICITY"  # Below quality threshold
 AGENT_CANCELLED = "AGENT_CANCELLED"  # GeneratorExit or cancellation
+AGENT_BULKHEAD_REJECTED = "AGENT_BULKHEAD_REJECTED"  # Bulkhead full or timeout (Issue #588)
 
 # Agent errors
 ACTIONABLE_FAILED = "ACTIONABLE_FAILED"

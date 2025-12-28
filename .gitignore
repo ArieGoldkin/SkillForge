@@ -430,3 +430,4 @@ backend/coverage.json
 # GitHub Actions self-hosted runners (contains tokens)
 runners/
 docs/.DS_Store
+docs/.DS_Store
