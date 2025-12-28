@@ -154,9 +154,14 @@ async def _handle_aggregation_error(
             error_message=str(error),
             stage="aggregate_findings",
         )
-    except Exception:  # noqa: BLE001 - Graceful degradation for error recording failures
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: error recording must not break workflow
         # Don't fail if error recording fails (e.g., invalid UUID in tests)
-        pass
+        logger.debug(
+            "error_recorder_unavailable",
+            analysis_id=analysis_id,
+            error=str(e),
+            reason="error_recording_failed_during_aggregation_error_handling",
+        )
 
     await emit_aggregation_failed(analysis_id, str(error))
 
@@ -457,8 +462,8 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: Langfuse telemetry is optional
+        logger.debug("langfuse_telemetry_unavailable", analysis_id=analysis_id, error=str(e))
 
     # Emit SSE event: aggregation started
     await emit_aggregation_started(analysis_id, len(agent_findings))

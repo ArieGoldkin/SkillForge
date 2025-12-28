@@ -145,8 +145,14 @@ async def _queue_low_quality_artifact_for_review(
                 warning_message=str(e),
                 stage="artifact_generation",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let warning recording break the flow
+        except Exception as warning_error:  # noqa: BLE001 - Graceful degradation: warning recording must not break workflow
+            # Don't let warning recording break the flow
+            logger.debug(
+                "warning_recorder_unavailable",
+                analysis_id=analysis_id,
+                error=str(warning_error),
+                reason="warning_recording_failed_during_artifact_queuing_error",
+            )
 
         logger.warning(
             "artifact_queuing_failed",
@@ -241,8 +247,14 @@ async def _submit_artifact_quality_scores(
                 warning_message=str(e),
                 stage="artifact_generation",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let warning recording break the flow
+        except Exception as warning_error:  # noqa: BLE001 - Graceful degradation: warning recording must not break workflow
+            # Don't let warning recording break the flow
+            logger.debug(
+                "warning_recorder_unavailable",
+                analysis_id=analysis_id,
+                error=str(warning_error),
+                reason="warning_recording_failed_during_g_eval_scoring_error",
+            )
 
         logger.warning(
             "artifact_g_eval_scoring_failed",
@@ -324,8 +336,8 @@ async def generate_artifact(  # noqa: PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: Langfuse telemetry is optional
+        logger.debug("langfuse_telemetry_unavailable", analysis_id=analysis_id, error=str(e))
 
     logger.info(
         "workflow_artifact_generation_started",

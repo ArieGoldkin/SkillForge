@@ -158,8 +158,10 @@ async def invoke_agent(
                     agent_type=agent_type,
                     analysis_id=analysis_id,
                 )
-    except Exception:  # noqa: BLE001, S110
-        pass  # Graceful degradation - continue without prompt linkage
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Prompt metadata extraction may fail if agent config format changes
+        # Continue invocation without Langfuse prompt linkage
+        logger.debug("Prompt extraction for Langfuse linkage failed, continuing: %s", e)
 
     # Create RunnableConfig with Langfuse prompt for observation linkage
     # Issue #564: Passing langfuse_prompt to callback handler links it to the generation

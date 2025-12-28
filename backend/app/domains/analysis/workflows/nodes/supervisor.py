@@ -252,8 +252,10 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Langfuse may not be available or trace update may fail
+        # Continue workflow execution without blocking on telemetry
+        logger.debug("Langfuse trace update failed, continuing: %s", e)
 
     # Emit SSE event: supervisor started
     await emit_streaming_event(

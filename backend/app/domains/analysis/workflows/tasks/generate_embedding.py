@@ -59,8 +59,10 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Langfuse may not be available or trace update may fail
+        # Continue embedding generation without blocking on telemetry
+        logger.debug("Langfuse trace update failed, continuing: %s", e)
 
     logger.info("workflow_embedding_started", content_length=len(content))
     embedding_service = EmbeddingService()
@@ -92,8 +94,10 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
                 error_message=str(e),
                 stage="embedding",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let error recording break the flow
+        except Exception as record_error:  # noqa: BLE001 - Graceful degradation for error recording
+            # Error recording to database may fail due to DB issues
+            # Don't block the main error flow - the exception will still propagate
+            logger.debug("Error recording to database failed, continuing: %s", record_error)
 
         # Emit error event using standardized helper
         stage_name = get_stage_name("embedding")
@@ -145,8 +149,10 @@ async def generate_embeddings_batch(
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Langfuse may not be available or trace update may fail
+        # Continue embedding generation without blocking on telemetry
+        logger.debug("Langfuse trace update failed, continuing: %s", e)
 
     embedding_service = EmbeddingService()
     results: list[tuple[EmbeddingVector, dict]] = []
@@ -182,8 +188,10 @@ async def generate_embeddings_batch(
                 error_message=str(e),
                 stage="embedding",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let error recording break the flow
+        except Exception as record_error:  # noqa: BLE001 - Graceful degradation for error recording
+            # Error recording to database may fail due to DB issues
+            # Don't block the main error flow - the exception will still propagate
+            logger.debug("Error recording to database failed, continuing: %s", record_error)
 
         # Emit error event using standardized helper
         stage_name = get_stage_name("embedding")

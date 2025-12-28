@@ -70,8 +70,10 @@ async def extract_content(  # noqa: PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: Langfuse telemetry is optional
+        logger.debug(
+            "langfuse_telemetry_unavailable", analysis_id=analysis_id, url=url, error=str(e)
+        )
 
     logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
 
@@ -94,8 +96,15 @@ async def extract_content(  # noqa: PLR0915
         # Detect content type from URL
         try:
             detected_content_type = detect_content_type(url)
-        except Exception:  # noqa: BLE001 - ContentTypeError or other exceptions, fallback gracefully
+        except Exception as e:  # noqa: BLE001 - Graceful degradation: content type detection failure should not break extraction
             # Fallback to article if detection fails
+            logger.debug(
+                "content_type_detection_failed",
+                analysis_id=analysis_id,
+                url=url,
+                error=str(e),
+                fallback="article",
+            )
             detected_content_type = "article"
 
         # Get title from extracted metadata
@@ -180,8 +189,14 @@ async def extract_content(  # noqa: PLR0915
                 error_message=str(e),
                 stage="extraction",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let error recording break the flow
+        except Exception as recording_error:  # noqa: BLE001 - Graceful degradation: error recording must not break workflow
+            # Don't let error recording break the flow
+            logger.debug(
+                "error_recorder_unavailable",
+                analysis_id=analysis_id,
+                error=str(recording_error),
+                reason="error_recording_failed_during_extraction_error_handling",
+            )
 
         # Emit error event using standardized helper
         await emit_error_event(
