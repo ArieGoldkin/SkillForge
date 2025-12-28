@@ -29,12 +29,15 @@ class TestBulkheadTiers:
     """Tests for bulkhead tier configuration."""
 
     def test_critical_tier_defaults(self) -> None:
-        """Test CRITICAL tier has correct default configuration."""
+        """Test CRITICAL tier has correct default configuration.
+
+        Issue #588: CRITICAL tier uses 180s timeout (fail fast, not 300s).
+        """
         bulkhead = Bulkhead(name="test-critical", tier=Tier.CRITICAL)
 
         assert bulkhead.max_concurrent == 5
         assert bulkhead.queue_size == 10
-        assert bulkhead.timeout == 300.0
+        assert bulkhead.timeout == 180.0  # Fail fast for critical path
         assert bulkhead.tier == Tier.CRITICAL
 
     def test_standard_tier_defaults(self) -> None:
@@ -418,7 +421,7 @@ class TestBulkheadStatus:
         assert status["tier"] == "CRITICAL"
         assert status["config"]["max_concurrent"] == 5
         assert status["config"]["queue_size"] == 10
-        assert status["config"]["timeout"] == 300.0
+        assert status["config"]["timeout"] == 180.0  # Issue #588: fail fast
         assert "current" in status
         assert "stats" in status
 

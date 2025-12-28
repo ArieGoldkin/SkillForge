@@ -217,13 +217,13 @@ async def agent_node(state: AnalysisState) -> dict:
 
 from app.shared.resilience.bulkhead import Bulkhead, Tier
 
-# Tier 1: Critical operations
+# Tier 1: Critical operations (fail fast - 180s max)
 tier1_bulkhead = Bulkhead(
     name="critical",
     tier=Tier.CRITICAL,
     max_concurrent=5,
     queue_size=10,
-    timeout=300.0,
+    timeout=180.0,
 )
 
 # Tier 2: Standard analysis (Issue #588: 8 agents → 8 workers)

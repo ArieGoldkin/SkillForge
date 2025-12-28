@@ -83,11 +83,11 @@ class BulkheadTimeoutError(Exception):
 
 # Default tier configurations
 # Issue #588: Capacity sized for TRUE PARALLEL FAN-OUT within each tier
-# Tier 1: 4 agents → 5 workers (125% headroom)
+# Tier 1: 4 agents → 5 workers (125% headroom), 180s timeout (fail fast)
 # Tier 2: 8 agents → 8 workers (100% + 12 queue for burst)
 # Tier 3: 4 agents → 4 workers (100% + 6 queue for burst)
 TIER_DEFAULTS = {
-    Tier.CRITICAL: {"max_concurrent": 5, "queue_size": 10, "timeout": 300.0},
+    Tier.CRITICAL: {"max_concurrent": 5, "queue_size": 10, "timeout": 180.0},
     Tier.STANDARD: {"max_concurrent": 8, "queue_size": 12, "timeout": 120.0},
     Tier.OPTIONAL: {"max_concurrent": 4, "queue_size": 6, "timeout": 60.0},
 }
