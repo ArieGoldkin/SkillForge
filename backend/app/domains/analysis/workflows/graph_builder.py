@@ -47,6 +47,10 @@ from app.domains.analysis.workflows.nodes.quality_gate_node import (
     should_retry_synthesis,
 )
 from app.domains.analysis.workflows.nodes.supervisor import supervisor_route
+from app.domains.analysis.workflows.nodes.tier_aggregate_node import (
+    tier1_aggregate,
+    tier2_aggregate,
+)
 from app.domains.analysis.workflows.state import AnalysisState
 from app.domains.analysis.workflows.state_accessors import get_extraction_metadata
 from app.domains.analysis.workflows.tasks import (
@@ -58,6 +62,11 @@ from app.domains.analysis.workflows.tasks import (
     generate_embeddings_batch,
     log_chunking_metrics,
     store_embeddings,
+)
+from app.domains.analysis.workflows.tier_types import (
+    TIER_1_AGENTS,
+    TIER_2_AGENTS,
+    TIER_3_AGENTS,
 )
 from app.shared.services.extraction.jina_reader import _is_error_page
 
@@ -663,32 +672,231 @@ async def _quality_gate_fail_node(state: AnalysisState) -> dict[str, object]:
     }
 
 
+# =============================================================================
+# Issue #588: Sequential Tier Learning - Tier Routing Functions
+# =============================================================================
+
+
+def _route_to_tier1_agents(state: AnalysisState) -> list[Send]:
+    """Route to Tier 1 (foundational) agents based on supervisor decision.
+
+    This function filters the supervisor's selected agents to only include
+    Tier 1 agents. If no Tier 1 agents are selected, it routes directly to
+    tier1_aggregate to continue the workflow.
+
+    Tier 1 agents (foundational analysis):
+    - key_insights: Main themes and technical concepts
+    - pros_cons: Strengths and weaknesses
+    - audience_fit: Target audience and prerequisites
+    - actionable: Practical applications
+
+    Args:
+        state: Current workflow state with supervisor_decision
+
+    Returns:
+        List of Send objects for Tier 1 agent execution
+
+    """
+    # Get selected agents from supervisor decision
+    supervisor_decision = state.get("supervisor_decision", {})
+    if not isinstance(supervisor_decision, dict):
+        supervisor_decision = {}
+
+    # Note: Supervisor uses "agents" key (not "selected_agents") for consistency with agent_router.py
+    selected_agents: list[str] = supervisor_decision.get("agents", [])
+    if not isinstance(selected_agents, list):
+        selected_agents = []
+
+    # Filter for Tier 1 agents
+    tier1_agents = [agent for agent in selected_agents if agent in TIER_1_AGENTS]
+
+    analysis_id = state.get("analysis_id")
+    logger.info(
+        "routing_to_tier1_agents",
+        analysis_id=analysis_id,
+        selected_agents=selected_agents,
+        tier1_agents=tier1_agents,
+        tier1_count=len(tier1_agents),
+    )
+
+    # If no Tier 1 agents selected, route directly to tier1_aggregate
+    if not tier1_agents:
+        logger.debug(
+            "no_tier1_agents_selected",
+            analysis_id=analysis_id,
+            routing_to="tier1_aggregate",
+        )
+        return [Send("tier1_aggregate", state)]
+
+    # Map agent types to node names (some have different names)
+    agent_to_node = {
+        "key_insights": "key_insights",
+        "pros_cons": "pros_cons",
+        "audience_fit": "audience_fit",
+        "actionable": "actionable",
+    }
+
+    # Create Send objects for each Tier 1 agent
+    return [Send(agent_to_node.get(agent, agent), state) for agent in tier1_agents]
+
+
+def _route_to_tier2_agents(state: AnalysisState) -> list[Send]:
+    """Route to Tier 2 (technical) agents based on supervisor decision.
+
+    This function filters the supervisor's selected agents to only include
+    Tier 2 agents. These agents receive tier1_summary context from previous tier.
+
+    Tier 2 agents (technical deep-dive):
+    - tech_comparator, security_auditor, impl_planner, performance_analyst,
+    - code_quality_critic, trend_validator, dependency_mapper, integration_feasibility
+
+    Args:
+        state: Current workflow state with supervisor_decision and tier1_summary
+
+    Returns:
+        List of Send objects for Tier 2 agent execution
+
+    """
+    supervisor_decision = state.get("supervisor_decision", {})
+    if not isinstance(supervisor_decision, dict):
+        supervisor_decision = {}
+
+    # Note: Supervisor uses "agents" key for consistency with agent_router.py
+    selected_agents: list[str] = supervisor_decision.get("agents", [])
+    if not isinstance(selected_agents, list):
+        selected_agents = []
+
+    # Filter for Tier 2 agents
+    tier2_agents = [agent for agent in selected_agents if agent in TIER_2_AGENTS]
+
+    analysis_id = state.get("analysis_id")
+    has_tier1_summary = bool(state.get("tier1_summary"))
+
+    logger.info(
+        "routing_to_tier2_agents",
+        analysis_id=analysis_id,
+        tier2_agents=tier2_agents,
+        tier2_count=len(tier2_agents),
+        has_tier1_context=has_tier1_summary,
+    )
+
+    # If no Tier 2 agents selected, route directly to tier2_aggregate
+    if not tier2_agents:
+        logger.debug(
+            "no_tier2_agents_selected",
+            analysis_id=analysis_id,
+            routing_to="tier2_aggregate",
+        )
+        return [Send("tier2_aggregate", state)]
+
+    # Map agent types to node names
+    agent_to_node = {
+        "tech_comparator": "tech_comparator",
+        "security_auditor": "security_auditor",
+        "impl_planner": "implementation_planner",
+        "performance_analyst": "performance_analyst",
+        "code_quality_critic": "code_quality_critic",
+        "trend_validator": "trend_validator",
+        "dependency_mapper": "dependency_mapper",
+        "integration_feasibility": "integration_feasibility",
+    }
+
+    return [Send(agent_to_node.get(agent, agent), state) for agent in tier2_agents]
+
+
+def _route_to_tier3_agents(state: AnalysisState) -> list[Send]:
+    """Route to Tier 3 (research) agents based on supervisor decision.
+
+    This function filters the supervisor's selected agents to only include
+    Tier 3 agents. These agents receive tier1_summary + tier2_summary context.
+
+    Tier 3 agents (strategic research):
+    - deep_researcher, community_pulse, knowledge_curator, learning_path_advisor
+
+    Args:
+        state: Current workflow state with supervisor_decision and tier summaries
+
+    Returns:
+        List of Send objects for Tier 3 agent execution
+
+    """
+    supervisor_decision = state.get("supervisor_decision", {})
+    if not isinstance(supervisor_decision, dict):
+        supervisor_decision = {}
+
+    # Note: Supervisor uses "agents" key for consistency with agent_router.py
+    selected_agents: list[str] = supervisor_decision.get("agents", [])
+    if not isinstance(selected_agents, list):
+        selected_agents = []
+
+    # Filter for Tier 3 agents
+    tier3_agents = [agent for agent in selected_agents if agent in TIER_3_AGENTS]
+
+    analysis_id = state.get("analysis_id")
+    has_tier1_summary = bool(state.get("tier1_summary"))
+    has_tier2_summary = bool(state.get("tier2_summary"))
+
+    logger.info(
+        "routing_to_tier3_agents",
+        analysis_id=analysis_id,
+        tier3_agents=tier3_agents,
+        tier3_count=len(tier3_agents),
+        has_tier1_context=has_tier1_summary,
+        has_tier2_context=has_tier2_summary,
+    )
+
+    # If no Tier 3 agents selected, route directly to aggregate
+    if not tier3_agents:
+        logger.debug(
+            "no_tier3_agents_selected",
+            analysis_id=analysis_id,
+            routing_to="aggregate",
+        )
+        return [Send("aggregate", state)]
+
+    # Map agent types to node names
+    agent_to_node = {
+        "deep_researcher": "deep_researcher",
+        "community_pulse": "community_pulse",
+        "knowledge_curator": "knowledge_curator",
+        "learning_path_advisor": "learning_path_advisor",
+    }
+
+    return [Send(agent_to_node.get(agent, agent), state) for agent in tier3_agents]
+
+
 def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
     route_to_agents_fn: Callable[[AnalysisState], list[Send]] | None = None,
     checkpointer_override: Any | None = None,
 ):
-    """Build StateGraph workflow with native parallel execution using Send API.
+    """Build StateGraph workflow with Sequential Tier Learning (Issue #588).
 
     This function supports dependency injection for testability. Optional parameters
     allow tests to inject mocked routing functions and checkpointers.
 
     Args:
         route_to_agents_fn: Optional custom routing function for supervisor->agent routing.
-            Defaults to route_to_agents from agent_router module.
+            Defaults to route_to_agents from agent_router module. Only used for backward
+            compatibility tests; new tiered routing uses _route_to_tier{1,2,3}_agents.
         checkpointer_override: Optional checkpointer instance to use instead of default.
             Defaults to _get_checkpointer() which returns PostgresSaver or MemorySaver.
 
-    Workflow structure:
+    Workflow structure (Issue #588: Sequential Tier Learning):
     1. Extract content (sequential)
     2. Generate embedding (sequential)
     3. Fan-out: Chunk + Embed, Inject Context, Supervisor (parallel)
-    4. Fan-out: Selected agents (native LangGraph parallel via Send API)
-    5. Fan-in: Aggregate findings (waits for all agent nodes)
-    6. Quality gate validation (with retry loop)
-       - If quality < threshold and retries available: increment_retry -> aggregate
-       - If quality passes or max retries: continue -> generate_artifact
-    7. Generate artifact
-    8. End
+    4. Tier 1: Foundational agents (parallel via Send API)
+       - key_insights, pros_cons, audience_fit, actionable
+    5. tier1_aggregate: Compress Tier 1 findings to ~500 tokens
+    6. Tier 2: Technical agents (parallel, with tier1_summary context)
+       - tech_comparator, security_auditor, impl_planner, etc.
+    7. tier2_aggregate: Compress Tier 2 findings to ~800 tokens
+    8. Tier 3: Research agents (parallel, with tier1+tier2 context)
+       - deep_researcher, community_pulse, knowledge_curator, learning_path_advisor
+    9. Fan-in: Final aggregate (waits for all Tier 3 nodes)
+    10. Quality gate validation (with retry loop)
+    11. Generate artifact
+    12. End
 
     Issue #300: inject_context node runs in parallel with chunk_and_embed and supervisor
     to fetch relevant memories from past analyses and make them available to agents.
@@ -699,6 +907,10 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
     Issue #441: If extraction fails (should_abort=True), workflow routes to workflow_failed
     node which terminates the workflow early. The conditional edge ensures parallel nodes
     only execute when extraction succeeds.
+
+    Issue #588: Sequential Tier Learning enables later-tier agents to build on earlier
+    insights via compressed tier summaries, reducing redundant analysis and saving
+    15-30% LLM tokens.
 
     Returns:
         Compiled StateGraph ready for execution (compiled graph type, not StateGraph)
@@ -725,6 +937,11 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
     graph.add_node("quality_gate_fail", _quality_gate_fail_node)
     graph.add_node("workflow_failed", _workflow_failed_node)
     graph.add_node("generate_artifact", generate_artifact)
+
+    # Issue #588: Sequential Tier Learning - Tier aggregate nodes
+    # These nodes compress findings from each tier before passing to next tier
+    graph.add_node("tier1_aggregate", tier1_aggregate)
+    graph.add_node("tier2_aggregate", tier2_aggregate)
 
     # Add all agent nodes (each executes independently in parallel)
     graph.add_node("actionable", actionable_node)
@@ -769,19 +986,53 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
     graph.add_edge("embedding", "inject_context")
     graph.add_edge("embedding", "supervisor")
 
-    # Fan-out: Supervisor routes to selected agents dynamically using Send API
-    # Conditional edge returns list[Send] objects for parallel execution
-    # All agent nodes are potential targets
-    graph.add_conditional_edges(
-        "supervisor",
-        routing_fn,
-        [
-            # Tier 1: Universal agents (Quick mode+)
+    # ==========================================================================
+    # Issue #588: Sequential Tier Learning - Tiered Agent Execution
+    # ==========================================================================
+    # Agents execute in three sequential tiers with inter-tier context passing.
+    # Each tier's findings are compressed and passed to the next tier.
+    #
+    # Flow: Supervisor → Tier1 → tier1_aggregate → Tier2 → tier2_aggregate
+    #                  → Tier3 → aggregate → quality_gate → artifact
+    # ==========================================================================
+
+    # Tier 1: Supervisor routes to foundational agents
+    # Use custom routing if provided (for backward compatibility tests), otherwise use tiered routing
+    if route_to_agents_fn is not None:
+        # Backward compatibility: use provided routing function for all agents at once
+        # This path is used by existing tests that expect all agents to run in parallel
+        graph.add_conditional_edges(
+            "supervisor",
+            routing_fn,
+            [
+                # Tier 1: Universal agents
+                "actionable",
+                "audience_fit",
+                "key_insights",
+                "pros_cons",
+                # Tier 2: Validation agents
+                "tech_comparator",
+                "security_auditor",
+                "implementation_planner",
+                "performance_analyst",
+                "code_quality_critic",
+                "trend_validator",
+                "dependency_mapper",
+                "integration_feasibility",
+                # Tier 3: Research agents
+                "deep_researcher",
+                "community_pulse",
+                "knowledge_curator",
+                "learning_path_advisor",
+                "aggregate",  # Fallback if no agents selected
+            ],
+        )
+        # Fan-in: All agent nodes route to aggregate in backward compatibility mode
+        all_agent_nodes = [
             "actionable",
             "audience_fit",
             "key_insights",
             "pros_cons",
-            # Tier 2: Validation agents (Standard mode+)
             "tech_comparator",
             "security_auditor",
             "implementation_planner",
@@ -790,43 +1041,86 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
             "trend_validator",
             "dependency_mapper",
             "integration_feasibility",
-            # Tier 3: Research agents (Deep Dive mode) - Issue #501
             "deep_researcher",
             "community_pulse",
             "knowledge_curator",
             "learning_path_advisor",
-            "aggregate",  # Fallback if no agents selected
-        ],
-    )
+        ]
+        for agent_node in all_agent_nodes:
+            graph.add_edge(agent_node, "aggregate")
+    else:
+        # Issue #588: Sequential Tier Learning - Tiered execution (default behavior)
+        # Tier 1: Foundational agents run first
+        graph.add_conditional_edges(
+            "supervisor",
+            _route_to_tier1_agents,
+            [
+                "actionable",
+                "audience_fit",
+                "key_insights",
+                "pros_cons",
+                "tier1_aggregate",  # Fallback if no Tier 1 agents selected
+            ],
+        )
 
-    # Fan-in: All agent nodes route to aggregate
-    # LangGraph automatically waits for all incoming edges before executing aggregate
-    agent_nodes = [
-        # Tier 1: Universal agents
-        "actionable",
-        "audience_fit",
-        "key_insights",
-        "pros_cons",
-        # Tier 2: Validation agents
-        "tech_comparator",
-        "security_auditor",
-        "implementation_planner",
-        "performance_analyst",
-        "code_quality_critic",
-        "trend_validator",
-        "dependency_mapper",
-        "integration_feasibility",
-        # Tier 3: Research agents (Issue #501)
-        "deep_researcher",
-        "community_pulse",
-        "knowledge_curator",
-        "learning_path_advisor",
-    ]
-    for agent_node in agent_nodes:
-        graph.add_edge(agent_node, "aggregate")
+        # Tier 1 agents route to tier1_aggregate
+        tier1_agent_nodes = ["actionable", "audience_fit", "key_insights", "pros_cons"]
+        for agent_node in tier1_agent_nodes:
+            graph.add_edge(agent_node, "tier1_aggregate")
 
-    # When no agents selected, route_to_agents returns Send("aggregate", state)
-    # to explicitly route to aggregate (prevents hanging on empty list)
+        # Tier 2: tier1_aggregate routes to technical agents (with tier1 context)
+        graph.add_conditional_edges(
+            "tier1_aggregate",
+            _route_to_tier2_agents,
+            [
+                "tech_comparator",
+                "security_auditor",
+                "implementation_planner",
+                "performance_analyst",
+                "code_quality_critic",
+                "trend_validator",
+                "dependency_mapper",
+                "integration_feasibility",
+                "tier2_aggregate",  # Fallback if no Tier 2 agents selected
+            ],
+        )
+
+        # Tier 2 agents route to tier2_aggregate
+        tier2_agent_nodes = [
+            "tech_comparator",
+            "security_auditor",
+            "implementation_planner",
+            "performance_analyst",
+            "code_quality_critic",
+            "trend_validator",
+            "dependency_mapper",
+            "integration_feasibility",
+        ]
+        for agent_node in tier2_agent_nodes:
+            graph.add_edge(agent_node, "tier2_aggregate")
+
+        # Tier 3: tier2_aggregate routes to research agents (with tier1+tier2 context)
+        graph.add_conditional_edges(
+            "tier2_aggregate",
+            _route_to_tier3_agents,
+            [
+                "deep_researcher",
+                "community_pulse",
+                "knowledge_curator",
+                "learning_path_advisor",
+                "aggregate",  # Fallback if no Tier 3 agents selected
+            ],
+        )
+
+        # Tier 3 agents route to final aggregate
+        tier3_agent_nodes = [
+            "deep_researcher",
+            "community_pulse",
+            "knowledge_curator",
+            "learning_path_advisor",
+        ]
+        for agent_node in tier3_agent_nodes:
+            graph.add_edge(agent_node, "aggregate")
 
     # Quality gate: aggregate -> quality_gate (validation)
     graph.add_edge("aggregate", "quality_gate")

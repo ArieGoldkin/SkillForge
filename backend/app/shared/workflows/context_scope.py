@@ -13,9 +13,15 @@ from pydantic import BaseModel, Field
 
 from app.core.logging import get_logger
 from app.domains.analysis.workflows.state import AnalysisState
+from app.domains.analysis.workflows.tasks.aggregation.tier_summary_builder import (
+    format_tier_context,
+)
 from app.shared.types import AgentFinding
 
 logger = get_logger(__name__)
+
+# Issue #588: Tier configuration constants
+TIER_3_THRESHOLD = 3  # Tier 3 agents receive context from both Tier 1 and Tier 2
 
 
 class ContextScope(BaseModel):
@@ -27,6 +33,8 @@ class ContextScope(BaseModel):
         inject_memory: Whether to inject prior agent findings as narrative context
         max_content_tokens: Maximum tokens for content (for future content truncation)
         include_other_findings: Whether to include findings from other agents
+        tier: Agent's execution tier (1, 2, or 3) for sequential tier learning (Issue #588)
+        include_tier_context: Whether to inject tier summaries from previous tiers (Issue #588)
 
     """
 
@@ -49,6 +57,15 @@ class ContextScope(BaseModel):
     include_other_findings: bool = Field(
         default=False,
         description="Include findings from other agents",
+    )
+    # Issue #588: Sequential Tier Learning - Inter-Agent Context Passing
+    tier: int = Field(
+        default=1,
+        description="Agent's execution tier (1=foundation, 2=validation, 3=research)",
+    )
+    include_tier_context: bool = Field(
+        default=False,
+        description="Inject compressed tier summaries from previous tiers",
     )
 
 
@@ -77,7 +94,44 @@ class ScopedState(dict):
 # - Agents use has_content_available() to check content_ref availability
 # - Runners load optimized sections via ArtifactStore when content_ref is present
 # - raw_content NOT included: use content_ref exclusively (Issue #299-304)
+#
+# Issue #588: Sequential Tier Learning - Inter-Agent Context Passing
+# - tier: Agent's execution tier (1=foundation, 2=validation, 3=research)
+# - include_tier_context: Whether to inject compressed tier summaries from previous tiers
+# - Tier 1 agents run first, Tier 2 receives tier1_summary, Tier 3 receives tier1+tier2 summaries
 AGENT_SCOPES: dict[str, ContextScope] = {
+    # ==================== TIER 1: Foundation Agents ====================
+    # These run first - no tier context needed (they CREATE the context)
+    "key_insights": ContextScope(
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        inject_memory=False,
+        include_other_findings=False,
+        tier=1,
+        include_tier_context=False,
+    ),
+    "pros_cons": ContextScope(
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        inject_memory=False,
+        include_other_findings=False,
+        tier=1,
+        include_tier_context=False,
+    ),
+    "audience_fit": ContextScope(
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        inject_memory=False,
+        include_other_findings=False,
+        tier=1,
+        include_tier_context=False,
+    ),
+    "actionable": ContextScope(
+        include=["analysis_id", "content_ref", "content_type", "skill_level"],
+        inject_memory=False,
+        include_other_findings=False,
+        tier=1,
+        include_tier_context=False,
+    ),
+    # ==================== TIER 2: Validation Agents ====================
+    # These receive tier1_summary for context
     "security_auditor": ContextScope(
         include=[
             "analysis_id",
@@ -88,6 +142,8 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Issue #442: Need content_signals for research-aware thresholds
         inject_memory=True,
         include_other_findings=False,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "tech_comparator": ContextScope(
         include=[
@@ -99,6 +155,8 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=True,
         include_other_findings=False,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "implementation_planner": ContextScope(
         include=[
@@ -110,11 +168,15 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=True,
         include_other_findings=True,  # Planner benefits from other findings
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "code_quality_critic": ContextScope(
         include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "dependency_mapper": ContextScope(
         include=[
@@ -126,21 +188,29 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=False,
         include_other_findings=False,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "practical_applicator": ContextScope(
         include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "learning_path_designer": ContextScope(
         include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "reporter": ContextScope(
         include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=False,
         include_other_findings=False,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "performance_analyst": ContextScope(
         include=[
@@ -152,6 +222,8 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Issue #442: Need content_signals for research-aware thresholds
         inject_memory=False,
         include_other_findings=False,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "trend_validator": ContextScope(
         include=[
@@ -163,13 +235,18 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Issue #299-304: Need content_signals for comparison-aware thresholds
         inject_memory=False,
         include_other_findings=False,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
     "integration_feasibility": ContextScope(
         include=["analysis_id", "content_ref", "content_type", "skill_level"],
         inject_memory=True,
         include_other_findings=True,
+        tier=2,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary
     ),
-    # Tier 3 Research agents (Issue #501) - memory-enabled deep analysis
+    # ==================== TIER 3: Research Agents ====================
+    # These receive tier1_summary + tier2_summary for comprehensive context
     "deep_researcher": ContextScope(
         include=[
             "analysis_id",
@@ -180,6 +257,8 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Extended research with 10+ queries
         inject_memory=True,
         include_other_findings=True,  # Needs context from Tier 1/2 agents
+        tier=3,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary + tier2_summary
     ),
     "community_pulse": ContextScope(
         include=[
@@ -191,6 +270,8 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Sentiment analysis from community sources
         inject_memory=True,
         include_other_findings=False,
+        tier=3,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary + tier2_summary
     ),
     "knowledge_curator": ContextScope(
         include=[
@@ -201,6 +282,8 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Connects to user's knowledge graph via PGVector
         inject_memory=True,
         include_other_findings=True,  # Needs all findings for connection mapping
+        tier=3,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary + tier2_summary
     ),
     "learning_path_advisor": ContextScope(
         include=[
@@ -211,6 +294,8 @@ AGENT_SCOPES: dict[str, ContextScope] = {
         ],  # Personalizes learning paths based on user preferences
         inject_memory=True,
         include_other_findings=True,  # Needs findings for learning sequence
+        tier=3,
+        include_tier_context=True,  # Issue #588: Receives tier1_summary + tier2_summary
     ),
 }
 
@@ -309,6 +394,72 @@ def _inject_supervisor_data(
             scoped_state["content_signals"] = content_signals
 
 
+def _inject_tier_context(
+    scoped_state: ScopedState,
+    full_state: AnalysisState,
+    agent_type: str,
+    scope: ContextScope,
+) -> None:
+    """Inject compressed tier summaries from previous tiers (Issue #588).
+
+    For Sequential Tier Learning, later-tier agents receive compressed context
+    from earlier tiers to build upon previous insights without redundancy.
+
+    - Tier 2 agents receive tier1_summary (~500 tokens)
+    - Tier 3 agents receive tier1_summary + tier2_summary (~1300 tokens)
+
+    Args:
+        scoped_state: Scoped state to inject into (modified in place)
+        full_state: Full AnalysisState with tier summary data
+        agent_type: Type of agent receiving the context
+        scope: ContextScope configuration with tier and include_tier_context
+
+    Example:
+        >>> scope = ContextScope(tier=2, include_tier_context=True)
+        >>> full_state = {"tier1_summary": {"key_findings": ["RAG tutorial"]}}
+        >>> scoped_state = ScopedState()
+        >>> _inject_tier_context(scoped_state, full_state, "security_auditor", scope)
+        >>> "tier_context" in scoped_state
+        True
+
+    """
+    # Skip if tier context injection is disabled
+    if not scope.include_tier_context:
+        return
+
+    # Skip for Tier 1 agents (they create context, don't receive it)
+    if scope.tier <= 1:
+        return
+
+    # Get tier summaries from state
+    tier1_summary = full_state.get("tier1_summary")
+    tier2_summary = full_state.get("tier2_summary") if scope.tier >= TIER_3_THRESHOLD else None
+
+    # Format tier context as narrative
+    tier_context = format_tier_context(
+        tier1_summary=tier1_summary,
+        tier2_summary=tier2_summary,
+    )
+
+    if tier_context:
+        scoped_state["tier_context"] = tier_context
+        logger.info(
+            "tier_context_injected",
+            agent_type=agent_type,
+            agent_tier=scope.tier,
+            has_tier1=tier1_summary is not None,
+            has_tier2=tier2_summary is not None,
+            context_length=len(tier_context),
+        )
+    else:
+        logger.debug(
+            "tier_context_empty",
+            agent_type=agent_type,
+            agent_tier=scope.tier,
+            reason="No tier summaries available yet",
+        )
+
+
 def build_scoped_context(
     full_state: AnalysisState,
     agent_type: str,
@@ -359,6 +510,9 @@ def build_scoped_context(
 
     # Inject supervisor decision data (expectations, coverage, content_signals)
     _inject_supervisor_data(scoped_state, full_state, agent_type, scope)
+
+    # Issue #588: Inject tier context from previous tiers (Sequential Tier Learning)
+    _inject_tier_context(scoped_state, full_state, agent_type, scope)
 
     # Calculate size reduction
     # Cast to dict for size estimation (AnalysisState is TypedDict)

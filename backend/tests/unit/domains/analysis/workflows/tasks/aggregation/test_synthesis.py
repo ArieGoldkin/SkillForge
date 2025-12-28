@@ -127,7 +127,9 @@ class TestCreateSynthesisAgent:
         """Test that create_synthesis_agent calls create_structured_agent with correct args."""
         mock_agent = MagicMock()
         mock_create_structured_agent.return_value = mock_agent
-        mock_get_prompt.return_value = "Test system prompt with triple-purpose and executive_summary"
+        mock_get_prompt.return_value = (
+            "Test system prompt with triple-purpose and executive_summary"
+        )
 
         # Call the async function
         result = await create_synthesis_agent()
@@ -141,7 +143,10 @@ class TestCreateSynthesisAgent:
 
         # Verify system_prompt was passed
         assert "system_prompt" in call_kwargs
-        assert call_kwargs["system_prompt"] == "Test system prompt with triple-purpose and executive_summary"
+        assert (
+            call_kwargs["system_prompt"]
+            == "Test system prompt with triple-purpose and executive_summary"
+        )
 
         # Verify response_schema is AggregatedInsights
         assert "response_schema" in call_kwargs
