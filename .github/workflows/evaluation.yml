@@ -113,6 +113,11 @@ jobs:
       - name: Install dependencies
         working-directory: backend
         run: |
+          # Force fresh venv if cache is corrupted (check alembic, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run python -m alembic --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted (alembic not found), removing..."
+            rm -rf .venv 2>/dev/null || true
+          fi
           poetry install --no-interaction --no-root
 
       - name: Setup database
@@ -120,8 +125,8 @@ jobs:
         run: |
           # Local PostgreSQL 17 with pgvector on self-hosted runner
           /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
-          # Run migrations to set up schema
-          poetry run alembic upgrade head
+          # Run migrations to set up schema (use python -m to avoid PATH issues with CLI entrypoints)
+          poetry run python -m alembic upgrade head
 
       - name: Load evaluation fixtures
         working-directory: backend

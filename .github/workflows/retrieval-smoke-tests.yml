@@ -83,7 +83,13 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check alembic, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run python -m alembic --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted (alembic not found), removing..."
+            rm -rf .venv 2>/dev/null || true
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Ensure pgvector extension
         run: |
@@ -92,7 +98,7 @@ jobs:
 
       - name: Run Alembic migrations
         working-directory: ./backend
-        run: poetry run alembic upgrade head
+        run: poetry run python -m alembic upgrade head
 
       # ========================================================================
       # Run ALL smoke tests in ONE pytest command (optimized from 4 separate runs)
