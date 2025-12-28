@@ -23,10 +23,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -85,10 +88,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
