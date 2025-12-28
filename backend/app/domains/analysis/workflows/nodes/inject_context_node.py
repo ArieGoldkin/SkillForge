@@ -10,6 +10,7 @@ import asyncio
 import time
 
 from app.core.logging import get_logger
+from app.core.timeout_config import CONTEXT_INJECTION_TIMEOUT
 from app.db.session import get_session_factory
 from app.domains.analysis.workflows.state import AnalysisState
 from app.shared.services.memory.proactive_recall import (
@@ -65,8 +66,8 @@ async def inject_context_node(state: AnalysisState) -> dict[str, object]:
         # Use first 1000 chars as a reasonable summary for vector search
         content_summary = raw_content[:1000]
 
-        # Fetch proactive context with 30 second timeout to prevent hanging
-        async with asyncio.timeout(30):
+        # Issue #536: Using centralized CONTEXT_INJECTION_TIMEOUT constant
+        async with asyncio.timeout(CONTEXT_INJECTION_TIMEOUT):
             # Fetch proactive context for each agent type
             # We'll fetch a generic context that applies to all agents
             # Individual agents can filter what's relevant to them

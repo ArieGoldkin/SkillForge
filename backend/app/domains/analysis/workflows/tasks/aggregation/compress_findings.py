@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.timeout_config import COMPRESSION_TIMEOUT
 from app.core.tracing import robust_traceable
 from app.shared.services.prompts.prompt_manager import get_prompt_manager
 
@@ -198,10 +199,11 @@ async def compress_single_finding(
         HumanMessage(content=user_prompt),
     ]
 
-    # Invoke LLM directly with asyncio.timeout (30s for compression - should be fast)
+    # Invoke LLM directly with asyncio.timeout for compression
     # Note: We bypass invoke_agent because llm.with_structured_output() expects
     # direct message input, not the agent-style {"messages": [...]} format
-    async with asyncio.timeout(30.0):
+    # Issue #536: Using centralized COMPRESSION_TIMEOUT constant
+    async with asyncio.timeout(COMPRESSION_TIMEOUT):
         result = await llm.ainvoke(messages)
 
     # Extract usage metadata (LangChain-Core 1.2.4+)
@@ -371,7 +373,7 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
         results = []
         for i, messages in enumerate(batch_inputs):
             try:
-                async with asyncio.timeout(30.0):
+                async with asyncio.timeout(COMPRESSION_TIMEOUT):
                     result = await llm_with_structure.ainvoke(messages, config=config)
                 results.append(result)
             except Exception as seq_error:
