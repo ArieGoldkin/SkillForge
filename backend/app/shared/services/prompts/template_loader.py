@@ -121,6 +121,7 @@ class TemplatePaths:
     AGENT_TREND_VALIDATOR = "agents/tier2/trend_validator.j2"
     AGENT_INTEGRATION_FEASIBILITY = "agents/tier2/integration_feasibility.j2"
     AGENT_CODE_QUALITY_CRITIC = "agents/tier2/code_quality_critic.j2"
+    AGENT_FACT_VALIDATOR = "agents/tier2/fact_validator.j2"
 
     AGENT_DEEP_RESEARCHER = "agents/tier3/deep_researcher.j2"
     AGENT_COMMUNITY_PULSE = "agents/tier3/community_pulse.j2"

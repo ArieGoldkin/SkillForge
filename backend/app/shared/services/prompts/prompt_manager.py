@@ -64,6 +64,7 @@ TEMPLATE_MAPPING: dict[str, str] = {
     "analysis-agent-trend-validator": TemplatePaths.AGENT_TREND_VALIDATOR,
     "analysis-agent-integration-feasibility": TemplatePaths.AGENT_INTEGRATION_FEASIBILITY,
     "analysis-agent-code-quality-critic": TemplatePaths.AGENT_CODE_QUALITY_CRITIC,
+    "analysis-agent-fact-validator": TemplatePaths.AGENT_FACT_VALIDATOR,
     # Tier 3 Agents (Research - Deep Dive with memory/tools)
     "analysis-agent-deep-researcher": TemplatePaths.AGENT_DEEP_RESEARCHER,
     "analysis-agent-community-pulse": TemplatePaths.AGENT_COMMUNITY_PULSE,

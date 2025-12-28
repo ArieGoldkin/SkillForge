@@ -1,6 +1,7 @@
-"""Migrate hardcoded prompts to Langfuse Prompt Management.
+"""Migrate Jinja2 templates to Langfuse Prompt Management.
 
-Issue #379: Upload all hardcoded prompts to Langfuse with "production" label.
+Issue #379: Upload prompts to Langfuse with "production" label.
+Issue #414: Updated to use TEMPLATE_MAPPING instead of removed HARDCODED_PROMPTS.
 
 Usage:
     # Dry run (preview what will be uploaded)
@@ -20,7 +21,8 @@ from typing import Any
 
 from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
-from app.shared.services.prompts.prompt_manager import HARDCODED_PROMPTS
+from app.shared.services.prompts.prompt_manager import TEMPLATE_MAPPING
+from app.shared.services.prompts.template_loader import render_template
 
 logger = get_logger(__name__)
 
@@ -101,7 +103,10 @@ def create_or_update_prompt(
 
 
 def migrate_all_prompts(dry_run: bool = True, label: str = "production") -> dict[str, Any]:
-    """Migrate all hardcoded prompts to Langfuse.
+    """Migrate all Jinja2 templates to Langfuse.
+
+    Issue #414: Now loads templates from TEMPLATE_MAPPING instead of HARDCODED_PROMPTS.
+    Templates are rendered with empty variables (Langfuse uses {var} syntax, not Jinja2).
 
     Args:
         dry_run: If True, only preview (don't actually create)
@@ -133,12 +138,32 @@ def migrate_all_prompts(dry_run: bool = True, label: str = "production") -> dict
 
     logger.info(
         "prompt_migration_started",
-        total_prompts=len(HARDCODED_PROMPTS),
+        total_prompts=len(TEMPLATE_MAPPING),
         label=label,
         dry_run=dry_run,
     )
 
-    for name, prompt in HARDCODED_PROMPTS.items():
+    for name, template_path in TEMPLATE_MAPPING.items():
+        try:
+            # Load template content (without variable substitution for Langfuse)
+            # Note: For Langfuse, we want the raw template with {{ var }} preserved
+            # so it can be compiled later with variables
+            prompt = render_template(template_path)
+        except Exception as e:
+            logger.warning(
+                "template_load_failed",
+                name=name,
+                template_path=template_path,
+                error=str(e),
+            )
+            results.append({
+                "name": name,
+                "label": label,
+                "status": "failed",
+                "error": f"Template load failed: {e}",
+            })
+            continue
+
         result = create_or_update_prompt(
             client=client,
             name=name,
