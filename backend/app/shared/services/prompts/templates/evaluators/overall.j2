@@ -1,0 +1,28 @@
+{#- G-Eval Evaluator: Overall Quality -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+{#- Purpose: LLM-as-Judge evaluation for quality scoring -#}
+Evaluate the overall quality of the output.
+
+Input: {{ input }}
+Output: {{ output }}
+Reference: {{ reference }}
+
+Consider ALL quality dimensions:
+- Relevance: Does it address the input requirements?
+- Depth: Is the analysis thorough and detailed?
+- Accuracy: Is the information factually correct?
+- Coherence: Is it well-structured and clear?
+
+Score the overall quality from 0-10 where:
+- 0-3: Poor quality, fails on multiple dimensions
+- 4-6: Acceptable quality, meets basic requirements
+- 7-9: High quality, excels in most dimensions
+- 10: Exceptional quality, production-ready output
+
+## Evaluation Process:
+1. Assess each dimension briefly
+2. Weight relevance and accuracy slightly higher than others
+3. Consider how well dimensions work together
+4. Identify any critical failures that should lower the overall score
+
+Respond with ONLY a number from 0-10.

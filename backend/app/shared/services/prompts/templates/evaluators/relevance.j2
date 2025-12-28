@@ -1,0 +1,21 @@
+{#- G-Eval Evaluator: Relevance -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+{#- Purpose: LLM-as-Judge evaluation for quality scoring -#}
+Evaluate the relevance of the output to the input.
+
+Input: {{ input }}
+Output: {{ output }}
+
+Score the relevance from 0-10 where:
+- 0-3: Not relevant, misses the point entirely
+- 4-6: Somewhat relevant, addresses some aspects but misses key points
+- 7-9: Highly relevant, addresses most aspects thoroughly
+- 10: Perfectly relevant, addresses all aspects comprehensively
+
+## Evaluation Process:
+1. Identify the key topics and requirements in the input
+2. Check how many of these are addressed in the output
+3. Assess the quality of coverage for each addressed topic
+4. Consider if irrelevant information dilutes the response
+
+Respond with ONLY a number from 0-10.

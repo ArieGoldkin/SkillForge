@@ -1,0 +1,91 @@
+{# Base template with shared macros for agent prompts #}
+{# Issue #414: Jinja2 template inheritance for DRY prompt engineering #}
+
+{#- Macro for required output structure documentation -#}
+{% macro output_structure(example_json, field_requirements) %}
+CRITICAL: You MUST provide ALL required fields. Missing fields will cause validation errors.
+
+Required Output Structure (EXAMPLE FORMAT - extract actual values from content):
+{{ example_json }}
+
+Field Requirements:
+{{ field_requirements }}
+{% endmacro %}
+
+{#- Macro for numeric specificity requirements -#}
+{% macro numeric_specificity(requirements) %}
+NUMERIC SPECIFICITY REQUIREMENTS:
+{% for req in requirements %}
+- {{ req }}
+{% endfor %}
+{% endmacro %}
+
+{#- Macro for forbidden vague language -#}
+{% macro forbidden_language(examples) %}
+FORBIDDEN VAGUE LANGUAGE - Never use:
+{% for example in examples %}
+- {{ example }}
+{% endfor %}
+{% endmacro %}
+
+{#- Macro for good/bad examples -#}
+{% macro example_pair(good_example, bad_example) %}
+GOOD EXAMPLE:
+{{ good_example }}
+
+BAD EXAMPLE (DO NOT USE):
+{{ bad_example }}
+{% endmacro %}
+
+{#- Macro for framework-specific checks -#}
+{% macro framework_checks(frameworks) %}
+FRAMEWORK-SPECIFIC CHECKS (Apply if detected):
+{% for framework, checks in frameworks.items() %}
+- {{ framework }}: {{ checks }}
+{% endfor %}
+{% endmacro %}
+
+{#- Macro for skill level adaptation -#}
+{% macro skill_adaptation() %}
+SKILL LEVEL ADAPTATION:
+- Beginner: More detailed steps, longer time estimates, foundational resources first
+- Intermediate: Assume some setup done, focus on implementation patterns
+- Advanced: Skip basics, focus on optimization, production concerns, advanced techniques
+{% endmacro %}
+
+{#- Macro for memory usage instructions -#}
+{% macro memory_instructions() %}
+MEMORY USAGE INSTRUCTIONS:
+You will receive "prior_memory" context containing summaries of the user's previously
+analyzed content. Use this to:
+- Identify related topics they've already studied
+- Find prerequisite concepts already in their knowledge base
+- Detect gaps in their learning path
+- Recommend logical next steps based on what they know
+
+If prior_memory is empty or very limited, report this honestly:
+- Focus on general prerequisites and next steps
+- Lower confidence_score to reflect lack of knowledge graph context
+{% endmacro %}
+
+{#- Macro for tool call restriction -#}
+{% macro single_response() %}
+IMPORTANT: Return exactly ONE structured response/tool call; never return multiple
+tool calls or extra responses.
+{% endmacro %}
+
+{#- Macro for content-agnostic approach -#}
+{% macro content_agnostic() %}
+CONTENT-AGNOSTIC APPROACH:
+- Works for ANY content type: articles, videos, repos, tutorials, research papers
+- Subject can be: frameworks, libraries, methodologies, approaches, patterns, tools, etc.
+- Always maintain objectivity - report what content says, not external opinions
+{% endmacro %}
+
+{#- Macro for evidence-based extraction -#}
+{% macro evidence_based() %}
+EVIDENCE-BASED EXTRACTION:
+- Quote specific statements, code examples, or data from content
+- Link insights to source sections (e.g., "In Section 3, author demonstrates...")
+- Never hallucinate or add external knowledge not in content
+{% endmacro %}

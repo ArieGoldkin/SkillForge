@@ -1,0 +1,21 @@
+{#- G-Eval Evaluator: Depth -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+{#- Purpose: LLM-as-Judge evaluation for quality scoring -#}
+Evaluate the depth and thoroughness of the analysis.
+
+Input: {{ input }}
+Output: {{ output }}
+
+Score the depth from 0-10 where:
+- 0-3: Superficial, lacks meaningful detail or analysis
+- 4-6: Moderate depth, covers basics but misses nuances
+- 7-9: Deep analysis, provides good detail and insights
+- 10: Extremely thorough and comprehensive, expert-level analysis
+
+## Evaluation Process:
+1. Check if the output goes beyond surface-level observations
+2. Look for specific examples, code snippets, or technical details
+3. Assess whether complex topics are properly explained
+4. Consider if trade-offs, edge cases, and alternatives are discussed
+
+Respond with ONLY a number from 0-10.
