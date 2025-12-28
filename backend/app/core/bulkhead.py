@@ -4,12 +4,13 @@ Issue #533: Provides tier-based resource isolation to prevent cascade failures
 across agent tiers. Based on the resilience-patterns skill templates.
 
 The bulkhead pattern isolates failures by partitioning resources:
-- Tier 1 (UNIVERSAL): 5 workers, 10 queue, 300s timeout - Critical agents
-- Tier 2 (VALIDATION): 3 workers, 5 queue, 120s timeout - Standard agents
-- Tier 3 (RESEARCH): 2 workers, 3 queue, 60s timeout - Optional agents
+- Tier 1 (UNIVERSAL): 5 workers, 10 queue, 300s timeout - Critical agents (4 agents)
+- Tier 2 (VALIDATION): 8 workers, 12 queue, 240s timeout - Standard agents (8 agents)
+- Tier 3 (RESEARCH): 4 workers, 6 queue, 180s timeout - Optional agents (4 agents)
 
-This prevents a slow/failing Tier 3 agent from exhausting resources
-and blocking critical Tier 1 agents.
+Capacity is sized to allow TRUE PARALLEL FAN-OUT within each tier while
+still providing isolation between tiers. Issue #588: Previous config was
+too restrictive (3 workers for 8 Tier 2 agents caused BulkheadFullError).
 
 Example:
     >>> from app.core.bulkhead import get_bulkhead_for_tier
@@ -96,10 +97,14 @@ class BulkheadTimeoutError(Exception):
 
 
 # Default tier configurations (matches SkillForge agent tiers)
+# Issue #588: Capacity sized for TRUE PARALLEL FAN-OUT within each tier
+# Tier 1: 4 agents → 5 workers (125% headroom)
+# Tier 2: 8 agents → 8 workers (100% + 12 queue for burst)
+# Tier 3: 4 agents → 4 workers (100% + 6 queue for burst)
 TIER_DEFAULTS = {
     Tier.CRITICAL: {"max_concurrent": 5, "queue_size": 10, "timeout": 300.0},
-    Tier.STANDARD: {"max_concurrent": 3, "queue_size": 5, "timeout": 120.0},
-    Tier.OPTIONAL: {"max_concurrent": 2, "queue_size": 3, "timeout": 60.0},
+    Tier.STANDARD: {"max_concurrent": 8, "queue_size": 12, "timeout": 240.0},
+    Tier.OPTIONAL: {"max_concurrent": 4, "queue_size": 6, "timeout": 180.0},
 }
 
 
