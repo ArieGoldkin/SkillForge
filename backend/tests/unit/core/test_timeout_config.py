@@ -38,18 +38,18 @@ class TestTimeoutConstants:
 
     @pytest.mark.unit
     def test_step_timeout_default_value(self):
-        """STEP_TIMEOUT should default to 300 seconds (5 minutes)."""
+        """STEP_TIMEOUT should default to 90 seconds (catches hangs quickly)."""
         from app.core.timeout_config import STEP_TIMEOUT
 
-        # Default is 300 unless env var is set
-        assert STEP_TIMEOUT == 300.0 or isinstance(STEP_TIMEOUT, float)
+        # Default is 90s unless env var is set
+        assert STEP_TIMEOUT == 90.0 or isinstance(STEP_TIMEOUT, float)
 
     @pytest.mark.unit
     def test_workflow_timeout_value(self):
-        """WORKFLOW_TIMEOUT should be 900 seconds (15 minutes)."""
+        """WORKFLOW_TIMEOUT should be 300 seconds (5 minutes)."""
         from app.core.timeout_config import WORKFLOW_TIMEOUT
 
-        assert WORKFLOW_TIMEOUT == 900.0
+        assert WORKFLOW_TIMEOUT == 300.0
 
 
 class TestStepTimeoutEnvOverride:

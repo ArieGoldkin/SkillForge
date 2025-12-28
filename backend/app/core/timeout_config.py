@@ -11,13 +11,13 @@ We use a **tiered timeout strategy** with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  LAYER 1: Workflow-Level (WORKFLOW_TIMEOUT = 900s)             │
-│  └── Total workflow budget, external monitoring                 │
+│  LAYER 1: Workflow-Level (WORKFLOW_TIMEOUT = 300s)             │
+│  └── Total workflow budget (5 min for complete pipeline)       │
 │                                                                 │
-│  LAYER 2: Node-Level (STEP_TIMEOUT = 300s)                     │
+│  LAYER 2: Node-Level (STEP_TIMEOUT = 90s)                      │
 │  └── LangGraph's built-in per-node timeout                     │
 │  └── Set on compiled graph: graph.step_timeout = STEP_TIMEOUT  │
-│  └── Single source of truth for node execution limits          │
+│  └── Catches hangs quickly (1-2 LLM calls with retry)          │
 │                                                                 │
 │  LAYER 3: Operation-Level (asyncio.timeout)                    │
 │  └── For discrete async operations INSIDE nodes                │
@@ -76,7 +76,7 @@ async with asyncio.timeout(30):
 All timeout values are centralized here for consistency:
 
 **Active (used in code):**
-- `STEP_TIMEOUT`: Node-level timeout on compiled graph (300s)
+- `STEP_TIMEOUT`: Node-level timeout on compiled graph (90s)
 - `LLM_CALL_TIMEOUT`: Per-LLM invocation timeout (60s)
 - `SYNTHESIS_TIMEOUT`: Aggregation synthesis timeout (180s)
 - `COMPRESSION_TIMEOUT`: Finding compression timeout (30s)
@@ -85,7 +85,7 @@ All timeout values are centralized here for consistency:
 - `RERANKER_TIMEOUT`: Search reranking (configurable)
 
 **Reference (for documentation):**
-- `WORKFLOW_TIMEOUT`: Entire workflow budget (900s)
+- `WORKFLOW_TIMEOUT`: Entire workflow budget (300s / 5 min)
 - `STREAMING_TIMEOUT`: Streaming operations (120s)
 
 ## Retry Configuration
@@ -108,16 +108,18 @@ from langchain_core.runnables import RunnableConfig
 # LAYER 1: Workflow-Level Timeout
 # =============================================================================
 # Total budget for entire workflow execution
-WORKFLOW_TIMEOUT: float = 900.0  # 15 minutes
+# 5 minutes is sufficient for complete analysis pipeline
+WORKFLOW_TIMEOUT: float = 300.0  # 5 minutes
 
 # =============================================================================
 # LAYER 2: Node-Level Timeout (LangGraph step_timeout)
 # =============================================================================
 # Single source of truth for node execution limits
 # Set on compiled graph: graph.step_timeout = STEP_TIMEOUT
+# 90s = enough for 1-2 LLM calls with retry, catches hangs quickly
 # Override via SKILLFORGE_STEP_TIMEOUT env var for complex regeneration tasks
 _step_timeout_env = os.environ.get("SKILLFORGE_STEP_TIMEOUT")
-STEP_TIMEOUT: float = float(_step_timeout_env) if _step_timeout_env else 300.0  # 5 min
+STEP_TIMEOUT: float = float(_step_timeout_env) if _step_timeout_env else 90.0  # 90 seconds
 
 # =============================================================================
 # LAYER 3: Operation-Level Timeouts (asyncio.timeout for discrete awaits)
