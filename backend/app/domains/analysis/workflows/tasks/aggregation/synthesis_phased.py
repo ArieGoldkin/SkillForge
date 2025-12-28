@@ -22,7 +22,7 @@ from pydantic import ValidationError
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
-from app.core.timeout_config import SYNTHESIS_TIMEOUT
+from app.core.timeout_config import SYNTHESIS_PHASE_TIMEOUT
 from app.core.types import AnalysisID
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
 
@@ -327,8 +327,8 @@ async def _synthesize_core(
             HumanMessage(content=user_prompt),
         ]
 
-        # Use asyncio.timeout for explicit timeout control
-        async with asyncio.timeout(SYNTHESIS_TIMEOUT // 3):
+        # Issue #536: Using centralized SYNTHESIS_PHASE_TIMEOUT constant
+        async with asyncio.timeout(SYNTHESIS_PHASE_TIMEOUT):
             structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
@@ -439,8 +439,8 @@ async def _synthesize_learning(
             HumanMessage(content=user_prompt),
         ]
 
-        # Use asyncio.timeout for explicit timeout control
-        async with asyncio.timeout(SYNTHESIS_TIMEOUT // 3):
+        # Issue #536: Using centralized SYNTHESIS_PHASE_TIMEOUT constant
+        async with asyncio.timeout(SYNTHESIS_PHASE_TIMEOUT):
             structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
@@ -558,8 +558,8 @@ async def _synthesize_docs(
             HumanMessage(content=user_prompt),
         ]
 
-        # Use asyncio.timeout for explicit timeout control
-        async with asyncio.timeout(SYNTHESIS_TIMEOUT // 3):
+        # Issue #536: Using centralized SYNTHESIS_PHASE_TIMEOUT constant
+        async with asyncio.timeout(SYNTHESIS_PHASE_TIMEOUT):
             structured_response = await chain.ainvoke(messages)
 
         phase_elapsed = time.time() - phase_start
