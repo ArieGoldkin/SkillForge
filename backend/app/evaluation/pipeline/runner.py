@@ -33,7 +33,7 @@ from app.evaluation.pipeline.thresholds import (
     ThresholdStatus,
     get_threshold,
 )
-from app.schemas.search import SearchMode
+from app.schemas.search import ReRankConfig, SearchMode
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -352,10 +352,21 @@ class EvaluationRunner:
                 # Use at least 5, but increase if query expects more chunks
                 # This ensures we don't artificially cap recall for multi-target queries
                 dynamic_top_k = max(5, len(expected_chunks))
+
+                # Configure reranking for improved result quality
+                # Fetch 20 candidates, rerank with cross-encoder, return top_k
+                rerank_config = ReRankConfig(
+                    enabled=True,
+                    candidate_count=20,
+                    final_count=dynamic_top_k,
+                    timeout_seconds=5.0,
+                )
+
                 results = await self.search_service.search(
                     query=query_text,
                     top_k=dynamic_top_k,
                     mode=SearchMode.HYBRID,
+                    rerank=rerank_config,
                 )
 
                 # Extract section IDs from path metadata for matching
