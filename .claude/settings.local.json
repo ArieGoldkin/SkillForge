@@ -1,3 +1,13 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(gh milestone view:*)",
+      "Bash(for hook in .claude/hooks/pretool/bash/*.sh)",
+      "Bash(bash:*)",
+      "Bash(done)",
+      "Bash(for hook in .claude/hooks/posttool/*.sh)",
+      "Bash(find:*)"
+    ]
+  },
   "enableAllProjectMcpServers": true
 }
