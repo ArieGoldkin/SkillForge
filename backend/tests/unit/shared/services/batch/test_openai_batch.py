@@ -21,6 +21,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.core.exceptions import ExternalServiceError
 from app.shared.services.batch.openai_batch import (
     OpenAIBatchClient,
     batch_embeddings,
@@ -472,7 +473,11 @@ class TestBatchEmbeddings:
         assert requests[0]["model"] == "text-embedding-3-large"
 
     async def test_batch_embeddings_with_error_result(self, mock_batch_client):
-        """Test batch_embeddings raises error when result contains error."""
+        """Test batch_embeddings raises ExternalServiceError when result contains error.
+
+        Issue #535: Changed from RuntimeError to ExternalServiceError for proper
+        domain exception handling in external service integrations.
+        """
         mock_batch_client.get_batch_results.return_value = [
             {
                 "custom_id": "request-0",
@@ -480,8 +485,12 @@ class TestBatchEmbeddings:
             },
         ]
 
-        with pytest.raises(RuntimeError, match="Embedding failed"):
+        with pytest.raises(ExternalServiceError) as exc_info:
             await batch_embeddings(["text1"])
+
+        # Verify the exception contains proper context
+        assert exc_info.value.service_name == "openai_batch"
+        assert "Embedding failed" in str(exc_info.value)
 
     async def test_batch_embeddings_preserves_order(self, mock_batch_client):
         """Test batch_embeddings preserves input order."""

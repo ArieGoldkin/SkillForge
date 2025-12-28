@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from app.core.exceptions import AgentError
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
 
@@ -60,13 +61,17 @@ async def test_run_agent_with_tracking_no_structured_response(
     mock_get_stage_name,
     mock_session,
 ):
-    """Test error when agent doesn't return structured_response."""
+    """Test error when agent doesn't return structured_response raises AgentError.
+
+    Issue #535: Changed from RuntimeError to AgentError for proper
+    domain exception handling in agent operations.
+    """
     analysis_id = str(uuid4())
     mock_agent = MagicMock()
     mock_agent.astream = None  # Explicitly disable streaming to use ainvoke
     mock_agent.ainvoke = AsyncMock(return_value={})  # No structured_response
 
-    with pytest.raises(RuntimeError, match="did not return structured_response"):
+    with pytest.raises(AgentError) as exc_info:
         await run_agent_with_tracking(
             agent=mock_agent,
             content="test",
@@ -75,6 +80,7 @@ async def test_run_agent_with_tracking_no_structured_response(
             agent_type="tech_comparator",  # Use valid agent type
             session=mock_session,
         )
+    assert "did not return structured_response" in str(exc_info.value)
 
 
 @pytest.mark.asyncio

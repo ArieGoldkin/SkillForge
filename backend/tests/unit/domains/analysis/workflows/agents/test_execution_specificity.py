@@ -18,7 +18,7 @@ async def test_specificity_retry_then_success(monkeypatch):
         invoke_calls.append(1)
         return {"result": f"run-{len(invoke_calls)}"}
 
-    def fake_extract_structured_response(result, _agent_type):
+    def fake_extract_structured_response(result, _agent_type, analysis_id=None):
         return {"output": result["result"]}
 
     def fake_score_agent_output(_findings, agent_type: str):
@@ -66,7 +66,7 @@ async def test_specificity_failure_after_retries(monkeypatch):
         invoke_calls.append(1)
         return {"result": f"run-{len(invoke_calls)}"}
 
-    def fake_extract_structured_response(result, _agent_type):
+    def fake_extract_structured_response(result, _agent_type, analysis_id=None):
         return {"output": result["result"]}
 
     def fake_score_agent_output(_findings, agent_type: str):

@@ -12,6 +12,7 @@ TDD: These tests were written BEFORE the fix to ensure proper coverage.
 import pytest
 from pydantic import BaseModel
 
+from app.core.exceptions import AgentError
 from app.domains.analysis.workflows.agents.response_processing import (
     extract_structured_response,
 )
@@ -143,19 +144,25 @@ class TestExtractStructuredResponseDirectPydantic:
 
 
 class TestExtractStructuredResponseErrors:
-    """Tests for error handling in response extraction."""
+    """Tests for error handling in response extraction.
 
-    def test_raises_runtime_error_for_none_result(self):
-        """Test that None result raises RuntimeError."""
-        with pytest.raises(RuntimeError, match="returned no result"):
+    Issue #535: Changed from RuntimeError to AgentError for proper
+    domain exception handling in agent operations.
+    """
+
+    def test_raises_agent_error_for_none_result(self):
+        """Test that None result raises AgentError."""
+        with pytest.raises(AgentError) as exc_info:
             extract_structured_response(None, "key_insights")
+        assert "returned no result" in str(exc_info.value)
 
-    def test_raises_runtime_error_for_missing_structured_response_in_dict(self):
-        """Test that dict without structured_response raises RuntimeError."""
+    def test_raises_agent_error_for_missing_structured_response_in_dict(self):
+        """Test that dict without structured_response raises AgentError."""
         invalid_dict = {"some_key": "some_value"}
 
-        with pytest.raises(RuntimeError, match="did not return structured_response"):
+        with pytest.raises(AgentError) as exc_info:
             extract_structured_response(invalid_dict, "key_insights")
+        assert "did not return structured_response" in str(exc_info.value)
 
     def test_raises_type_error_for_non_pydantic_in_wrapper(self):
         """Test that non-Pydantic value in wrapper raises TypeError."""
