@@ -33,23 +33,13 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 10
 
-    services:
-      postgres:
-        image: pgvector/pgvector:pg17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: skillforge_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
+    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
 
     env:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+      # Local PostgreSQL uses current user (no password) on macOS
+      DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
       PYTHONUNBUFFERED: "1"
 
     steps:
@@ -82,9 +72,10 @@ jobs:
         working-directory: ./backend
         run: poetry install --no-interaction --no-root
 
-      - name: Install pgvector extension
+      - name: Ensure pgvector extension
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Local PostgreSQL 17 with pgvector pre-installed on self-hosted runner
+          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
 
       - name: Run Alembic migrations
         working-directory: ./backend

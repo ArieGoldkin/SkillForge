@@ -62,21 +62,12 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 30
 
-    # Service container for PostgreSQL with pgvector
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: skillforge_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
+    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
 
     steps:
       - name: Checkout code
@@ -112,30 +103,17 @@ jobs:
         run: |
           poetry install --no-interaction --no-root
 
-      - name: Install PostgreSQL client
-        run: |
-          if command -v psql &> /dev/null; then
-            echo "PostgreSQL client already installed"
-          elif [[ "$OSTYPE" == "darwin"* ]]; then
-            brew install postgresql@16
-          else
-            sudo apt-get update && sudo apt-get install -y postgresql-client
-          fi
-
       - name: Setup database
         working-directory: backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
         run: |
-          # Ensure pgvector is available
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Local PostgreSQL 17 with pgvector on self-hosted runner
+          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
           # Run migrations to set up schema
           poetry run alembic upgrade head
 
       - name: Load evaluation fixtures
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
         run: |
           # Load fixture data with embeddings for evaluation
@@ -146,7 +124,6 @@ jobs:
         continue-on-error: true  # Don't fail PR on evaluation results - report metrics only
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
         run: |
           # In deterministic mode we run without regression gating (baseline is intended for

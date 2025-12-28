@@ -21,10 +21,10 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
@@ -73,27 +73,20 @@ jobs:
 
   test-migrations:
     runs-on: self-hosted
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+
+    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
+    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
@@ -120,22 +113,16 @@ jobs:
 
       - name: Setup database connection
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: |
-          # Enable pgvector extension
-          PGPASSWORD=testpass psql -h localhost -U testuser -d testdb -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Local PostgreSQL 17 with pgvector on self-hosted runner
+          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
 
       - name: Run migrations up
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: poetry run alembic upgrade head
 
       - name: Verify schema
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: |
           # Verify migrations were applied
           poetry run alembic current
@@ -143,8 +130,6 @@ jobs:
 
       - name: Run migrations down (one step)
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: |
           # Get current revision
           CURRENT=$(poetry run alembic current | grep -oP '(?<=\()\w+(?=\))' | head -1 || echo "")
@@ -159,13 +144,9 @@ jobs:
 
       - name: Run migrations up again
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: poetry run alembic upgrade head
 
       - name: Cleanup
         if: always()
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: poetry run alembic downgrade base || true
