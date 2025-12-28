@@ -408,17 +408,23 @@ class PromptManager:
             )
             return None
 
-    def _get_template_prompt(self, name: str) -> str | None:
+    def _get_template_prompt(self, name: str, variables: dict[str, Any]) -> str | None:
         """Get prompt from Jinja2 template fallback.
 
         Issue #414: Replaces _get_hardcoded_prompt with Jinja2 template loading.
+        Issue #414 (refactor): Uses TRUE Jinja2 best practices:
+        - Templates use {{ variable }} syntax (not Python {variable})
+        - Variables passed at render time via render_template(**variables)
+        - No separate Python .format() step needed
+
         Templates are stored in templates/ directory and mapped via TEMPLATE_MAPPING.
 
         Args:
             name: Prompt name (e.g., "analysis-agent-key-insights")
+            variables: Variables to pass to Jinja2 template
 
         Returns:
-            Rendered template content or None if not found
+            Rendered template content with variables substituted or None if not found
 
         """
         template_path = TEMPLATE_MAPPING.get(name)
@@ -432,13 +438,15 @@ class PromptManager:
             return None
 
         try:
-            # Render template (no variables - raw template content)
-            prompt = render_template(template_path)
+            # TRUE Jinja2: Pass variables directly to render_template()
+            # Templates use {{ var }} syntax, not Python {var} syntax
+            prompt = render_template(template_path, **variables)
 
             logger.info(
                 "prompt_fallback_to_template",
                 name=name,
                 template_path=template_path,
+                variables_count=len(variables),
                 message="Using Jinja2 template as fallback",
             )
 
@@ -615,10 +623,12 @@ class PromptManager:
             )
 
         # L4 Fallback: Jinja2 templates
-        template_prompt = self._get_template_prompt(name)
+        # TRUE Jinja2: Variables already substituted by render_template()
+        # No need for _compile_prompt() - that's only for Langfuse prompts with {var} syntax
+        template_prompt = self._get_template_prompt(name, variables)
         if template_prompt:
             # Don't cache template prompts (they're already fast to load)
-            return self._compile_prompt(template_prompt, variables), None
+            return template_prompt, None
 
         # Not found anywhere
         msg = f"Prompt '{name}' not found in Langfuse or templates"
@@ -691,10 +701,12 @@ class PromptManager:
             )
 
         # L4 Fallback: Jinja2 templates
-        template_prompt = self._get_template_prompt(name)
+        # TRUE Jinja2: Variables already substituted by render_template()
+        # No need for _compile_prompt() - that's only for Langfuse prompts with {var} syntax
+        template_prompt = self._get_template_prompt(name, variables)
         if template_prompt:
             # Don't cache template prompts (they're already fast to load)
-            return self._compile_prompt(template_prompt, variables)
+            return template_prompt
 
         # Not found anywhere
         msg = f"Prompt '{name}' not found in Langfuse or templates"
