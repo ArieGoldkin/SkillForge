@@ -43,6 +43,10 @@ jobs:
       PYTHONUNBUFFERED: "1"
 
     steps:
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
+
       - name: Checkout code
         uses: actions/checkout@v6
 
