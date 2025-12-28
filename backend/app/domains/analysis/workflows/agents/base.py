@@ -526,11 +526,37 @@ async def handle_agent_node_error(
         )
         return {"agent_findings": []}
 
-    # Import BulkheadTimeoutError for resilience wrapper timeout handling
-    from app.core.bulkhead import BulkheadTimeoutError
+    # Import bulkhead errors for resilience wrapper handling
+    from app.core.bulkhead import BulkheadFullError, BulkheadTimeoutError
 
-    if isinstance(error, (TimeoutError, BulkheadTimeoutError)):
-        # Agent execution exceeded timeout (direct or via bulkhead)
+    # Issue #588: Handle bulkhead rejection (queue full or timeout)
+    if isinstance(error, (BulkheadFullError, BulkheadTimeoutError)):
+        from app.domains.analysis.constants.error_codes import AGENT_BULKHEAD_REJECTED
+
+        # Bulkhead rejection - graceful degradation
+        error_message = str(error)
+        logger.warning(
+            "agent_bulkhead_rejected",
+            agent_type=agent_type,
+            analysis_id=str(analysis_id),
+            error_type=type(error).__name__,
+            error=error_message,
+            duration_seconds=duration,
+            trace_id=trace_id,
+        )
+
+        await record_agent_execution(
+            analysis_id=analysis_id,
+            agent_type=agent_type,
+            status=AgentStatus.FAILED,
+            error_code=AGENT_BULKHEAD_REJECTED,
+            error_message=error_message[:500],
+            processing_time_ms=processing_time_ms,
+        )
+        return {"agent_findings": []}
+
+    if isinstance(error, TimeoutError):
+        # Agent execution exceeded timeout (direct timeout, not bulkhead)
         error_code = f"{agent_type.upper()}_TIMEOUT"
         error_message = "Agent execution timed out"
 
