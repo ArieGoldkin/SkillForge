@@ -14,10 +14,10 @@ We use a **tiered timeout strategy** with clear separation of concerns:
 │  LAYER 1: Workflow-Level (WORKFLOW_TIMEOUT = 300s)             │
 │  └── Total workflow budget (5 min for complete pipeline)       │
 │                                                                 │
-│  LAYER 2: Node-Level (STEP_TIMEOUT = 90s)                      │
+│  LAYER 2: Node-Level (STEP_TIMEOUT = 60s)                      │
 │  └── LangGraph's built-in per-node timeout                     │
-│  └── Set on compiled graph: graph.step_timeout = STEP_TIMEOUT  │
-│  └── Catches hangs quickly (1-2 LLM calls with retry)          │
+│  └── Covers aggregation (parallel phases ~40s) + buffer        │
+│  └── Single-LLM nodes finish in 15-30s with headroom           │
 │                                                                 │
 │  LAYER 3: Operation-Level (asyncio.timeout)                    │
 │  └── For discrete async operations INSIDE nodes                │
@@ -76,7 +76,7 @@ async with asyncio.timeout(30):
 All timeout values are centralized here for consistency:
 
 **Active (used in code):**
-- `STEP_TIMEOUT`: Node-level timeout on compiled graph (90s)
+- `STEP_TIMEOUT`: Node-level timeout on compiled graph (60s)
 - `LLM_CALL_TIMEOUT`: Per-LLM invocation timeout (60s)
 - `SYNTHESIS_TIMEOUT`: Aggregation synthesis timeout (180s)
 - `COMPRESSION_TIMEOUT`: Finding compression timeout (30s)
@@ -116,10 +116,11 @@ WORKFLOW_TIMEOUT: float = 300.0  # 5 minutes
 # =============================================================================
 # Single source of truth for node execution limits
 # Set on compiled graph: graph.step_timeout = STEP_TIMEOUT
-# 90s = enough for 1-2 LLM calls with retry, catches hangs quickly
-# Override via SKILLFORGE_STEP_TIMEOUT env var for complex regeneration tasks
+# 60s = covers aggregation (3 phases run PARALLEL ~30s + compression ~10s)
+# Single-LLM nodes typically finish in 15-30s
+# Override via SKILLFORGE_STEP_TIMEOUT env var for complex tasks
 _step_timeout_env = os.environ.get("SKILLFORGE_STEP_TIMEOUT")
-STEP_TIMEOUT: float = float(_step_timeout_env) if _step_timeout_env else 90.0  # 90 seconds
+STEP_TIMEOUT: float = float(_step_timeout_env) if _step_timeout_env else 60.0  # 1 minute
 
 # =============================================================================
 # LAYER 3: Operation-Level Timeouts (asyncio.timeout for discrete awaits)
