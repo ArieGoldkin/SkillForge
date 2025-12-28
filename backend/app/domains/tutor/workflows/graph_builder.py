@@ -27,9 +27,11 @@ from app.domains.tutor.workflows.state_accessors import get_syllabus
 
 # Try to import PostgresSaver, fallback to MemorySaver if not available
 try:
-    from langgraph.checkpoint.postgres import PostgresSaver  # type: ignore[unresolved-import]
+    from langgraph.checkpoint.postgres import PostgresSaver
+
+    _postgres_available = True
 except ImportError:
-    PostgresSaver = None
+    _postgres_available = False
 
 logger = get_logger(__name__)
 
@@ -38,11 +40,7 @@ def _get_checkpointer():
     """Get checkpointer instance (PostgresSaver or MemorySaver)."""
     # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
     # Use MemorySaver in tests to avoid database connection hangs
-    if (
-        settings.DATABASE_URL
-        and PostgresSaver is not None
-        and not os.environ.get("PYTEST_CURRENT_TEST")
-    ):
+    if settings.DATABASE_URL and _postgres_available and not os.environ.get("PYTEST_CURRENT_TEST"):
         try:
             checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
             logger.info("tutor_checkpointer_initialized", type="PostgresSaver")

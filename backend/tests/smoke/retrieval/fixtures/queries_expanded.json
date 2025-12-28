@@ -3373,6 +3373,88 @@
       "min_score": 0.5,
       "max_score": null,
       "description": "Multi-agent context coordination edge case"
+    },
+    {
+      "id": "q-raft-time-series-forecasting-1",
+      "query": "What is RAFT for time series forecasting?",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": [
+        "raft-time-series-forecasting/introduction",
+        "raft-time-series-forecasting/retrieval-module"
+      ],
+      "min_score": 0.85,
+      "max_score": null,
+      "description": "Direct keyword match testing core acronym and method name"
+    },
+    {
+      "id": "q-raft-time-series-forecasting-2",
+      "query": "How does retrieval augmentation improve forecasting accuracy?",
+      "modes": [
+        "semantic",
+        "hybrid"
+      ],
+      "category": "broad",
+      "difficulty": "easy",
+      "expected_chunks": [
+        "raft-time-series-forecasting/introduction",
+        "raft-time-series-forecasting/discussions"
+      ],
+      "min_score": 0.7,
+      "max_score": null,
+      "description": "Synonym-based query testing understanding of RAG benefits and motivation"
+    },
+    {
+      "id": "q-raft-time-series-forecasting-3",
+      "query": "Explain the patch-based similarity aggregation mechanism for forecasting",
+      "modes": [
+        "semantic"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "raft-time-series-forecasting/retrieval-module",
+        "raft-time-series-forecasting/multi-period-design"
+      ],
+      "min_score": 0.6,
+      "max_score": null,
+      "description": "Paraphrased intent testing understanding of core technical components: patches, Pearson correlation, softmax aggregation"
+    },
+    {
+      "id": "q-raft-time-series-forecasting-4",
+      "query": "Why does multi-periodicity with downsampling help capture temporal patterns better than single-period approaches?",
+      "modes": [
+        "semantic"
+      ],
+      "category": "broad",
+      "difficulty": "hard",
+      "expected_chunks": [
+        "raft-time-series-forecasting/multi-period-design",
+        "raft-time-series-forecasting/discussions"
+      ],
+      "min_score": 0.55,
+      "max_score": null,
+      "description": "Cross-section reasoning connecting architecture design choices with temporal correlation insights"
+    },
+    {
+      "id": "q-raft-time-series-forecasting-5",
+      "query": "normalized pattern retrieval Pearson correlation softmax weighting",
+      "modes": [
+        "keyword",
+        "hybrid"
+      ],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": [
+        "raft-time-series-forecasting/retrieval-module"
+      ],
+      "min_score": 0.65,
+      "max_score": null,
+      "description": "Technical keyword phrase query testing identification of key algorithmic components"
     }
   ]
 }
