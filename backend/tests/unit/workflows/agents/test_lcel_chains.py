@@ -379,6 +379,9 @@ class TestSynthesisLCEL:
 class TestLCELPerformance:
     """Test performance improvements from LCEL chains."""
 
+    # Timing-sensitive test: parallel vs sequential comparison is unreliable in CI
+    # due to resource contention with pytest-xdist parallel execution (-n auto)
+    @pytest.mark.slow
     @patch("app.domains.analysis.workflows.tasks.aggregation.compress_findings.get_chat_model")
     async def test_abatch_speedup_vs_sequential(self, mock_get_chat_model):
         """Benchmark abatch() speedup vs sequential processing."""
