@@ -17,7 +17,6 @@ from app.domains.analysis.workflows.agents.response_processing import (
     extract_structured_response,
 )
 
-
 # ============================================================================
 # Test Fixtures - Mock Pydantic Models
 # ============================================================================

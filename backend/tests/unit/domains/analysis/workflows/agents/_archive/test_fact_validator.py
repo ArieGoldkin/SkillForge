@@ -9,10 +9,10 @@ Issue #436: Tier 2 agent with tool integration.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from app.domains.analysis.workflows.agents.fact_validator import run_fact_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.schemas.agents.fact_validator import Claim, FactValidatorOutput
-from app.domains.analysis.workflows.agents.fact_validator import run_fact_validator
 from app.domains.analysis.workflows.state import AnalysisState
 
 

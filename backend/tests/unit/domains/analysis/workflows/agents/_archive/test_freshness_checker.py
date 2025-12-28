@@ -11,13 +11,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from app.domains.analysis.workflows.agents.freshness_checker import run_freshness_checker
 from langchain_core.tools import BaseTool
 
 from app.domains.analysis.schemas.agents.freshness_checker import (
     FreshnessCheckerOutput,
     VersionCheck,
 )
-from app.domains.analysis.workflows.agents.freshness_checker import run_freshness_checker
 from app.domains.analysis.workflows.state import AnalysisState
 
 
