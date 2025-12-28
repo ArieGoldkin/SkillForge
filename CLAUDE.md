@@ -110,6 +110,13 @@ version: 4.1.0
 - **Fix**: Show "Complete with Errors" (red) when failures exist, added error details display
 - **Location**: `frontend/src/features/analysis/components/steps/AnalysisProgressCard.tsx`
 
+### CI Marker Override (Fixed Dec 2025)
+- **Problem**: Tests marked `@pytest.mark.slow` still ran in CI, causing flaky failures
+- **Root Cause**: CI used `-m "not external"` which OVERRIDES default `addopts` from pytest.ini
+- **Fix**: Updated `.github/workflows/backend-ci.yml` to use `-m "not slow and not external"`
+- **Location**: `.github/workflows/backend-ci.yml:185`
+- **Note**: When CI command includes `-m`, it replaces (not extends) the default marker filter
+
 ### Retrieval Ranking Quality (Improved Dec 2025)
 - **Problem**: Expected chunks ranked 6-10 instead of top-5 (91.1% pass rate)
 - **Root Cause**: Query-time tsvector (5-10x slower), low fetch multiplier, no metadata boosting
