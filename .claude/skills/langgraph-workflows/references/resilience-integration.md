@@ -60,11 +60,10 @@ llm_breaker = CircuitBreaker(
     recovery_timeout=60.0,
 )
 
-# Bulkhead per tier
+# Bulkhead per tier (Issue #588: Sized for parallel fan-out)
 tier2_bulkhead = Bulkhead(
     name="analysis-agents",
-    tier=Tier.STANDARD,
-    max_concurrent=3,
+    tier=Tier.STANDARD,  # Uses defaults: max_concurrent=8, queue_size=12
     timeout=120.0,
 )
 
@@ -227,21 +226,21 @@ tier1_bulkhead = Bulkhead(
     timeout=300.0,
 )
 
-# Tier 2: Standard analysis
+# Tier 2: Standard analysis (Issue #588: 8 agents → 8 workers)
 tier2_bulkhead = Bulkhead(
     name="analysis",
     tier=Tier.STANDARD,
-    max_concurrent=3,
-    queue_size=5,
+    max_concurrent=8,
+    queue_size=12,
     timeout=120.0,
 )
 
-# Tier 3: Optional enrichment
+# Tier 3: Optional enrichment (Issue #588: 4 agents → 4 workers)
 tier3_bulkhead = Bulkhead(
     name="enrichment",
     tier=Tier.OPTIONAL,
-    max_concurrent=2,
-    queue_size=3,
+    max_concurrent=4,
+    queue_size=6,
     timeout=60.0,
 )
 
