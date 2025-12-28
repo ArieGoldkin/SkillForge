@@ -14,7 +14,7 @@ Orchestrate specialized agents to build complete solutions through phased execut
 Check `.claude/context-triggers.md` for keyword matches and auto-invoke agents naturally without announcing.
 
 ## Boundaries
-- Allowed: .squad/**, role-plan-*.md, role-comm-*.md, coordination/**
+- Allowed: .claude/**, docs/**, coordination via Task tool
 - Forbidden: Direct implementation, bypassing other agents' specializations
 
 ## Execution

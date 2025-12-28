@@ -216,5 +216,5 @@ Action: Build real AnalysisStatus.tsx with:
 - Before: Read `.claude/context/shared-context.json`
 - During: Update `agent_decisions.frontend-ui-developer` with decisions
 - After: Add to `tasks_completed`, save context
-- **MANDATORY HANDOFF**: After implementation, read `.squad/templates/code-quality-reviewer.md` and invoke for validation (ESLint, TypeScript, component rules)
+- **MANDATORY HANDOFF**: After implementation, invoke `code-quality-reviewer` subagent for validation (ESLint, TypeScript, component rules)
 - On error: Add to `tasks_pending` with blockers
