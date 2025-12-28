@@ -8,10 +8,24 @@ Exception Hierarchy:
     SkillForgeException (base)
     ├── ServiceException (service layer errors)
     │   ├── EmbeddingError (embedding generation failures)
-    │   └── JinaReaderError (content extraction failures)
+    │   ├── JinaReaderError (content extraction failures)
+    │   ├── TavilySearchError (search API failures)
+    │   ├── GitHubSearchError (GitHub API failures)
+    │   ├── ExternalServiceError (external API failures)
+    │   └── CacheError (Redis/cache failures)
     ├── WorkflowError (workflow execution failures)
-    └── DatabaseError (database operation failures)
+    │   ├── WorkflowStageError (stage-aware error wrapper)
+    │   └── AgentError (individual agent failures)
+    ├── DatabaseError (database operation failures)
+    ├── ConfigurationError (configuration/setup errors)
+    ├── EvaluationError (G-Eval/scoring failures)
+    └── RetryableError (marker for retryable errors)
+        └── TransientError (transient failures)
+
+    AgentGroupError (PEP 654 ExceptionGroup for parallel agent failures)
 """
+
+from __future__ import annotations
 
 from enum import Enum
 
@@ -199,6 +213,246 @@ class DatabaseError(SkillForgeException):
     - Query execution fails
     - Transaction errors occur
     - Other database-related errors occur
+    """
+
+
+class AgentError(WorkflowError):
+    """Exception raised when an individual agent fails during workflow execution.
+
+    This exception is raised when:
+    - Agent execution fails due to LLM errors
+    - Agent raises unhandled exceptions
+    - Agent timeout occurs
+    - Agent produces invalid output
+
+    Attributes:
+        agent_name: Name of the agent that failed (e.g., "key_insights", "security_auditor")
+        analysis_id: The analysis ID being processed when failure occurred
+        original_exception: The underlying exception that caused the failure
+
+    Example:
+        ```python
+        try:
+            result = await key_insights_agent.ainvoke(state)
+        except Exception as e:
+            raise AgentError(
+                agent_name="key_insights",
+                original_exception=e,
+                analysis_id=state["analysis_id"],
+                message=f"Key insights agent failed: {e}",
+            )
+        ```
+
+    """
+
+    def __init__(
+        self,
+        agent_name: str,
+        original_exception: BaseException,
+        analysis_id: str | None = None,
+        message: str | None = None,
+    ):
+        """Initialize AgentError with agent context.
+
+        Args:
+            agent_name: Name of the agent that failed
+            original_exception: The underlying exception that caused the failure
+            analysis_id: The analysis ID being processed (optional)
+            message: Optional custom error message (defaults to original exception message)
+
+        """
+        error_message = message or f"Agent '{agent_name}' failed: {original_exception}"
+        super().__init__(error_message)
+        self.agent_name = agent_name
+        self.analysis_id = analysis_id
+        self.original_exception = original_exception
+        # Preserve exception chain for debugging (__cause__)
+        self.__cause__ = original_exception
+
+
+class AgentGroupError(ExceptionGroup):
+    """Exception group for multiple agent failures during parallel execution.
+
+    Uses PEP 654 ExceptionGroup to collect errors from 16 parallel agents.
+    Can be handled with except* syntax in Python 3.11+.
+
+    This exception is raised when:
+    - Multiple agents fail during parallel execution
+    - Need to preserve individual agent error context
+    - Want to handle different agent errors separately
+
+    Attributes:
+        message: Description of the group error
+        exceptions: List of AgentError instances from failed agents
+
+    Example:
+        ```python
+        # Collecting agent errors
+        agent_errors: list[AgentError] = []
+        for agent_name, task in parallel_tasks.items():
+            try:
+                await task
+            except Exception as e:
+                agent_errors.append(AgentError(agent_name, e))
+
+        if agent_errors:
+            raise AgentGroupError("Multiple agents failed", agent_errors)
+
+        # Handling with except* (Python 3.11+)
+        try:
+            await run_parallel_agents()
+        except* AgentError as eg:
+            for exc in eg.exceptions:
+                logger.error(f"Agent {exc.agent_name} failed: {exc}")
+        ```
+
+    """
+
+    def __init__(self, message: str, exceptions: list[AgentError]):
+        """Initialize AgentGroupError with agent errors.
+
+        Args:
+            message: Description of the group error
+            exceptions: List of AgentError instances from failed agents
+
+        """
+        super().__init__(message, exceptions)
+
+
+class ConfigurationError(SkillForgeException):
+    """Exception raised when configuration or setup errors occur.
+
+    This exception is raised when:
+    - Required environment variables are missing
+    - Configuration files are invalid
+    - Service initialization fails due to config
+    - API keys or credentials are invalid
+
+    Example:
+        ```python
+        if not settings.OPENAI_API_KEY:
+            raise ConfigurationError("OPENAI_API_KEY environment variable not set")
+        ```
+
+    """
+
+
+class ExternalServiceError(ServiceException):
+    """Exception raised when external API or service calls fail.
+
+    This exception is raised when:
+    - External API returns error response
+    - Network timeout to external service
+    - Authentication failure with external service
+    - External service unavailable
+
+    Attributes:
+        service_name: Name of the external service that failed
+
+    Example:
+        ```python
+        try:
+            response = await external_api.get(url)
+        except httpx.HTTPError as e:
+            raise ExternalServiceError(
+                service_name="external_api", message=f"Failed to fetch data: {e}"
+            )
+        ```
+
+    """
+
+    def __init__(self, service_name: str, message: str):
+        """Initialize ExternalServiceError with service context.
+
+        Args:
+            service_name: Name of the external service that failed
+            message: Error message describing the failure
+
+        """
+        super().__init__(message)
+        self.service_name = service_name
+
+
+class CacheError(ServiceException):
+    """Exception raised when Redis or cache operations fail.
+
+    This exception is raised when:
+    - Redis connection fails
+    - Cache get/set operations fail
+    - Cache serialization/deserialization errors
+    - Cache eviction failures
+
+    Example:
+        ```python
+        try:
+            await redis_client.set(key, value)
+        except redis.RedisError as e:
+            raise CacheError(f"Failed to cache result: {e}")
+        ```
+
+    """
+
+
+class EvaluationError(SkillForgeException):
+    """Exception raised when G-Eval or quality scoring fails.
+
+    This exception is raised when:
+    - G-Eval LLM calls fail
+    - Score parsing errors occur
+    - Evaluation criteria validation fails
+    - Quality gate evaluation errors
+
+    Example:
+        ```python
+        try:
+            score = await g_eval_scorer.score(criteria, output)
+        except Exception as e:
+            raise EvaluationError(f"G-Eval scoring failed: {e}")
+        ```
+
+    """
+
+
+class RetryableError(SkillForgeException):
+    """Base marker class for errors that may succeed on retry.
+
+    Inherit from this class to indicate that an operation may succeed
+    if retried with exponential backoff or circuit breaker patterns.
+
+    This is a marker base class - specific retryable errors should
+    inherit from both RetryableError and the appropriate error type.
+
+    Example:
+        ```python
+        class TransientDatabaseError(RetryableError, DatabaseError):
+            \"\"\"Database error that may succeed on retry.\"\"\"
+            pass
+
+        # Retry logic
+        if isinstance(exc, RetryableError):
+            await retry_with_backoff(operation)
+        ```
+
+    """
+
+
+class TransientError(RetryableError):
+    """Exception raised for transient failures that may succeed on retry.
+
+    This exception is raised when:
+    - Network timeouts occur
+    - Rate limits are temporarily exceeded
+    - Service temporarily unavailable
+    - Transient database connection issues
+
+    Example:
+        ```python
+        try:
+            response = await api_call()
+        except httpx.TimeoutException as e:
+            raise TransientError(f"API timeout, retry recommended: {e}")
+        ```
+
     """
 
 
