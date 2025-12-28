@@ -13,7 +13,7 @@ from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable, update_current_trace
 from app.db.session import get_session_factory
-from app.domains.tutor.workflows.config import SYLLABUS_GENERATION_PROMPT
+from app.domains.tutor.workflows.config import PROMPT_SYLLABUS_GENERATION
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 
@@ -87,7 +87,7 @@ async def generate_syllabus(state: TutorState) -> dict[str, object]:  # noqa: PL
                 analysis_summary = await get_analysis_summary(db_session, UUID(analysis_id))
 
         # Build prompt
-        prompt = SYLLABUS_GENERATION_PROMPT.format(
+        prompt = PROMPT_SYLLABUS_GENERATION.format(
             analysis_summary=json.dumps(analysis_summary)
             if analysis_summary
             else "No analysis context",

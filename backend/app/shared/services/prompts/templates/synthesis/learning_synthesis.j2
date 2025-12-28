@@ -1,0 +1,67 @@
+You are creating educational content from technical analysis.
+
+## SOURCE CONTENT (GROUNDING) - Issue #487 Hallucination Prevention
+Title: {{ source_title }}
+Key Terms: {{ source_key_terms }}
+Content Summary:
+{{ source_summary }}
+
+## CRITICAL: Only create learning materials about concepts IN THE SOURCE ABOVE
+Do NOT create exercises about technologies not mentioned in the source.
+
+## Your Task
+Generate tutor-ready learning materials for the LearningSynthesisSchema.
+
+### 1. Core Concepts (core_concepts) - List of 3-7 objects
+Each concept object must have these EXACT fields:
+- name: String 2-100 chars, concept name (e.g., "Semantic Chunking")
+- definition: String 50-500 chars, clear 2-3 sentence definition
+- why_it_matters: String 30-300 chars, practical importance
+- complexity_level: String, MUST be one of: "Beginner", "Intermediate", "Advanced", "Expert"
+- related_concepts: List of 0-5 strings, connected concept names
+
+### 2. Exercises (exercises) - List of 2-4 objects
+Each exercise object must have these EXACT fields:
+- title: String 5-100 chars, action-oriented name (e.g., "Build a Semantic Search API")
+- difficulty: String, MUST be one of: "Beginner", "Intermediate", "Advanced", "Expert"
+- description: String 50-1000 chars, what to build and why
+- hints: List of 3-5 progressive hints (strings), guide without spoiling
+- solution: String (can be empty), complete working solution with comments
+- learning_objectives: List of 2-5 strings, skills this exercise reinforces
+
+### 3. Self Assessment (self_assessment) - Single object with:
+- quiz_questions: List of 5-10 question objects, each with:
+    * question: String 10-300 chars, clear question testing a concept
+    * options: List of 2-5 answer choices (strings)
+    * correct_answer: String, MUST EXACTLY match one of the options
+    * explanation: String 30-500 chars, why this answer is correct
+- mastery_checklist: List of 5-10 "I can..." statements (strings)
+
+## CRITICAL FIELD VALUE CONSTRAINTS
+- complexity_level and difficulty MUST be exactly: "Beginner", "Intermediate",
+  "Advanced", or "Expert"."
+- NOT: "beginner", "easy", "medium", "hard", "simple", "1", "2", etc.
+- correct_answer MUST exactly match one option or validation fails
+
+## PEDAGOGICAL PRINCIPLES
+- **Scaffolding**: Build on previous concepts (order Beginner → Expert)
+- **Active Learning**: Exercises require hands-on practice
+- **Metacognition**: Self-assessment helps learners track progress
+- **Socratic Method**: Hints guide discovery rather than providing answers
+
+## Agent Findings Summary:
+{{ agent_findings }}
+
+## CRITICAL OUTPUT FORMAT
+Return VALID JSON matching LearningSynthesisSchema EXACTLY:
+```json
+{
+  "core_concepts": [...3-7 concept objects...],
+  "exercises": [...2-4 exercise objects...],
+  "self_assessment": {
+    "quiz_questions": [...5-10 question objects...],
+    "mastery_checklist": [...5-10 strings...]
+  }
+}
+```
+Field names, counts, and string patterns must match EXACTLY or validation will fail.

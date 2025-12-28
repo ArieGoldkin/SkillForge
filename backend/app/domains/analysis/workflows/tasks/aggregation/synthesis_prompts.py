@@ -5,15 +5,21 @@ and improving generation reliability.
 
 Issue #299-304: Replaces monolithic 4K token SYNTHESIS_SYSTEM_PROMPT
 with three ~1K token prompts, each targeting a specific synthesis phase.
+
+Issue #414: Migrated hardcoded prompts to Jinja2 templates for maintainability.
 """
 
 from typing import Any
 
-# ============================================================================
-# PHASE 1: CORE SYNTHESIS (~1K tokens)
-# ============================================================================
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 
-CORE_SYNTHESIS_PROMPT = """You are synthesizing technical analysis findings into an
+# ============================================================================
+# DEPRECATED CONSTANTS - Use PromptManager instead
+# ============================================================================
+# These constants are kept for backwards compatibility but should be replaced
+# with async get_prompt() calls in new code.
+
+CORE_SYNTHESIS_PROMPT_DEPRECATED = """You are synthesizing technical analysis findings into an
 executive summary.
 
 ## Your Task
@@ -287,12 +293,14 @@ Field names and structures must match EXACTLY or validation will fail.
 # ============================================================================
 
 
-def build_core_prompt(
+async def build_core_prompt(
     compressed_findings: list[dict[str, Any]],
     conflicts: list[dict[str, Any]],
     source_context: dict[str, Any] | None = None,
 ) -> str:
     """Build the Phase 1 (Core) synthesis prompt.
+
+    Issue #414: Now uses PromptManager with Jinja2 templates.
 
     Args:
         compressed_findings: Compressed agent findings with key insights
@@ -307,21 +315,28 @@ def build_core_prompt(
     findings_text = _format_compressed_findings(compressed_findings)
     conflicts_text = _format_conflicts(conflicts)
     source_title, source_summary, source_key_terms = _format_source_context(source_context)
-    return CORE_SYNTHESIS_PROMPT.format(
-        agent_findings=findings_text,
-        conflicts=conflicts_text,
-        source_title=source_title,
-        source_summary=source_summary,
-        source_key_terms=source_key_terms,
+
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(
+        name="synthesis-core",
+        variables={
+            "agent_findings": findings_text,
+            "conflicts": conflicts_text,
+            "source_title": source_title,
+            "source_summary": source_summary,
+            "source_key_terms": source_key_terms,
+        },
     )
 
 
-def build_learning_prompt(
+async def build_learning_prompt(
     compressed_findings: list[dict[str, Any]],
     source_context: dict[str, Any] | None = None,
 ) -> str:
     """Build the Phase 2 (Learning) synthesis prompt.
 
+    Issue #414: Now uses PromptManager with Jinja2 templates.
+
     Args:
         compressed_findings: Compressed agent findings with key insights
         source_context: Optional source content for LLM grounding (Issue #487)
@@ -332,20 +347,27 @@ def build_learning_prompt(
     """
     findings_text = _format_compressed_findings(compressed_findings)
     source_title, source_summary, source_key_terms = _format_source_context(source_context)
-    return LEARNING_SYNTHESIS_PROMPT.format(
-        agent_findings=findings_text,
-        source_title=source_title,
-        source_summary=source_summary,
-        source_key_terms=source_key_terms,
+
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(
+        name="synthesis-learning",
+        variables={
+            "agent_findings": findings_text,
+            "source_title": source_title,
+            "source_summary": source_summary,
+            "source_key_terms": source_key_terms,
+        },
     )
 
 
-def build_docs_prompt(
+async def build_docs_prompt(
     compressed_findings: list[dict[str, Any]],
     source_context: dict[str, Any] | None = None,
 ) -> str:
     """Build the Phase 3 (Docs) synthesis prompt.
 
+    Issue #414: Now uses PromptManager with Jinja2 templates.
+
     Args:
         compressed_findings: Compressed agent findings with key insights
         source_context: Optional source content for LLM grounding (Issue #487)
@@ -356,11 +378,16 @@ def build_docs_prompt(
     """
     findings_text = _format_compressed_findings(compressed_findings)
     source_title, source_summary, source_key_terms = _format_source_context(source_context)
-    return DOCS_SYNTHESIS_PROMPT.format(
-        agent_findings=findings_text,
-        source_title=source_title,
-        source_summary=source_summary,
-        source_key_terms=source_key_terms,
+
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(
+        name="synthesis-docs",
+        variables={
+            "agent_findings": findings_text,
+            "source_title": source_title,
+            "source_summary": source_summary,
+            "source_key_terms": source_key_terms,
+        },
     )
 
 

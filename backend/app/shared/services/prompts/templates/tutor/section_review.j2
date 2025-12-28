@@ -1,0 +1,17 @@
+{#- Tutor: Section Review Quiz -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+
+Create a section review quiz to assess understanding.
+
+Section: {{ section_title }}
+Concepts Covered: {{ concepts }}
+User Level: {{ user_level }}
+Understanding Scores: {{ understanding_scores }}
+
+Create a quiz with 3-5 questions that:
+1. Test key concepts from this section
+2. Are appropriate for the user's level
+3. Provide immediate feedback
+4. Identify areas needing reinforcement
+
+Return as structured quiz with questions and answer keys.

@@ -1,6 +1,7 @@
 """Conduct section review node for tutor workflow.
 
 This node conducts a section quiz with feedback to evaluate understanding.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 from typing import TYPE_CHECKING
@@ -16,6 +17,7 @@ from app.domains.tutor.workflows.nodes.response_helpers import extract_string_co
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 if TYPE_CHECKING:
@@ -26,29 +28,19 @@ logger = get_logger(__name__)
 # Module-level compiler (lazy init)
 _tutor_compiler = None
 
+# Prompt name for PromptManager
+PROMPT_NAME = "tutor-section-review"
 
-def _get_tutor_compiler():
-    """Get or create tutor compiler instance (lazy initialization)."""
+
+async def _get_tutor_compiler():
+    """Get or create tutor compiler instance (lazy initialization).
+
+    Issue #414: Now async since create_workflow_compiler uses PromptManager.
+    """
     global _tutor_compiler  # noqa: PLW0603
     if _tutor_compiler is None:
-        _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
+        _tutor_compiler = await create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
     return _tutor_compiler
-
-
-SECTION_REVIEW_PROMPT = """Create a section review quiz to assess understanding.
-
-Section: {section_title}
-Concepts Covered: {concepts}
-User Level: {user_level}
-Understanding Scores: {understanding_scores}
-
-Create a quiz with 3-5 questions that:
-1. Test key concepts from this section
-2. Are appropriate for the user's level
-3. Provide immediate feedback
-4. Identify areas needing reinforcement
-
-Return as structured quiz with questions and answer keys."""
 
 
 @robust_traceable(
@@ -130,17 +122,21 @@ async def conduct_review(state: TutorState) -> dict[str, object]:  # noqa: PLR09
             str(lesson.get("concept", "")) for lesson in lessons if isinstance(lesson, dict)
         ]
 
-        # Build prompt
-        prompt = SECTION_REVIEW_PROMPT.format(
-            section_title=section_title,
-            concepts=", ".join(concepts),
-            user_level=user_level,
-            understanding_scores=str(understanding_scores),
+        # Build prompt using PromptManager
+        prompt_manager = get_prompt_manager()
+        prompt = await prompt_manager.get_prompt(
+            PROMPT_NAME,
+            variables={
+                "section_title": section_title,
+                "concepts": ", ".join(concepts),
+                "user_level": user_level,
+                "understanding_scores": str(understanding_scores),
+            },
         )
 
         # Get LLM model and compiler
         model = get_chat_model()
-        compiler = _get_tutor_compiler()
+        compiler = await _get_tutor_compiler()
 
         # Get conversation history for context compaction (Issue #270)
         conversation_history = state.get("conversation_history", [])

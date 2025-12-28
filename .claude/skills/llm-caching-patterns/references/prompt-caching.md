@@ -144,6 +144,43 @@ async def get_llm_response_with_double_caching(query: str, agent_type: str):
     return response  # 90% cost savings (prompt cache)
 ```
 
+## SkillForge Prompt Resolution (Issue #414)
+
+SkillForge's PromptManager provides 4-level prompt caching:
+
+```
+L1 → In-Memory LRU (5min TTL)     # Fastest
+L2 → Redis Cache (15min TTL)      # Distributed
+L3 → Langfuse API                 # Cloud-managed, version controlled
+L4 → Jinja2 Templates             # Local fallback (uses {{ var }} syntax)
+```
+
+The system prompts are fetched once via PromptManager, then Claude's native prompt caching applies for repeated LLM calls:
+
+```python
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
+
+# Prompt caching strategy:
+# 1. PromptManager resolves system prompt (L1→L2→L3→L4)
+# 2. Claude's native prompt caching caches the LLM call prefix
+
+prompt_manager = get_prompt_manager()
+system_prompt = await prompt_manager.get_prompt(
+    name="analysis-agent-security-auditor",
+    variables={},
+    label="production"
+)
+
+# Claude native caching kicks in for repeated LLM calls
+response = await client.messages.create(
+    model="claude-sonnet-4-20250514",
+    messages=build_cached_messages(
+        system_prompt=system_prompt,  # From L1-L4 resolution
+        user_content=user_query
+    )
+)
+```
+
 ## References
 
 - [Claude Prompt Caching](https://docs.anthropic.com/claude/docs/prompt-caching)

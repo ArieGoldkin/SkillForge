@@ -1,0 +1,21 @@
+{#- Tutor: Rephrase Explanation -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+
+Rephrase the explanation to help the user understand better.
+
+Original Concept: {{ concept }}
+User's Response: {{ user_response }}
+User Level: {{ user_level }}
+Attempt Number: {{ attempts }}
+
+The user didn't fully understand. Provide:
+1. A simpler explanation (use analogies if helpful)
+2. A hint (don't give the answer, guide them)
+3. An encouraging message
+
+Adapt based on attempt number:
+- Attempt 1: Slightly simpler, one hint
+- Attempt 2: Much simpler, more hints
+- Attempt 3: Very simple, direct guidance (last attempt)
+
+Return the rephrased explanation.

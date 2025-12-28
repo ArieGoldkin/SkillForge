@@ -1,10 +1,12 @@
 """Lesson delivery task with LLM prompt engineering.
 
 Phase 2: Extracted from node for better organization.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 from app.core.logging import get_logger
-from app.domains.tutor.workflows.config import LESSON_DELIVERY_PROMPT
+from app.domains.tutor.workflows.config import PROMPT_LESSON_DELIVERY
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 
 logger = get_logger(__name__)
 
@@ -31,10 +33,14 @@ async def generate_lesson_prompt(
     """
     import json
 
-    return LESSON_DELIVERY_PROMPT.format(
-        concept=concept,
-        section_title=section_title,
-        lesson_title=lesson_title,
-        user_level=user_level,
-        understanding_scores=json.dumps(understanding_scores),
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(
+        PROMPT_LESSON_DELIVERY,
+        variables={
+            "concept": concept,
+            "section_title": section_title,
+            "lesson_title": lesson_title,
+            "user_level": user_level,
+            "understanding_scores": json.dumps(understanding_scores),
+        },
     )

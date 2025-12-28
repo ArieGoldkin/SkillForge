@@ -1,5 +1,9 @@
 """Pytest configuration and fixtures."""
 
+# Ignore archived tests that reference deleted modules
+# This is more reliable than norecursedirs for nested directories
+collect_ignore_glob = ["*/_archive/*"]
+
 import logging
 import os
 from collections.abc import AsyncGenerator

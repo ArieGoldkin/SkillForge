@@ -5,6 +5,8 @@ to reduce token usage in synthesis prompts.
 
 Phase 0 Implementation: Compresses 50K tokens from 8 agents to ~8-16K tokens
 (1-2K per agent) using fast LLM-based summarization.
+
+Issue #414: Migrated COMPRESSION_SYSTEM_PROMPT to Jinja2 template.
 """
 
 import asyncio
@@ -16,6 +18,7 @@ from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.tracing import robust_traceable
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -40,22 +43,17 @@ class CompressedFinding(BaseModel):
     relevant_code_snippets: list[str] = Field(default_factory=list, max_length=3)
 
 
-COMPRESSION_SYSTEM_PROMPT = """You are summarizing agent analysis findings for synthesis.
+async def get_compression_system_prompt() -> str:
+    """Get compression system prompt from PromptManager.
 
-Your job is to extract ONLY the essential information that will be useful for
-creating a comprehensive technical artifact.
+    Issue #414: Uses Jinja2 template instead of hardcoded string.
 
-Extract these fields:
-1. key_insights: 3-5 bullet points - the most important findings (be specific, not vague)
-2. confidence: 0.0-1.0 score - how confident is this analysis
-3. data_quality: "high", "medium", or "low" - quality of source data
-4. critical_warnings: Any blockers, security issues, or major concerns
-5. relevant_code_snippets: Max 3 most relevant code examples (if any exist)
+    Returns:
+        Compression system prompt string
 
-Be extremely concise. Focus on actionable insights, not filler.
-Total output should be under 500 words per agent.
-
-YOU MUST respond with a valid CompressedFinding object."""
+    """
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(name="synthesis-compression")
 
 
 def build_compression_user_prompt(agent_name: str, finding: dict[str, Any]) -> str:
@@ -188,12 +186,15 @@ async def compress_single_finding(
     # Build compression prompt
     user_prompt = build_compression_user_prompt(agent_name, finding)
 
+    # Issue #414: Get system prompt from PromptManager
+    system_prompt = await get_compression_system_prompt()
+
     # Issue #299-304: Fix - llm.with_structured_output() expects messages directly,
     # NOT wrapped in {"messages": [...]} dict format. Use HumanMessage/SystemMessage.
     from langchain_core.messages import HumanMessage, SystemMessage
 
     messages = [
-        SystemMessage(content=COMPRESSION_SYSTEM_PROMPT),
+        SystemMessage(content=system_prompt),
         HumanMessage(content=user_prompt),
     ]
 
@@ -317,6 +318,9 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
         # LangChain 1.2.x: Use strict mode for exact schema compliance
         llm_with_structure = llm.with_structured_output(CompressedFinding, strict=True)
 
+    # Issue #414: Get system prompt from PromptManager once
+    system_prompt = await get_compression_system_prompt()
+
     # Prepare batch inputs for parallel processing with abatch()
     # Each input is a list of messages for one agent's findings
     from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
@@ -329,7 +333,7 @@ async def compress_all_findings(  # noqa: PLR0915 - Complex batch processing log
         user_prompt = build_compression_user_prompt(agent_name, finding)
 
         messages: list[BaseMessage] = [
-            SystemMessage(content=COMPRESSION_SYSTEM_PROMPT),
+            SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt),
         ]
         batch_inputs.append(messages)

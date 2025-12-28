@@ -9,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 
 from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
-    COMPRESSION_SYSTEM_PROMPT,
     CompressedFinding,
     _create_fallback_compressed_finding,
     _format_findings_for_compression,
@@ -17,6 +16,7 @@ from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
     build_compression_user_prompt,
     compress_all_findings,
     compress_single_finding,
+    get_compression_system_prompt,
 )
 
 
@@ -510,12 +510,13 @@ class TestCompressAllFindings:
         assert call_count[0] == 2
 
 
+@pytest.mark.asyncio
 class TestCompressionSystemPrompt:
-    """Test COMPRESSION_SYSTEM_PROMPT constant."""
+    """Test compression system prompt from PromptManager (Issue #414)."""
 
-    def test_system_prompt_contains_instructions(self):
+    async def test_system_prompt_contains_instructions(self):
         """Test system prompt contains key instructions."""
-        prompt = COMPRESSION_SYSTEM_PROMPT
+        prompt = await get_compression_system_prompt()
 
         assert "key_insights" in prompt
         assert "confidence" in prompt
@@ -524,8 +525,8 @@ class TestCompressionSystemPrompt:
         assert "relevant_code_snippets" in prompt
         assert "CompressedFinding" in prompt
 
-    def test_system_prompt_mentions_conciseness(self):
+    async def test_system_prompt_mentions_conciseness(self):
         """Test prompt emphasizes conciseness."""
-        prompt = COMPRESSION_SYSTEM_PROMPT
+        prompt = await get_compression_system_prompt()
 
         assert "concise" in prompt.lower() or "500 words" in prompt

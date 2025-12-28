@@ -1,6 +1,7 @@
 """Final challenge node for tutor workflow.
 
 This node presents an integrative problem combining multiple concepts.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 from app.core.config import settings
@@ -14,6 +15,7 @@ from app.domains.tutor.workflows.nodes.response_helpers import extract_string_co
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
@@ -21,28 +23,19 @@ logger = get_logger(__name__)
 # Module-level compiler (lazy init)
 _tutor_compiler = None
 
+# Prompt name for PromptManager
+PROMPT_NAME = "tutor-final-challenge"
 
-def _get_tutor_compiler():
-    """Get or create tutor compiler instance (lazy initialization)."""
+
+async def _get_tutor_compiler():
+    """Get or create tutor compiler instance (lazy initialization).
+
+    Issue #414: Now async since create_workflow_compiler uses PromptManager.
+    """
     global _tutor_compiler  # noqa: PLW0603
     if _tutor_compiler is None:
-        _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
+        _tutor_compiler = await create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
     return _tutor_compiler
-
-
-FINAL_CHALLENGE_PROMPT = """Create a final integrative challenge problem.
-
-Syllabus: {syllabus_summary}
-User Level: {user_level}
-Understanding Scores: {understanding_scores}
-
-Create a challenging problem that:
-1. Combines concepts from multiple sections
-2. Tests overall understanding
-3. Requires synthesis and application
-4. Is appropriate for the user's level
-
-Return a problem statement with clear instructions."""
 
 
 @robust_traceable(
@@ -106,16 +99,20 @@ async def final_challenge(state: TutorState) -> dict[str, object]:
                 section_titles = [s.get("title", "") for s in sections if isinstance(s, dict)]
                 syllabus_summary = f"Sections: {', '.join(section_titles)}"
 
-        # Build prompt
-        prompt = FINAL_CHALLENGE_PROMPT.format(
-            syllabus_summary=syllabus_summary,
-            user_level=user_level,
-            understanding_scores=str(understanding_scores),
+        # Build prompt using PromptManager
+        prompt_manager = get_prompt_manager()
+        prompt = await prompt_manager.get_prompt(
+            PROMPT_NAME,
+            variables={
+                "syllabus_summary": syllabus_summary,
+                "user_level": user_level,
+                "understanding_scores": str(understanding_scores),
+            },
         )
 
         # Get LLM model and compiler
         model = get_chat_model()
-        compiler = _get_tutor_compiler()
+        compiler = await _get_tutor_compiler()
 
         # Get conversation history for context compaction (Issue #270)
         conversation_history = state.get("conversation_history", [])

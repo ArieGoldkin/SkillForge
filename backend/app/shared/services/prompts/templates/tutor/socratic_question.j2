@@ -1,0 +1,16 @@
+{#- Tutor: Socratic Question Generation -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+
+Generate a Socratic question based on the lesson and user's response.
+
+Lesson Concept: {{ concept }}
+User Response: {{ user_response }}
+User Level: {{ user_level }}
+
+Generate a question that:
+- For beginners: Checks understanding before explanation
+- For intermediate/advanced: Challenges thinking after explanation
+- Guides the user to discover the answer themselves
+- Is contextual to the current lesson
+
+Return a single thoughtful question.

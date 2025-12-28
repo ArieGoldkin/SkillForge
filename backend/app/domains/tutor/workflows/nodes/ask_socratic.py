@@ -1,6 +1,7 @@
 """Ask Socratic question node for tutor workflow.
 
 This node generates contextual Socratic questions based on user level.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 from app.core.config import settings
@@ -8,11 +9,12 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable, update_current_trace
-from app.domains.tutor.workflows.config import SOCRATIC_QUESTION_PROMPT, TUTOR_COMPACTION_CONFIG
+from app.domains.tutor.workflows.config import PROMPT_SOCRATIC_QUESTION, TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
@@ -21,11 +23,14 @@ logger = get_logger(__name__)
 _tutor_compiler = None
 
 
-def _get_tutor_compiler():
-    """Get or create tutor compiler instance (lazy initialization)."""
+async def _get_tutor_compiler():
+    """Get or create tutor compiler instance (lazy initialization).
+
+    Issue #414: Now async since create_workflow_compiler uses PromptManager.
+    """
     global _tutor_compiler  # noqa: PLW0603
     if _tutor_compiler is None:
-        _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
+        _tutor_compiler = await create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
     return _tutor_compiler
 
 
@@ -100,16 +105,20 @@ async def ask_socratic(state: TutorState) -> dict[str, object]:
                         if isinstance(lesson, dict):
                             concept = str(lesson.get("concept", concept))
 
-        # Build prompt
-        prompt = SOCRATIC_QUESTION_PROMPT.format(
-            concept=concept,
-            user_response=last_user_message or "No response yet",
-            user_level=user_level,
+        # Build prompt using PromptManager
+        prompt_manager = get_prompt_manager()
+        prompt = await prompt_manager.get_prompt(
+            PROMPT_SOCRATIC_QUESTION,
+            variables={
+                "concept": concept,
+                "user_response": last_user_message or "No response yet",
+                "user_level": user_level,
+            },
         )
 
         # Get LLM model and compiler
         model = get_chat_model()
-        compiler = _get_tutor_compiler()
+        compiler = await _get_tutor_compiler()
 
         # Get conversation history for context compaction (Issue #270)
         conversation_history = state.get("conversation_history", [])

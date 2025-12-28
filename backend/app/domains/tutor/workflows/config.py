@@ -20,65 +20,11 @@ READINESS_CONFIDENCE_THRESHOLD = 0.7  # Minimum confidence to mark ready
 # Streaming settings
 STREAMING_CHUNK_SIZE = 50  # Characters per chunk for SSE streaming
 
-# Tutor prompts (will be moved to tasks module in Phase 2)
-SYLLABUS_GENERATION_PROMPT = (
-    "Generate a personalized curriculum for teaching the following content.\n\n"
-    "Content Summary:\n"
-    "{analysis_summary}\n\n"
-    "User Level: {user_level}\n\n"
-    "Create a curriculum with 2-4 sections, each containing 2-3 lessons.\n"
-    "Each lesson should cover one key concept with:\n"
-    "- Clear explanation\n"
-    "- Analogical explanation (if helpful)\n"
-    "- Concrete example\n"
-    "- Practice exercise/question\n\n"
-    "Return as JSON matching the Syllabus schema."
-)
-
-LESSON_DELIVERY_PROMPT = """Deliver a lesson on the following concept:
-
-Concept: {concept}
-Section: {section_title}
-Lesson: {lesson_title}
-
-User Level: {user_level}
-Previous Understanding: {understanding_scores}
-
-Provide:
-1. Clear explanation of the concept
-2. An analogy to help understanding
-3. A concrete example
-4. A practice exercise or question
-
-Adapt the complexity based on the user's level."""
-
-SOCRATIC_QUESTION_PROMPT = """Generate a Socratic question based on the lesson and user's response.
-
-Lesson Concept: {concept}
-User Response: {user_response}
-User Level: {user_level}
-
-Generate a question that:
-- For beginners: Checks understanding before explanation
-- For intermediate/advanced: Challenges thinking after explanation
-- Guides the user to discover the answer themselves
-- Is contextual to the current lesson
-
-Return a single thoughtful question."""
-
-READINESS_ASSESSMENT_PROMPT = """Assess the user's understanding based on their response.
-
-Lesson Concept: {concept}
-User Response: {user_response}
-Previous Understanding: {understanding_scores}
-
-Evaluate:
-1. Does the user demonstrate understanding? (boolean)
-2. Confidence in assessment (0.0-1.0)
-3. Reasoning for the assessment
-4. Suggested action: 'rephrase' if not ready, 'move_on' if ready
-
-Return as JSON matching ReadinessAssessment schema."""
+# Tutor prompt names (Issue #414: Migrated to Jinja2 templates)
+PROMPT_SYLLABUS_GENERATION = "tutor-syllabus-generation"
+PROMPT_LESSON_DELIVERY = "tutor-lesson-delivery"
+PROMPT_SOCRATIC_QUESTION = "tutor-socratic-question"
+PROMPT_READINESS_ASSESSMENT = "tutor-readiness-assessment"
 
 TUTOR_CONFIG = {
     "syllabus": {

@@ -296,7 +296,7 @@ async def _synthesize_core(
         findings_dicts = [f.model_dump() for f in compressed_findings]
 
         # Build phase prompt with source context for grounding (Issue #487)
-        user_prompt = build_core_prompt(
+        user_prompt = await build_core_prompt(
             compressed_findings=findings_dicts,
             conflicts=conflicts,
             source_context=source_context,
@@ -411,7 +411,7 @@ async def _synthesize_learning(
         findings_dicts = [f.model_dump() for f in compressed_findings]
 
         # Build phase prompt with source context for grounding (Issue #487)
-        user_prompt = build_learning_prompt(
+        user_prompt = await build_learning_prompt(
             compressed_findings=findings_dicts,
             source_context=source_context,
         )
@@ -528,7 +528,7 @@ async def _synthesize_docs(
         findings_dicts = [f.model_dump() for f in compressed_findings]
 
         # Build phase prompt with source context for grounding (Issue #487)
-        user_prompt = build_docs_prompt(
+        user_prompt = await build_docs_prompt(
             compressed_findings=findings_dicts,
             source_context=source_context,
         )

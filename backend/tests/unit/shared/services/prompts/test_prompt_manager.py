@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.shared.services.prompts.prompt_manager import (
-    HARDCODED_PROMPTS,
+    TEMPLATE_MAPPING,
     LRUCache,
     PromptManager,
 )
@@ -188,8 +188,8 @@ class TestPromptManager:
         manager.redis_client.setex.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_hardcoded_fallback(self, manager, mock_langfuse):
-        """Test falling back to hardcoded prompts when Langfuse unavailable."""
+    async def test_template_fallback(self, manager, mock_langfuse):
+        """Test falling back to Jinja2 templates when Langfuse unavailable."""
         # Langfuse returns None (not found)
         mock_langfuse.get_prompt.return_value = None
 
@@ -199,7 +199,7 @@ class TestPromptManager:
             label="production",
         )
 
-        # Should use hardcoded prompt
+        # Should use Jinja2 template prompt
         assert "Analyze content and select relevant agents" in result
         assert "test agents" in result
 
@@ -208,7 +208,7 @@ class TestPromptManager:
         """Test error when prompt not found anywhere."""
         mock_langfuse.get_prompt.return_value = None
 
-        with pytest.raises(ValueError, match="not found in Langfuse or hardcoded"):
+        with pytest.raises(ValueError, match="not found in Langfuse or templates"):
             await manager.get_prompt(
                 name="nonexistent-prompt",
                 variables={},
@@ -261,13 +261,13 @@ class TestPromptManager:
         explicitly provided variables.
         """
         key = "prompt:json-prompt:production"
-        json_prompt = '''Analyze the content and return JSON:
+        json_prompt = """Analyze the content and return JSON:
 {
   "immediate_actions": ["action1", "action2"],
   "findings_count": {findings_count}
 }
 
-Content to analyze: {content}'''
+Content to analyze: {content}"""
         manager.l1_cache.set(key, json_prompt)
 
         result = await manager.get_prompt(
@@ -349,8 +349,8 @@ Content to analyze: {content}'''
         assert metadata["prompt_source"] == "langfuse"
 
     @pytest.mark.asyncio
-    async def test_get_prompt_metadata_hardcoded(self, manager, mock_langfuse):
-        """Test metadata retrieval for hardcoded prompts."""
+    async def test_get_prompt_metadata_template(self, manager, mock_langfuse):
+        """Test metadata retrieval for Jinja2 template prompts."""
         mock_langfuse.get_prompt.return_value = None
 
         metadata = await manager.get_prompt_metadata(
@@ -359,9 +359,9 @@ Content to analyze: {content}'''
         )
 
         assert metadata["prompt_name"] == "analysis-supervisor-routing"
-        assert metadata["prompt_version"] == "hardcoded"
+        assert metadata["prompt_version"] == "template"
         assert metadata["prompt_label"] == "production"
-        assert metadata["prompt_source"] == "hardcoded"
+        assert metadata["prompt_source"] == "jinja2_template"
 
     @pytest.mark.asyncio
     async def test_redis_connection_failure_graceful(self, manager):
@@ -384,7 +384,7 @@ Content to analyze: {content}'''
 
     @pytest.mark.asyncio
     async def test_langfuse_fetch_failure_falls_back(self, manager, mock_langfuse):
-        """Test falling back to hardcoded when Langfuse fetch fails."""
+        """Test falling back to Jinja2 templates when Langfuse fetch fails."""
         # Simulate Langfuse API error
         mock_langfuse.get_prompt.side_effect = Exception("API error")
 
@@ -394,7 +394,7 @@ Content to analyze: {content}'''
             label="production",
         )
 
-        # Should fallback to hardcoded
+        # Should fallback to Jinja2 template
         assert "Analyze content and select relevant agents" in result
 
     def test_clear_caches(self, manager, mock_redis):
@@ -431,10 +431,78 @@ Content to analyze: {content}'''
         assert "MINIMUM 3 AGENTS REQUIRED" in result
         assert "TUTORIAL ANALYSIS" in result
 
-    def test_hardcoded_prompts_exist(self):
-        """Test hardcoded prompts are defined."""
-        assert "analysis-supervisor-routing" in HARDCODED_PROMPTS
-        assert len(HARDCODED_PROMPTS["analysis-supervisor-routing"]) > 100
+    def test_template_mappings_exist(self):
+        """Test Jinja2 template mappings are defined for all prompts."""
+        assert "analysis-supervisor-routing" in TEMPLATE_MAPPING
+        assert TEMPLATE_MAPPING["analysis-supervisor-routing"].endswith(".j2")
+
+
+class TestModuleExports:
+    """Test module __all__ exports for proper public API."""
+
+    def test_all_exports_defined(self):
+        """Test that __all__ is defined and contains expected exports."""
+        from app.shared.services.prompts import prompt_manager
+
+        assert hasattr(prompt_manager, "__all__")
+        assert isinstance(prompt_manager.__all__, list)
+        assert len(prompt_manager.__all__) > 0
+
+    def test_all_exports_importable(self):
+        """Test that all items in __all__ can be imported."""
+        from app.shared.services.prompts import prompt_manager
+
+        for export_name in prompt_manager.__all__:
+            assert hasattr(prompt_manager, export_name), f"{export_name} not found in module"
+
+    def test_template_mapping_in_all(self):
+        """Test that TEMPLATE_MAPPING is explicitly exported in __all__."""
+        from app.shared.services.prompts import prompt_manager
+
+        assert "TEMPLATE_MAPPING" in prompt_manager.__all__
+
+    def test_star_import_works(self):
+        """Test that star import exposes expected symbols.
+
+        This verifies the fix for Issue #2 where TEMPLATE_MAPPING was
+        defined but not exported via __all__, breaking script imports.
+        """
+        # Import module first to populate namespace
+        import app.shared.services.prompts.prompt_manager as pm
+
+        # Verify star import would include TEMPLATE_MAPPING
+        star_imports = {name for name in dir(pm) if name in pm.__all__}
+
+        assert "PromptManager" in star_imports
+        assert "get_prompt_manager" in star_imports
+        assert "TEMPLATE_MAPPING" in star_imports
+        assert "LRUCache" in star_imports
+
+    def test_template_mapping_directly_importable(self):
+        """Test that TEMPLATE_MAPPING can be imported directly.
+
+        This was the original bug - TEMPLATE_MAPPING existed but wasn't
+        in __all__, causing import errors in scripts.
+        """
+        from app.shared.services.prompts.prompt_manager import TEMPLATE_MAPPING
+
+        assert isinstance(TEMPLATE_MAPPING, dict)
+        assert len(TEMPLATE_MAPPING) > 0
+
+    def test_all_public_api_items_importable(self):
+        """Test that all public API items can be imported individually."""
+        from app.shared.services.prompts.prompt_manager import (
+            LRUCache,
+            PromptManager,
+            TEMPLATE_MAPPING,
+            get_prompt_manager,
+        )
+
+        # Verify all imports succeeded
+        assert PromptManager is not None
+        assert get_prompt_manager is not None
+        assert TEMPLATE_MAPPING is not None
+        assert LRUCache is not None
 
 
 class TestPromptManagerIntegration:
@@ -543,8 +611,8 @@ class TestPromptManagerIntegration:
         )
         assert metadata is not None
         assert metadata["prompt_name"] == prompt_name
-        # Source should be either "langfuse" (if Langfuse had content) or "hardcoded" (fallback)
-        assert metadata["prompt_source"] in ["langfuse", "hardcoded"]
+        # Source should be "langfuse" (if Langfuse had content) or "jinja2_template" (fallback)
+        assert metadata["prompt_source"] in ["langfuse", "jinja2_template"]
 
     @pytest.mark.asyncio
     @pytest.mark.integration

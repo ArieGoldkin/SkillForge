@@ -113,30 +113,35 @@ def sample_llm_response() -> dict[str, object]:
     }
 
 
+@pytest.mark.asyncio
 class TestCreateSynthesisAgent:
-    """Test synthesis agent creation."""
+    """Test synthesis agent creation (Issue #414: Now async for PromptManager)."""
 
     @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    def test_create_synthesis_agent_calls_create_structured_agent(
-        self, mock_create_structured_agent: MagicMock
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.get_synthesis_system_prompt")
+    async def test_create_synthesis_agent_calls_create_structured_agent(
+        self,
+        mock_get_prompt: AsyncMock,
+        mock_create_structured_agent: MagicMock,
     ):
         """Test that create_synthesis_agent calls create_structured_agent with correct args."""
         mock_agent = MagicMock()
         mock_create_structured_agent.return_value = mock_agent
+        mock_get_prompt.return_value = "Test system prompt with triple-purpose and executive_summary"
 
-        # Import and call the actual function (don't mock it)
-        result = create_synthesis_agent()
+        # Call the async function
+        result = await create_synthesis_agent()
+
+        # Verify get_synthesis_system_prompt was called
+        mock_get_prompt.assert_called_once()
 
         # Verify create_structured_agent was called
         mock_create_structured_agent.assert_called_once()
         call_kwargs = mock_create_structured_agent.call_args.kwargs
 
         # Verify system_prompt was passed
-        # Issue #304: Prompt redesigned for triple-purpose artifacts
         assert "system_prompt" in call_kwargs
-        system_prompt_lower = call_kwargs["system_prompt"].lower()
-        assert "triple-purpose" in system_prompt_lower
-        assert "executive_summary" in system_prompt_lower  # Required section
+        assert call_kwargs["system_prompt"] == "Test system prompt with triple-purpose and executive_summary"
 
         # Verify response_schema is AggregatedInsights
         assert "response_schema" in call_kwargs
@@ -150,12 +155,18 @@ class TestCreateSynthesisAgent:
         assert result == mock_agent
 
     @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_structured_agent")
-    def test_create_synthesis_agent_returns_runnable(self, mock_create_structured_agent: MagicMock):
+    @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.get_synthesis_system_prompt")
+    async def test_create_synthesis_agent_returns_runnable(
+        self,
+        mock_get_prompt: AsyncMock,
+        mock_create_structured_agent: MagicMock,
+    ):
         """Test that create_synthesis_agent returns a Runnable."""
         mock_agent = MagicMock()
         mock_create_structured_agent.return_value = mock_agent
+        mock_get_prompt.return_value = "Test system prompt"
 
-        result = create_synthesis_agent()
+        result = await create_synthesis_agent()
 
         # Verify result is returned
         assert result is not None
@@ -201,17 +212,18 @@ class TestCreateFallbackSynthesisModel:
         assert result == mock_structured_model
 
 
+@pytest.mark.asyncio
 class TestCreateSynthesisAgentWithFallback:
-    """Test synthesis agent with fallback chain creation (Issue #299-304)."""
+    """Test synthesis agent with fallback chain creation (Issue #299-304, #414)."""
 
     @patch("app.domains.analysis.workflows.tasks.aggregation.synthesis.create_synthesis_agent")
     @patch(
         "app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model"
     )
-    def test_create_synthesis_agent_with_fallback_attaches_fallback(
+    async def test_create_synthesis_agent_with_fallback_attaches_fallback(
         self,
         mock_create_fallback: MagicMock,
-        mock_create_primary: MagicMock,
+        mock_create_primary: AsyncMock,
     ):
         """Test that fallback chain is properly attached to primary agent."""
         mock_primary_agent = MagicMock()
@@ -222,7 +234,7 @@ class TestCreateSynthesisAgentWithFallback:
         mock_create_fallback.return_value = mock_fallback_model
         mock_primary_agent.with_fallbacks.return_value = mock_agent_with_fallback
 
-        result = create_synthesis_agent_with_fallback()
+        result = await create_synthesis_agent_with_fallback()
 
         # Verify primary agent was created
         mock_create_primary.assert_called_once()
@@ -249,10 +261,10 @@ class TestCreateSynthesisAgentWithFallback:
     @patch(
         "app.domains.analysis.workflows.tasks.aggregation.synthesis.create_fallback_synthesis_model"
     )
-    def test_create_synthesis_agent_with_fallback_logs_models(
+    async def test_create_synthesis_agent_with_fallback_logs_models(
         self,
         mock_create_fallback: MagicMock,
-        mock_create_primary: MagicMock,
+        mock_create_primary: AsyncMock,
     ):
         """Test that agent creation logs primary and fallback models."""
         mock_primary_agent = MagicMock()
@@ -261,7 +273,7 @@ class TestCreateSynthesisAgentWithFallback:
         mock_create_fallback.return_value = MagicMock()
 
         # This test mainly verifies no exceptions are raised during creation
-        result = create_synthesis_agent_with_fallback()
+        result = await create_synthesis_agent_with_fallback()
 
         assert result is not None
 

@@ -1,0 +1,22 @@
+{#- G-Eval Evaluator: Accuracy -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+{#- Purpose: LLM-as-Judge evaluation for quality scoring -#}
+Evaluate the factual accuracy of the output.
+
+Input: {{ input }}
+Output: {{ output }}
+Reference: {{ reference }}
+
+Score the accuracy from 0-10 where:
+- 0-3: Many errors, hallucinations, or incorrect information
+- 4-6: Some errors but mostly accurate on key points
+- 7-9: Accurate with only minor issues or imprecisions
+- 10: Completely accurate, no factual errors
+
+## Evaluation Process:
+1. Compare factual claims against the reference (if available)
+2. Check for logical consistency within the output
+3. Identify any hallucinated information or made-up details
+4. Verify technical accuracy of code examples or specifications
+
+Respond with ONLY a number from 0-10.

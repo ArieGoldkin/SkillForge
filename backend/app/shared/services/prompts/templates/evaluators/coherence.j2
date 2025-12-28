@@ -1,0 +1,20 @@
+{#- G-Eval Evaluator: Coherence -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+{#- Purpose: LLM-as-Judge evaluation for quality scoring -#}
+Evaluate the coherence and clarity of the output.
+
+Output: {{ output }}
+
+Score the coherence from 0-10 where:
+- 0-3: Incoherent, confusing structure, hard to follow
+- 4-6: Somewhat coherent, could be clearer or better organized
+- 7-9: Coherent and well-structured, easy to understand
+- 10: Perfectly clear, logical flow, excellent organization
+
+## Evaluation Process:
+1. Check if ideas flow logically from one to the next
+2. Assess the use of clear headings, sections, or structure
+3. Look for smooth transitions between topics
+4. Verify that conclusions follow from the preceding analysis
+
+Respond with ONLY a number from 0-10.

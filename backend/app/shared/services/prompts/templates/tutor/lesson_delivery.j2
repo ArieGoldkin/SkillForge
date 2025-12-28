@@ -1,0 +1,19 @@
+{#- Tutor: Lesson Delivery -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+
+Deliver a lesson on the following concept:
+
+Concept: {{ concept }}
+Section: {{ section_title }}
+Lesson: {{ lesson_title }}
+
+User Level: {{ user_level }}
+Previous Understanding: {{ understanding_scores }}
+
+Provide:
+1. Clear explanation of the concept
+2. An analogy to help understanding
+3. A concrete example
+4. A practice exercise or question
+
+Adapt the complexity based on the user's level.
