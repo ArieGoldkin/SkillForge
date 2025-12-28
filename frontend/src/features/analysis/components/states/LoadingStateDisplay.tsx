@@ -132,7 +132,9 @@ export function LoadingStateDisplay({ loadingState }: LoadingStateDisplayProps):
         />
       </div>
       <div className="flex-1 min-w-0">
-        <p className={cn('text-sm font-medium', config.textClassName)}>{config.text}</p>
+        <p className={cn('text-sm font-medium', 'textClassName' in config && config.textClassName)}>
+          {config.text}
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
       </div>
     </div>
