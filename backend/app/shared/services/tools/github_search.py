@@ -43,7 +43,11 @@ from app.core.constants import (
     MAX_ERROR_MESSAGE_LENGTH_LONG,
     MAX_RETRY_ATTEMPTS,
 )
-from app.core.exceptions import ExtractionErrorCode, GitHubSearchError
+from app.core.exceptions import (
+    ExternalServiceError,
+    ExtractionErrorCode,
+    GitHubSearchError,
+)
 from app.core.tracing import traced_tool, update_current_observation
 from app.shared.services.cache.redis_connection import create_redis_client
 
@@ -420,7 +424,10 @@ class GitHubSearch:
                 error=str(e),
                 error_type=type(e).__name__,
             )
-            raise GitHubSearchError(error_msg, error_code=ExtractionErrorCode.UNKNOWN) from e
+            raise ExternalServiceError(
+                service_name="github",
+                message=f"GitHub API call failed: {e}",
+            ) from e
 
     @traced_tool("github_get_repo_stats", tags=["external_api", "github", "tier3"])
     @retry(
@@ -579,7 +586,10 @@ class GitHubSearch:
                 error=str(e),
                 error_type=type(e).__name__,
             )
-            raise GitHubSearchError(error_msg, error_code=ExtractionErrorCode.UNKNOWN) from e
+            raise ExternalServiceError(
+                service_name="github",
+                message=f"GitHub API call failed: {e}",
+            ) from e
 
     async def close(self) -> None:
         """Close HTTP client and Redis connection."""

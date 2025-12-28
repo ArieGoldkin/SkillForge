@@ -461,8 +461,10 @@ def _estimate_state_size(state: dict[str, Any]) -> int:
     try:
         # Use str representation as rough estimate
         return len(str(state).encode("utf-8"))
-    except Exception:  # noqa: BLE001
-        # If we can't estimate, return 0
+    except Exception as e:  # noqa: BLE001 - Graceful fallback: size estimation failure shouldn't break workflow
+        import logging
+
+        logging.getLogger(__name__).debug("Context size estimation failed: %s", e)
         return 0
 
 

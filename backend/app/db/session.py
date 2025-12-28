@@ -208,7 +208,11 @@ async def get_db() -> AsyncGenerator[AsyncSession]:
         try:
             yield session
             await session.commit()
-        except Exception:
+        except Exception as e:
+            # Log exception type for debugging pool/connection issues
+            import logging
+
+            logging.getLogger(__name__).debug("Session exception (%s): %s", type(e).__name__, e)
             await session.rollback()
             raise
         finally:

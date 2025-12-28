@@ -10,6 +10,7 @@ Issue #299-304: ArXiv PDF Extraction
 """
 
 from app.core.config import settings
+from app.core.exception_utils import async_exception_context
 from app.core.logging import get_logger
 from app.core.tracing import robust_traceable
 from app.core.types import AnalysisID
@@ -70,8 +71,10 @@ async def extract_content(  # noqa: PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: Langfuse telemetry is optional
+        logger.debug(
+            "langfuse_telemetry_unavailable", analysis_id=analysis_id, url=url, error=str(e)
+        )
 
     logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
 
@@ -89,78 +92,91 @@ async def extract_content(  # noqa: PLR0915
         extractor = JinaReader()
 
     try:
-        extracted = await extractor.extract_article(url)
-
-        # Detect content type from URL
-        try:
-            detected_content_type = detect_content_type(url)
-        except Exception:  # noqa: BLE001 - ContentTypeError or other exceptions, fallback gracefully
-            # Fallback to article if detection fails
-            detected_content_type = "article"
-
-        # Get title from extracted metadata
-        title = extracted.get("title")
-        if not isinstance(title, str):
-            title = None
-
-        # Emit SSE event: extraction complete with metadata
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage="extraction",
-            status="complete",
-            word_count=extracted.get("word_count", 0),
-            analysis_metadata={
-                "title": title,
-                "content_type": detected_content_type,
-                "url": url,
-                "word_count": extracted.get("word_count", 0),
-            },
-            analysis_mode=analysis_mode,
-        )
-
-        logger.info(
-            "workflow_extraction_complete",
-            analysis_id=analysis_id,
-            url=url,
-            word_count=extracted.get("word_count", 0),
-        )
-        # Build extraction_metadata from Jina's metadata plus top-level fields
-        # Type-safe construction: start with nested metadata dict, add top-level fields
-        base_metadata = extracted.get("metadata")
-        metadata: dict[str, str | int | None] = (
-            dict(base_metadata) if isinstance(base_metadata, dict) else {}
-        )
-        title_value = extracted.get("title")
-        metadata["title"] = title_value if isinstance(title_value, str) else None
-        word_count = extracted.get("word_count")
-        metadata["word_count"] = word_count if isinstance(word_count, int) else None
-
-        # Type assertion: extracted["content"] is always str from JinaReader
-        raw_content: str = str(extracted["content"])
-
-        # Add char_count for WorkflowResult validation (Issue #441)
-        metadata["char_count"] = len(raw_content)
-
-        # Issue #244: Create ArtifactRef for Handle Pattern
-        # This stores content summary and section metadata for on-demand loading
-        content_ref = await _create_artifact_ref(
+        async with async_exception_context(
+            operation="extract_content",
             analysis_id=str(analysis_id),
-            content=raw_content,
-        )
+            url=url,
+            extractor=extractor.__class__.__name__,
+        ):
+            extracted = await extractor.extract_article(url)
 
-        logger.info(
-            "artifact_ref_created",
-            analysis_id=analysis_id,
-            uri=content_ref.get("uri"),
-            size_bytes=content_ref.get("size_bytes"),
-        )
+            # Detect content type from URL
+            try:
+                detected_content_type = detect_content_type(url)
+            except Exception as e:  # noqa: BLE001 - Graceful degradation: content type detection failure should not break extraction
+                # Fallback to article if detection fails
+                logger.debug(
+                    "content_type_detection_failed",
+                    analysis_id=analysis_id,
+                    url=url,
+                    error=str(e),
+                    fallback="article",
+                )
+                detected_content_type = "article"
 
-        return {
-            "raw_content": raw_content,  # Backward compatibility
-            "content_ref": content_ref,  # Issue #244: Handle Pattern
-            "extraction_metadata": metadata,
-        }
+            # Get title from extracted metadata
+            title = extracted.get("title")
+            if not isinstance(title, str):
+                title = None
+
+            # Emit SSE event: extraction complete with metadata
+            await emit_streaming_event(
+                "progress",
+                analysis_id=analysis_id,
+                stage="extraction",
+                status="complete",
+                word_count=extracted.get("word_count", 0),
+                analysis_metadata={
+                    "title": title,
+                    "content_type": detected_content_type,
+                    "url": url,
+                    "word_count": extracted.get("word_count", 0),
+                },
+                analysis_mode=analysis_mode,
+            )
+
+            logger.info(
+                "workflow_extraction_complete",
+                analysis_id=analysis_id,
+                url=url,
+                word_count=extracted.get("word_count", 0),
+            )
+            # Build extraction_metadata from Jina's metadata plus top-level fields
+            # Type-safe construction: start with nested metadata dict, add top-level fields
+            base_metadata = extracted.get("metadata")
+            metadata: dict[str, str | int | None] = (
+                dict(base_metadata) if isinstance(base_metadata, dict) else {}
+            )
+            title_value = extracted.get("title")
+            metadata["title"] = title_value if isinstance(title_value, str) else None
+            word_count = extracted.get("word_count")
+            metadata["word_count"] = word_count if isinstance(word_count, int) else None
+
+            # Type assertion: extracted["content"] is always str from JinaReader
+            raw_content: str = str(extracted["content"])
+
+            # Add char_count for WorkflowResult validation (Issue #441)
+            metadata["char_count"] = len(raw_content)
+
+            # Issue #244: Create ArtifactRef for Handle Pattern
+            # This stores content summary and section metadata for on-demand loading
+            content_ref = await _create_artifact_ref(
+                analysis_id=str(analysis_id),
+                content=raw_content,
+            )
+
+            logger.info(
+                "artifact_ref_created",
+                analysis_id=analysis_id,
+                uri=content_ref.get("uri"),
+                size_bytes=content_ref.get("size_bytes"),
+            )
+
+            return {
+                "raw_content": raw_content,  # Backward compatibility
+                "content_ref": content_ref,  # Issue #244: Handle Pattern
+                "extraction_metadata": metadata,
+            }
     except Exception as e:
         # Extract error code from exception if available
         from app.core.exceptions import JinaReaderError
@@ -180,8 +196,14 @@ async def extract_content(  # noqa: PLR0915
                 error_message=str(e),
                 stage="extraction",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let error recording break the flow
+        except Exception as recording_error:  # noqa: BLE001 - Graceful degradation: error recording must not break workflow
+            # Don't let error recording break the flow
+            logger.debug(
+                "error_recorder_unavailable",
+                analysis_id=analysis_id,
+                error=str(recording_error),
+                reason="error_recording_failed_during_extraction_error_handling",
+            )
 
         # Emit error event using standardized helper
         await emit_error_event(

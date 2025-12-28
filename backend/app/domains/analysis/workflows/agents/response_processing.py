@@ -13,6 +13,7 @@ models instead of isinstance() checks, as this works across all Pydantic version
 
 from typing import Any, Protocol, cast, runtime_checkable
 
+from app.core.exceptions import AgentError
 from app.core.logging import get_logger
 
 
@@ -34,6 +35,7 @@ logger = get_logger(__name__)
 def extract_structured_response(
     final_result: dict[str, object] | Any | None,
     agent_type: str,
+    analysis_id: str | None = None,
 ) -> dict[str, object]:
     """Extract and validate structured response from agent result.
 
@@ -45,18 +47,29 @@ def extract_structured_response(
         final_result: Result from agent execution - either a Pydantic model
             (Gemini) or a dict with "structured_response" key (Anthropic/OpenAI)
         agent_type: Type of agent for error messages
+        analysis_id: Optional analysis ID for exception context enrichment
 
     Returns:
         Dictionary of findings from structured response
 
     Raises:
-        RuntimeError: If no result or no structured_response found
+        AgentError: If no result or no structured_response found
         TypeError: If result is invalid type or not a Pydantic model
 
     """
+    from app.core.exception_utils import enrich_exception
+
     if final_result is None:
         msg = f"Agent {agent_type} returned no result"
-        raise RuntimeError(msg)
+        error = AgentError(
+            agent_name=agent_type,
+            original_exception=ValueError("No result"),
+            message=msg,
+        )
+        # GAP 6: Enrich exception with context before raising
+        if analysis_id:
+            enrich_exception(error, analysis_id=analysis_id, agent_type=agent_type)
+        raise error
 
     # Case 1: Direct Pydantic model (Gemini 2.5+ pattern)
     # Gemini's with_structured_output(strict=True) returns the model directly
@@ -75,12 +88,24 @@ def extract_structured_response(
         structured_response = final_result.get("structured_response")
         if structured_response is None:
             msg = f"Agent {agent_type} did not return structured_response"
-            raise RuntimeError(msg)
+            error = AgentError(
+                agent_name=agent_type,
+                original_exception=KeyError("structured_response"),
+                message=msg,
+            )
+            # GAP 6: Enrich exception with context before raising
+            if analysis_id:
+                enrich_exception(error, analysis_id=analysis_id, agent_type=agent_type)
+            raise error
 
         # Validate wrapped value is a Pydantic model using Protocol
         if not isinstance(structured_response, PydanticModel):
             msg = f"Agent {agent_type} structured_response is not a Pydantic model"
-            raise TypeError(msg)
+            error = TypeError(msg)
+            # GAP 6: Enrich exception with context before raising
+            if analysis_id:
+                enrich_exception(error, analysis_id=analysis_id, agent_type=agent_type)
+            raise error
 
         logger.debug(
             "extracted_wrapped_pydantic_model",
@@ -91,4 +116,8 @@ def extract_structured_response(
 
     # Case 3: Unsupported format
     msg = f"Agent {agent_type} returned invalid result type: {type(final_result)}"
-    raise TypeError(msg)
+    error = TypeError(msg)
+    # GAP 6: Enrich exception with context before raising
+    if analysis_id:
+        enrich_exception(error, analysis_id=analysis_id, agent_type=agent_type)
+    raise error

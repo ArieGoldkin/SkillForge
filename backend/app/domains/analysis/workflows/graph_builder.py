@@ -14,6 +14,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.types import Send
 
 from app.core.config import settings
+from app.core.exception_utils import enrich_exception
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.core.logging import get_logger
 from app.core.timeout_config import STEP_TIMEOUT
@@ -60,13 +61,16 @@ from app.domains.analysis.workflows.tasks import (
 )
 from app.shared.services.extraction.jina_reader import _is_error_page
 
+logger = get_logger(__name__)
+
 # Try to import PostgresSaver dynamically to avoid hard dependency in lint
 try:
     import importlib
 
     _lg_pg = importlib.import_module("langgraph.checkpoint.postgres")
     PostgresSaver = getattr(_lg_pg, "PostgresSaver", None)
-except Exception:  # noqa: BLE001
+except Exception as e:  # noqa: BLE001 - Graceful degradation: PostgresSaver is optional dependency
+    logger.debug("postgres_checkpointer_unavailable", error=str(e), exc_info=e)
     PostgresSaver = None
 
 # Try to import RedisSaver dynamically to avoid hard dependency in lint
@@ -75,10 +79,9 @@ try:
 
     _lg_redis = importlib.import_module("langgraph.checkpoint.redis")
     RedisSaver = getattr(_lg_redis, "RedisSaver", None)
-except Exception:  # noqa: BLE001
+except Exception as e:  # noqa: BLE001 - Graceful degradation: RedisSaver is optional dependency
+    logger.debug("redis_checkpointer_unavailable", error=str(e), exc_info=e)
     RedisSaver = None
-
-logger = get_logger(__name__)
 
 
 def _get_checkpointer():
@@ -550,10 +553,19 @@ async def _workflow_failed_node(state: AnalysisState) -> dict[str, object]:
             analysis_id=analysis_id,
             error_code=error_code,
         )
-    except Exception:
+    except Exception as e:
+        # Non-critical: DB failure during error handling must not crash workflow
+        enrich_exception(
+            e,
+            operation="persist_workflow_failure",
+            analysis_id=analysis_id,
+            error_code=error_code,
+        )
         logger.exception(
             "workflow_failure_persistence_error",
             analysis_id=analysis_id,
+            error_code=error_code,
+            exc_info=e,
         )
 
     return {
@@ -879,10 +891,11 @@ def build_analysis_graph(  # noqa: PLR0915 - Many nodes require many statements
             node_count=len(node_names),
             message="Graph structure metadata logged for Langfuse visualization",
         )
-    except Exception as e:  # noqa: BLE001 - Graceful fallback, visualization is non-critical
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: Langfuse tracing is optional telemetry
         logger.debug(
             "workflow_graph_metadata_logging_failed",
             error=str(e),
+            exc_info=e,
             message="Graph metadata logging failed, continuing without it",
         )
 

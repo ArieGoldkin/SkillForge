@@ -6,6 +6,7 @@ Production-grade persister with validation before write and fail-fast error hand
 from sqlalchemy import select
 
 from app.core.branded_ids import AnalysisID
+from app.core.exceptions import DatabaseError
 from app.core.logging import get_logger
 from app.db.models.analysis import Analysis
 from app.db.session import AsyncSessionLocal
@@ -155,4 +156,4 @@ class DataPersister:
                 exc_info=True,
             )
             error_message = f"Failed to persist analysis data: {db_error}"
-            raise RuntimeError(error_message) from db_error
+            raise DatabaseError(error_message) from db_error

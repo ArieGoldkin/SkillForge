@@ -20,6 +20,7 @@ from redis.backoff import ExponentialBackoff
 from redis.retry import Retry
 
 from app.core.config import get_settings
+from app.core.exceptions import ConfigurationError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -37,12 +38,12 @@ def _validate_redis_url(url: str) -> dict[str, str | None]:
         Dictionary with parsed URL components and validation info
 
     Raises:
-        ValueError: If URL format is invalid for ACL authentication
+        ConfigurationError: If URL format is invalid for ACL authentication
 
     """
     if not url.startswith("redis://"):
         msg = f"Redis URL must start with 'redis://', got: {url}"
-        raise ValueError(msg)
+        raise ConfigurationError(msg)
 
     # Parse URL components
     try:
@@ -91,7 +92,7 @@ def _validate_redis_url(url: str) -> dict[str, str | None]:
 
     except Exception as e:
         msg = f"Invalid Redis URL format: {url}. Error: {e}"
-        raise ValueError(msg) from e
+        raise ConfigurationError(msg) from e
 
 
 def create_redis_client(
@@ -126,7 +127,7 @@ def create_redis_client(
         Configured Redis client instance
 
     Raises:
-        ValueError: If Redis URL is invalid for ACL authentication
+        ConfigurationError: If Redis URL is invalid for ACL authentication
 
     Example:
         >>> client = create_redis_client()

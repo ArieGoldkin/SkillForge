@@ -14,7 +14,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from app.core.exceptions import TavilySearchError
+from app.core.exceptions import ExternalServiceError, TavilySearchError
 from app.shared.services.tools.tavily_search import TavilySearch
 
 # Sample responses for mocking
@@ -256,12 +256,17 @@ async def test_search_timeout(tavily_search):
 
 @pytest.mark.asyncio
 async def test_search_generic_exception(tavily_search):
-    """Test search with generic exception raises TavilySearchError."""
+    """Test search with generic exception raises ExternalServiceError.
+
+    Issue #535: Changed from TavilySearchError to ExternalServiceError for proper
+    domain exception handling - generic exceptions are wrapped in ExternalServiceError.
+    """
     # Mock generic exception
     tavily_search.client.post = AsyncMock(side_effect=ValueError("Unexpected error"))
 
-    with pytest.raises(TavilySearchError, match="search failed"):
+    with pytest.raises(ExternalServiceError) as exc_info:
         await tavily_search.search("test query")
+    assert exc_info.value.service_name == "tavily"
 
 
 @pytest.mark.asyncio

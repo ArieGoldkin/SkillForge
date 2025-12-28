@@ -235,7 +235,13 @@ class Bulkhead:
                     self._active -= 1
                     self.stats.current_active = self._active
 
-        except Exception:
+        except Exception as e:
+            logger.debug(
+                "bulkhead_cleanup_exception",
+                bulkhead=self.name,
+                error_type=type(e).__name__,
+                error=str(e),
+            )
             async with self._lock:
                 if self._waiting > 0:
                     self._waiting -= 1

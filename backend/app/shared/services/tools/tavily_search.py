@@ -53,7 +53,11 @@ from app.core.constants import (
     TAVILY_SEARCH_DEPTH_BASIC,
     TAVILY_TIMEOUT,
 )
-from app.core.exceptions import ExtractionErrorCode, TavilySearchError
+from app.core.exceptions import (
+    ExternalServiceError,
+    ExtractionErrorCode,
+    TavilySearchError,
+)
 from app.core.tracing import traced_tool, update_current_observation
 from app.core.types import TavilySearchResult
 from app.shared.services.cache.redis_connection import create_redis_client
@@ -418,7 +422,10 @@ class TavilySearch:
                 error=str(e),
                 error_type=type(e).__name__,
             )
-            raise TavilySearchError(error_msg, error_code=ExtractionErrorCode.UNKNOWN) from e
+            raise ExternalServiceError(
+                service_name="tavily",
+                message=f"Tavily API call failed: {e}",
+            ) from e
 
     async def search_basic(self, query: str, **kwargs) -> TavilySearchResult:
         """Execute basic web search (faster, less comprehensive).

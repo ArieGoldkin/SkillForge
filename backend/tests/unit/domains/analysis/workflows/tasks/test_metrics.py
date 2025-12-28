@@ -93,8 +93,10 @@ class TestEmitMetric:
             emit_metric("fallback.metric", 999, {"source": "test"})
 
         # Verify logging was called (covers lines 30-32)
-        assert len(caplog.records) == 1
-        record = caplog.records[0]
+        # Filter for metrics module records only (ignore Langfuse warnings)
+        metric_records = [r for r in caplog.records if "metrics" in r.name]
+        assert len(metric_records) == 1
+        record = metric_records[0]
         assert record.levelname == "INFO"
         assert "metric_emit_fallback" in record.message
 
@@ -106,7 +108,9 @@ class TestEmitMetric:
             emit_metric("no_tags.metric", 42)
 
         # Verify logging handles None tags (covers line 31)
-        assert len(caplog.records) == 1
+        # Filter for metrics module records only (ignore Langfuse warnings)
+        metric_records = [r for r in caplog.records if "metrics" in r.name]
+        assert len(metric_records) == 1
 
 
 class TestMetricsClientProtocol:

@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.core.exceptions import DatabaseError
 from app.domains.analysis.schemas.workflow_result import WorkflowResult
 from app.domains.analysis.services.persistence.data_persister import DataPersister
 
@@ -176,7 +177,11 @@ async def test_persister_missing_analysis(mock_analysis_id, valid_workflow_resul
 
 @pytest.mark.asyncio
 async def test_persister_database_error(mock_analysis_id, valid_workflow_result_dict):
-    """Test database errors handled."""
+    """Test database errors handled with DatabaseError.
+
+    Issue #535: Changed from RuntimeError to DatabaseError for proper
+    domain exception handling in database operations.
+    """
     mock_db_session = AsyncMock()
     mock_db_session.execute.side_effect = ConnectionError("DB connection failed")
     mock_db_session.__aenter__ = AsyncMock(return_value=mock_db_session)
@@ -187,13 +192,17 @@ async def test_persister_database_error(mock_analysis_id, valid_workflow_result_
         return_value=mock_db_session,
     ):
         persister = DataPersister()
-        with pytest.raises(RuntimeError, match="Failed to persist analysis data"):
+        with pytest.raises(DatabaseError, match="Failed to persist analysis data"):
             await persister.persist(mock_analysis_id, valid_workflow_result_dict)
 
 
 @pytest.mark.asyncio
 async def test_persister_transaction_rollback(mock_analysis_id, valid_workflow_result_dict):
-    """Test transaction rollback on error."""
+    """Test transaction rollback on error raises DatabaseError.
+
+    Issue #535: Changed from RuntimeError to DatabaseError for proper
+    domain exception handling in database operations.
+    """
     mock_analysis = MagicMock()
     mock_analysis.id = mock_analysis_id
 
@@ -210,7 +219,7 @@ async def test_persister_transaction_rollback(mock_analysis_id, valid_workflow_r
         return_value=mock_db_session,
     ):
         persister = DataPersister()
-        with pytest.raises(RuntimeError):
+        with pytest.raises(DatabaseError):
             await persister.persist(mock_analysis_id, valid_workflow_result_dict)
 
 
@@ -436,7 +445,11 @@ async def test_persister_error_messages_clear(mock_analysis_id):
 
 @pytest.mark.asyncio
 async def test_persister_all_or_nothing(mock_analysis_id, valid_workflow_result_dict):
-    """Test all-or-nothing persistence."""
+    """Test all-or-nothing persistence raises DatabaseError on commit failure.
+
+    Issue #535: Changed from RuntimeError to DatabaseError for proper
+    domain exception handling in database operations.
+    """
     mock_analysis = MagicMock()
     mock_analysis.id = mock_analysis_id
 
@@ -453,5 +466,5 @@ async def test_persister_all_or_nothing(mock_analysis_id, valid_workflow_result_
         return_value=mock_db_session,
     ):
         persister = DataPersister()
-        with pytest.raises(RuntimeError):
+        with pytest.raises(DatabaseError):
             await persister.persist(mock_analysis_id, valid_workflow_result_dict)

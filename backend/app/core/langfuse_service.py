@@ -496,8 +496,12 @@ class LangfuseService:
                 message="langfuse.langchain not available - install langfuse[langchain]",
             )
             return None
-        except Exception:
-            logger.exception("langfuse_callback_failed")
+        except Exception as e:
+            logger.exception(
+                "langfuse_callback_failed",
+                error_type=type(e).__name__,
+                error=str(e),
+            )
             return None
 
     # ========================================================================

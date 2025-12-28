@@ -60,6 +60,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import tiktoken
 
 from app.core.config import settings
+from app.core.exceptions import EvaluationError
 from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.model_registry import MODEL_REGISTRY, get_model_info
@@ -466,8 +467,8 @@ class LLMBenchmark:
                 ls_dataset_name = f"{dataset_name}_{task_type}"
                 try:
                     ls_dataset = self.client.read_dataset(dataset_name=ls_dataset_name)
-                except Exception:  # noqa: BLE001
-                    # Dataset doesn't exist, create it
+                except Exception as e:  # noqa: BLE001 - Expected: dataset may not exist, create it
+                    self.logger.debug("Dataset %s not found, creating: %s", ls_dataset_name, e)
                     ls_dataset = self.client.create_dataset(
                         dataset_name=ls_dataset_name,
                         description=f"Golden dataset for {task_type} task evaluation",
@@ -510,7 +511,7 @@ class LLMBenchmark:
                     duration_seconds=duration,
                     exc_info=True,
                 )
-                raise RuntimeError(f"Experiment failed: {e}") from e
+                raise EvaluationError(f"Experiment '{experiment_name}' failed: {e}") from e
 
         duration = time.time() - start_time
 
@@ -624,7 +625,7 @@ class LLMBenchmark:
 
         if not experiments:
             msg = "All experiments failed"
-            raise RuntimeError(msg)
+            raise EvaluationError(msg)
 
         # Determine winners by metric
         winner_by_metric = self._find_winners_by_metric(experiments)

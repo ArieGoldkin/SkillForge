@@ -59,27 +59,36 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Langfuse may not be available or trace update may fail
+        # Continue embedding generation without blocking on telemetry
+        logger.debug("Langfuse trace update failed, continuing: %s", e)
 
     logger.info("workflow_embedding_started", content_length=len(content))
     embedding_service = EmbeddingService()
     try:
-        embedding_result = await embedding_service.generate_embedding(content)
-        embedding: EmbeddingVector = list(embedding_result)
+        from app.core.exception_utils import async_exception_context
 
-        # Emit SSE event: embedding complete
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
-            status="complete",
-        )
+        async with async_exception_context(
+            operation="generate_embedding",
+            analysis_id=str(analysis_id),
+            content_length=len(content),
+        ):
+            embedding_result = await embedding_service.generate_embedding(content)
+            embedding: EmbeddingVector = list(embedding_result)
 
-        logger.info(
-            "workflow_embedding_complete",
-            embedding_dimensions=len(embedding),
-        )
+            # Emit SSE event: embedding complete
+            await emit_streaming_event(
+                "progress",
+                analysis_id=analysis_id,
+                stage=get_stage_name("embedding"),
+                status="complete",
+            )
+
+            logger.info(
+                "workflow_embedding_complete",
+                embedding_dimensions=len(embedding),
+            )
     except Exception as e:
         # Record error to database before emitting events
         from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED
@@ -92,8 +101,10 @@ async def generate_embedding(content: str, analysis_id: AnalysisID) -> Embedding
                 error_message=str(e),
                 stage="embedding",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let error recording break the flow
+        except Exception as record_error:  # noqa: BLE001 - Graceful degradation for error recording
+            # Error recording to database may fail due to DB issues
+            # Don't block the main error flow - the exception will still propagate
+            logger.debug("Error recording to database failed, continuing: %s", record_error)
 
         # Emit error event using standardized helper
         stage_name = get_stage_name("embedding")
@@ -145,31 +156,40 @@ async def generate_embeddings_batch(
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Langfuse may not be available or trace update may fail
+        # Continue embedding generation without blocking on telemetry
+        logger.debug("Langfuse trace update failed, continuing: %s", e)
 
     embedding_service = EmbeddingService()
     results: list[tuple[EmbeddingVector, dict]] = []
 
     try:
-        for chunk in payloads:
-            embedding_result = await embedding_service.generate_embedding(
-                chunk.text, normalize=normalize
+        from app.core.exception_utils import async_exception_context
+
+        async with async_exception_context(
+            operation="generate_embeddings_batch",
+            analysis_id=str(analysis_id),
+            batch_size=len(payloads),
+        ):
+            for chunk in payloads:
+                embedding_result = await embedding_service.generate_embedding(
+                    chunk.text, normalize=normalize
+                )
+                results.append((list(embedding_result), chunk.__dict__))
+
+            await emit_streaming_event(
+                "progress",
+                analysis_id=analysis_id,
+                stage=get_stage_name("embedding"),
+                status="complete",
             )
-            results.append((list(embedding_result), chunk.__dict__))
 
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage=get_stage_name("embedding"),
-            status="complete",
-        )
-
-        logger.info(
-            "workflow_embedding_batch_complete",
-            count=len(results),
-            normalize=normalize,
-        )
+            logger.info(
+                "workflow_embedding_batch_complete",
+                count=len(results),
+                normalize=normalize,
+            )
     except Exception as e:
         # Record error to database before emitting events
         from app.domains.analysis.constants.error_codes import EMBEDDING_FAILED
@@ -182,8 +202,10 @@ async def generate_embeddings_batch(
                 error_message=str(e),
                 stage="embedding",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let error recording break the flow
+        except Exception as record_error:  # noqa: BLE001 - Graceful degradation for error recording
+            # Error recording to database may fail due to DB issues
+            # Don't block the main error flow - the exception will still propagate
+            logger.debug("Error recording to database failed, continuing: %s", record_error)
 
         # Emit error event using standardized helper
         stage_name = get_stage_name("embedding")

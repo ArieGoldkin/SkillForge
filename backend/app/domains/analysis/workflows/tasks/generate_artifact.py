@@ -145,8 +145,14 @@ async def _queue_low_quality_artifact_for_review(
                 warning_message=str(e),
                 stage="artifact_generation",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let warning recording break the flow
+        except Exception as warning_error:  # noqa: BLE001 - Graceful degradation: warning recording must not break workflow
+            # Don't let warning recording break the flow
+            logger.debug(
+                "warning_recorder_unavailable",
+                analysis_id=analysis_id,
+                error=str(warning_error),
+                reason="warning_recording_failed_during_artifact_queuing_error",
+            )
 
         logger.warning(
             "artifact_queuing_failed",
@@ -241,8 +247,14 @@ async def _submit_artifact_quality_scores(
                 warning_message=str(e),
                 stage="artifact_generation",
             )
-        except Exception:  # noqa: BLE001
-            pass  # Don't let warning recording break the flow
+        except Exception as warning_error:  # noqa: BLE001 - Graceful degradation: warning recording must not break workflow
+            # Don't let warning recording break the flow
+            logger.debug(
+                "warning_recorder_unavailable",
+                analysis_id=analysis_id,
+                error=str(warning_error),
+                reason="warning_recording_failed_during_g_eval_scoring_error",
+            )
 
         logger.warning(
             "artifact_g_eval_scoring_failed",
@@ -324,8 +336,8 @@ async def generate_artifact(  # noqa: PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: Langfuse telemetry is optional
+        logger.debug("langfuse_telemetry_unavailable", analysis_id=analysis_id, error=str(e))
 
     logger.info(
         "workflow_artifact_generation_started",
@@ -333,150 +345,157 @@ async def generate_artifact(  # noqa: PLR0915
     )
 
     try:
-        # Validate aggregated_insights exists
-        if not aggregated_insights or not isinstance(aggregated_insights, dict):
-            error_msg = "aggregated_insights is missing or invalid"
-            await emit_error_event(
+        from app.core.exception_utils import async_exception_context
+
+        async with async_exception_context(
+            operation="generate_artifact",
+            analysis_id=str(analysis_id),
+            analysis_mode=analysis_mode,
+        ):
+            # Validate aggregated_insights exists
+            if not aggregated_insights or not isinstance(aggregated_insights, dict):
+                error_msg = "aggregated_insights is missing or invalid"
+                await emit_error_event(
+                    analysis_id=analysis_id,
+                    stage=get_stage_name("artifact_generation"),
+                    error=error_msg,
+                    error_code="ARTIFACT_GENERATION_FAILED",
+                )
+                logger.error(
+                    "workflow_artifact_generation_missing_insights",
+                    analysis_id=analysis_id,
+                )
+                raise ValueError(error_msg)
+
+            # Prepare template context
+            title = extraction_metadata.get("title") or "Technical Analysis"
+            generated_date = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+
+            analysis_metadata = {
+                "title": title,
+                "url": url,
+                "generated_date": generated_date,
+                "analysis_id": str(analysis_id),
+            }
+
+            # Build Claude Code prompt
+            claude_code_prompt = build_claude_code_prompt(aggregated_insights, analysis_metadata)
+
+            # Filter out empty/invalid findings before template rendering
+            validated_findings, _, _ = validate_and_parse_findings(agent_findings)
+
+            # Render markdown template
+            # Extract quick_reference from aggregated_insights for template access
+            quick_reference = (
+                aggregated_insights.get("quick_reference") if aggregated_insights else None
+            )
+
+            template_context = {
+                "aggregated_insights": aggregated_insights,
+                "agent_findings": validated_findings,
+                "analysis_metadata": analysis_metadata,
+                "claude_code_prompt": claude_code_prompt,
+                "quick_reference": quick_reference,  # Pass at top level for template
+                "agent_statuses": agent_statuses,  # Pass agent statuses for template display
+            }
+
+            markdown_content = render_jinja_template("artifact.j2", template_context)
+
+            # Sanitize markdown to fix LLM-generated formatting issues
+            # This fixes tables with blank lines and unicode bullets
+            markdown_content = sanitize_markdown(markdown_content)
+
+            # Extract metadata (topics, complexity)
+            artifact_metadata = extract_artifact_metadata(aggregated_insights, agent_findings)
+
+            # Issue #442: Add quality metadata to artifact for frontend display
+            quality_gate_passed = state.get("quality_gate_passed", True)
+            quality_gate_avg_score = state.get("quality_gate_avg_score", 1.0)
+            quality_warnings_raw = state.get("quality_warnings", [])
+            quality_scores_raw = state.get("quality_scores", {})
+
+            # Flatten quality_scores to {aspect: score} format
+            quality_scores_flat: dict[str, float] = {}
+            if quality_scores_raw and isinstance(quality_scores_raw, dict):
+                for aspect, value in quality_scores_raw.items():
+                    if isinstance(value, dict) and "score" in value:
+                        score_val = value.get("score")
+                        if isinstance(score_val, (int, float)):
+                            quality_scores_flat[aspect] = float(score_val)
+                    elif isinstance(value, (int, float)):
+                        quality_scores_flat[aspect] = float(value)
+
+            artifact_metadata["quality"] = {
+                "passed": bool(quality_gate_passed),
+                "avg_score": float(quality_gate_avg_score) if quality_gate_avg_score else 0.0,
+                "scores": quality_scores_flat,
+                "warnings": list(quality_warnings_raw) if quality_warnings_raw else [],
+            }
+
+            # Get current trace ID for Langfuse feedback linking
+            from app.core.tracing import get_current_trace_id
+
+            trace_id = get_current_trace_id()
+
+            # Store artifact in database using repository pattern
+            session_factory = get_session_factory()
+            async with session_factory() as db_session:
+                repository = ArtifactRepository(session=db_session)
+                artifact = await repository.create_artifact(
+                    {
+                        "id": uuid.uuid4(),
+                        "analysis_id": analysis_id,
+                        "markdown_content": markdown_content,
+                        "version": 1,
+                        "artifact_metadata": artifact_metadata,
+                        "download_count": 0,
+                        "trace_id": trace_id,
+                    }
+                )
+                artifact_id = str(artifact.id)
+
+            processing_time_ms = int((time.time() - start_time) * 1000)
+
+            logger.info(
+                "workflow_artifact_generation_complete",
+                analysis_id=analysis_id,
+                artifact_id=artifact_id,
+                markdown_length=len(markdown_content),
+                processing_time_ms=processing_time_ms,
+            )
+
+            # Emit SSE event: artifact generation complete
+            await emit_streaming_event(
+                "progress",
                 analysis_id=analysis_id,
                 stage=get_stage_name("artifact_generation"),
-                error=error_msg,
-                error_code="ARTIFACT_GENERATION_FAILED",
+                status="complete",
+                artifact_id=artifact_id,
+                markdown_length=len(markdown_content),
+                analysis_mode=analysis_mode,
             )
-            logger.error(
-                "workflow_artifact_generation_missing_insights",
+
+            # Issue #378-385: Submit G-Eval scores to Langfuse for artifact quality
+            # This happens after artifact is stored, so it doesn't block user display
+            await _submit_artifact_quality_scores(
+                artifact_content=markdown_content,
+                aggregated_insights=aggregated_insights,
                 analysis_id=analysis_id,
             )
-            raise ValueError(error_msg)
 
-        # Prepare template context
-        title = extraction_metadata.get("title") or "Technical Analysis"
-        generated_date = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
-
-        analysis_metadata = {
-            "title": title,
-            "url": url,
-            "generated_date": generated_date,
-            "analysis_id": str(analysis_id),
-        }
-
-        # Build Claude Code prompt
-        claude_code_prompt = build_claude_code_prompt(aggregated_insights, analysis_metadata)
-
-        # Filter out empty/invalid findings before template rendering
-        validated_findings, _, _ = validate_and_parse_findings(agent_findings)
-
-        # Render markdown template
-        # Extract quick_reference from aggregated_insights for template access
-        quick_reference = (
-            aggregated_insights.get("quick_reference") if aggregated_insights else None
-        )
-
-        template_context = {
-            "aggregated_insights": aggregated_insights,
-            "agent_findings": validated_findings,
-            "analysis_metadata": analysis_metadata,
-            "claude_code_prompt": claude_code_prompt,
-            "quick_reference": quick_reference,  # Pass at top level for template
-            "agent_statuses": agent_statuses,  # Pass agent statuses for template display
-        }
-
-        markdown_content = render_jinja_template("artifact.j2", template_context)
-
-        # Sanitize markdown to fix LLM-generated formatting issues
-        # This fixes tables with blank lines and unicode bullets
-        markdown_content = sanitize_markdown(markdown_content)
-
-        # Extract metadata (topics, complexity)
-        artifact_metadata = extract_artifact_metadata(aggregated_insights, agent_findings)
-
-        # Issue #442: Add quality metadata to artifact for frontend display
-        quality_gate_passed = state.get("quality_gate_passed", True)
-        quality_gate_avg_score = state.get("quality_gate_avg_score", 1.0)
-        quality_warnings_raw = state.get("quality_warnings", [])
-        quality_scores_raw = state.get("quality_scores", {})
-
-        # Flatten quality_scores to {aspect: score} format
-        quality_scores_flat: dict[str, float] = {}
-        if quality_scores_raw and isinstance(quality_scores_raw, dict):
-            for aspect, value in quality_scores_raw.items():
-                if isinstance(value, dict) and "score" in value:
-                    score_val = value.get("score")
-                    if isinstance(score_val, (int, float)):
-                        quality_scores_flat[aspect] = float(score_val)
-                elif isinstance(value, (int, float)):
-                    quality_scores_flat[aspect] = float(value)
-
-        artifact_metadata["quality"] = {
-            "passed": bool(quality_gate_passed),
-            "avg_score": float(quality_gate_avg_score) if quality_gate_avg_score else 0.0,
-            "scores": quality_scores_flat,
-            "warnings": list(quality_warnings_raw) if quality_warnings_raw else [],
-        }
-
-        # Get current trace ID for Langfuse feedback linking
-        from app.core.tracing import get_current_trace_id
-
-        trace_id = get_current_trace_id()
-
-        # Store artifact in database using repository pattern
-        session_factory = get_session_factory()
-        async with session_factory() as db_session:
-            repository = ArtifactRepository(session=db_session)
-            artifact = await repository.create_artifact(
-                {
-                    "id": uuid.uuid4(),
-                    "analysis_id": analysis_id,
-                    "markdown_content": markdown_content,
-                    "version": 1,
-                    "artifact_metadata": artifact_metadata,
-                    "download_count": 0,
-                    "trace_id": trace_id,
-                }
+            # Issue #419: Queue low-quality artifacts for annotation review
+            # MUST happen AFTER artifact is created (uses real artifact.id, not analysis_id)
+            # Type cast: artifact.id is Column[UUID] but runtime value is uuid.UUID
+            await _queue_low_quality_artifact_for_review(
+                artifact_id=uuid.UUID(str(artifact.id)),
+                state=state,
+                trace_id=trace_id,
+                analysis_id=analysis_id,
             )
-            artifact_id = str(artifact.id)
 
-        processing_time_ms = int((time.time() - start_time) * 1000)
-
-        logger.info(
-            "workflow_artifact_generation_complete",
-            analysis_id=analysis_id,
-            artifact_id=artifact_id,
-            markdown_length=len(markdown_content),
-            processing_time_ms=processing_time_ms,
-        )
-
-        # Emit SSE event: artifact generation complete
-        await emit_streaming_event(
-            "progress",
-            analysis_id=analysis_id,
-            stage=get_stage_name("artifact_generation"),
-            status="complete",
-            artifact_id=artifact_id,
-            markdown_length=len(markdown_content),
-            analysis_mode=analysis_mode,
-        )
-
-        # Issue #378-385: Submit G-Eval scores to Langfuse for artifact quality
-        # This happens after artifact is stored, so it doesn't block user display
-        await _submit_artifact_quality_scores(
-            artifact_content=markdown_content,
-            aggregated_insights=aggregated_insights,
-            analysis_id=analysis_id,
-        )
-
-        # Issue #419: Queue low-quality artifacts for annotation review
-        # MUST happen AFTER artifact is created (uses real artifact.id, not analysis_id)
-        # Type cast: artifact.id is Column[UUID] but runtime value is uuid.UUID
-        await _queue_low_quality_artifact_for_review(
-            artifact_id=uuid.UUID(str(artifact.id)),
-            state=state,
-            trace_id=trace_id,
-            analysis_id=analysis_id,
-        )
-
-        # Return only updated fields, not entire state
-        # Issue #441: Set workflow_status to "completed" for orchestrator validation
-        return {"artifact_id": artifact_id, "workflow_status": "completed"}
+            # Return only updated fields, not entire state
+            # Issue #441: Set workflow_status to "completed" for orchestrator validation
+            return {"artifact_id": artifact_id, "workflow_status": "completed"}
 
     except Exception as e:
         # Emit error event using standardized helper

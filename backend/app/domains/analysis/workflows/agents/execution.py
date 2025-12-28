@@ -20,6 +20,7 @@ from langchain_core.runnables import Runnable
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.constants import MIN_AGENT_FINDINGS
+from app.core.exception_utils import async_exception_context
 from app.core.logging import get_logger
 from app.core.timeout_config import AGENT_TIMEOUT
 from app.core.tracing import update_current_observation
@@ -233,63 +234,69 @@ async def _run_agent_with_tracking_impl(
     )
 
     try:
-        # Build user prompt and initialize execution context
-        user_prompt = build_agent_user_prompt(
-            content=params.content,
-            content_type=params.content_type,
-            max_length=config.max_content_length,
-            proactive_context=params.proactive_context,
-        )
-
-        input_messages = {"messages": [{"role": "user", "content": user_prompt}]}
-
-        # Initialize validation configuration
-        max_retries = get_specificity_max_retries()
-        min_score = (
-            config.specificity_threshold
-            if config.specificity_threshold is not None
-            else get_specificity_min_score()
-        )
-        min_findings = get_min_agent_findings()
-
-        # Issue #507: Initialize self-correction context
-        self_correction_enabled = get_self_correction_enabled()
-        self_correction_ctx = SelfCorrectionContext(
-            enabled=self_correction_enabled,
-            max_retries=get_self_correction_max_retries(),
-        )
-        validator = get_validator(params.agent_type) if self_correction_enabled else None
-        use_compact_prompts = get_self_correction_compact_prompts()
-
-        # Execute retry loop with validation
-        findings = await _execute_agent_retry_loop(
-            params=params,
-            config=config,
-            input_messages=input_messages,
-            max_retries=max_retries,
-            min_score=min_score,
-            min_findings=min_findings,
-            self_correction_ctx=self_correction_ctx,
-            validator=validator,
-            use_compact_prompts=use_compact_prompts,
-        )
-
-        # Issue #507: Record self-correction metadata for Langfuse observability
-        record_self_correction_metadata(
-            context=self_correction_ctx,
+        async with async_exception_context(
+            operation="execute_agent",
             agent_type=params.agent_type,
             analysis_id=str(params.analysis_id),
-            update_observation_fn=update_current_observation,
-        )
+            content_type=params.content_type,
+        ):
+            # Build user prompt and initialize execution context
+            user_prompt = build_agent_user_prompt(
+                content=params.content,
+                content_type=params.content_type,
+                max_length=config.max_content_length,
+                proactive_context=params.proactive_context,
+            )
 
-        # Process and persist result
-        return await process_agent_result(
-            findings=findings or {},
-            analysis_id=params.analysis_id,
-            agent_type=params.agent_type,
-            session=config.session,
-            start_time=start_time,
-        )
+            input_messages = {"messages": [{"role": "user", "content": user_prompt}]}
+
+            # Initialize validation configuration
+            max_retries = get_specificity_max_retries()
+            min_score = (
+                config.specificity_threshold
+                if config.specificity_threshold is not None
+                else get_specificity_min_score()
+            )
+            min_findings = get_min_agent_findings()
+
+            # Issue #507: Initialize self-correction context
+            self_correction_enabled = get_self_correction_enabled()
+            self_correction_ctx = SelfCorrectionContext(
+                enabled=self_correction_enabled,
+                max_retries=get_self_correction_max_retries(),
+            )
+            validator = get_validator(params.agent_type) if self_correction_enabled else None
+            use_compact_prompts = get_self_correction_compact_prompts()
+
+            # Execute retry loop with validation
+            findings = await _execute_agent_retry_loop(
+                params=params,
+                config=config,
+                input_messages=input_messages,
+                max_retries=max_retries,
+                min_score=min_score,
+                min_findings=min_findings,
+                self_correction_ctx=self_correction_ctx,
+                validator=validator,
+                use_compact_prompts=use_compact_prompts,
+            )
+
+            # Issue #507: Record self-correction metadata for Langfuse observability
+            record_self_correction_metadata(
+                context=self_correction_ctx,
+                agent_type=params.agent_type,
+                analysis_id=str(params.analysis_id),
+                update_observation_fn=update_current_observation,
+            )
+
+            # Process and persist result
+            return await process_agent_result(
+                findings=findings or {},
+                analysis_id=params.analysis_id,
+                agent_type=params.agent_type,
+                session=config.session,
+                start_time=start_time,
+            )
 
     except GeneratorExit:
         await handle_agent_cancellation(
@@ -349,7 +356,9 @@ async def _execute_agent_retry_loop(  # noqa: PLR0913
     while attempts <= max_retries:
         # Invoke agent
         final_result = await _invoke_agent_with_timeout(params, config, current_messages)
-        findings = extract_structured_response(final_result, params.agent_type)
+        findings = extract_structured_response(
+            final_result, params.agent_type, analysis_id=str(params.analysis_id)
+        )
 
         # Validate findings count
         insights_count = _count_insights(findings, params.agent_type)

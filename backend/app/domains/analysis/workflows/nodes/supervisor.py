@@ -252,8 +252,10 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
             session_id=f"analysis-{analysis_id}",
             user_id="anonymous",
         )
-    except Exception:  # noqa: BLE001 - Langfuse may not be available
-        pass
+    except Exception as e:  # noqa: BLE001 - Graceful degradation for observability
+        # Langfuse may not be available or trace update may fail
+        # Continue workflow execution without blocking on telemetry
+        logger.debug("Langfuse trace update failed, continuing: %s", e)
 
     # Emit SSE event: supervisor started
     await emit_streaming_event(
@@ -444,11 +446,19 @@ async def supervisor_route(  # noqa: PLR0912, PLR0915
         )
 
         # Invoke with LCEL chain (fallback built-in, retry at LangChain level)
-        selection = await _invoke_supervisor_with_retry(
-            structured_model,
-            user_prompt,
-            analysis_id,
-        )
+        from app.core.exception_utils import async_exception_context
+
+        async with async_exception_context(
+            operation="supervisor_route",
+            analysis_id=str(analysis_id),
+            content_type=content_type,
+            content_length=len(content),
+        ):
+            selection = await _invoke_supervisor_with_retry(
+                structured_model,
+                user_prompt,
+                analysis_id,
+            )
 
         # ═══════════════════════════════════════════════════════════════════
         # ISSUE #544: Force-inject Tier 1 (UNIVERSAL) agents as safety net

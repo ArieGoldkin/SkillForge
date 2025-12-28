@@ -628,7 +628,25 @@ async def g_eval_score(  # noqa: PLR0913, PLR0915, PLR0912 - Complex batch proce
         ]
 
         try:
-            sc_results = await asyncio.gather(*tasks)
+            from app.core.exception_utils import collect_agent_errors
+
+            sc_results = await asyncio.gather(*tasks, return_exceptions=True)
+            if error_group := collect_agent_errors(sc_results):
+                logger.warning(
+                    "scoring_partial_failures",
+                    error_count=len(error_group.exceptions),
+                    agent_type=agent_type,
+                )
+                # Filter out exceptions, keep successful results
+                sc_results = [r for r in sc_results if not isinstance(r, Exception)]
+                # If all failed, return error result
+                if not sc_results:
+                    logger.exception("g_eval_self_consistency_all_failed", error=str(error_group))
+                    return GEvalResult(
+                        overall=0.5,
+                        agent_type=agent_type,
+                        error=str(error_group),
+                    )
         except Exception as e:
             logger.exception("g_eval_self_consistency_batch_error", error=str(e))
             return GEvalResult(
@@ -877,9 +895,22 @@ async def g_eval_score_batch(
         List of GEvalResult for each item
 
     """
+    from app.core.exception_utils import collect_agent_errors
+
     tasks = [
         g_eval_score(input_content, output, agent_type, criteria)
         for input_content, output, agent_type in items
     ]
 
-    return await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    if error_group := collect_agent_errors(results):
+        logger.warning(
+            "g_eval_batch_partial_failures",
+            error_count=len(error_group.exceptions),
+            total_items=len(items),
+        )
+        # Filter out exceptions, keep successful results
+        results = [r for r in results if not isinstance(r, Exception)]
+
+    # Type cast: after filtering exceptions, all remaining are GEvalResult
+    return results  # type: ignore[return-value]
