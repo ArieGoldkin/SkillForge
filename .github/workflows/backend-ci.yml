@@ -30,7 +30,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -52,7 +52,7 @@ jobs:
         run: rm -rf backend/.venv 2>/dev/null || true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure PATH for Homebrew
         run: |
@@ -100,7 +100,7 @@ jobs:
         run: rm -rf backend/.venv 2>/dev/null || true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure PATH for Homebrew
         run: |
@@ -147,7 +147,7 @@ jobs:
         run: rm -rf backend/.venv 2>/dev/null || true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure PATH for Homebrew
         run: |
