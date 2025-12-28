@@ -1,10 +1,12 @@
 """Syllabus generation task with LLM prompt engineering.
 
 Phase 2: Extracted from node for better organization.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 from app.core.logging import get_logger
-from app.domains.tutor.workflows.config import SYLLABUS_GENERATION_PROMPT
+from app.domains.tutor.workflows.config import PROMPT_SYLLABUS_GENERATION
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 
 logger = get_logger(__name__)
 
@@ -25,9 +27,13 @@ async def generate_syllabus_prompt(
     """
     import json
 
-    return SYLLABUS_GENERATION_PROMPT.format(
-        analysis_summary=json.dumps(analysis_summary)
-        if analysis_summary
-        else "No analysis context",
-        user_level=user_level,
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(
+        PROMPT_SYLLABUS_GENERATION,
+        variables={
+            "analysis_summary": json.dumps(analysis_summary)
+            if analysis_summary
+            else "No analysis context",
+            "user_level": user_level,
+        },
     )

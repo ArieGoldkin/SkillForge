@@ -1,0 +1,80 @@
+You are creating documentation for developers and AI assistants.
+
+## SOURCE CONTENT (GROUNDING) - Issue #487 Hallucination Prevention
+Title: {{ source_title }}
+Key Terms: {{ source_key_terms }}
+Content Summary:
+{{ source_summary }}
+
+## CRITICAL: Only document technologies IN THE SOURCE ABOVE
+Do NOT create documentation about APIs, frameworks, or tools not mentioned in the source.
+
+## Your Task
+Generate developer-friendly documentation for the DocsSynthesisSchema.
+
+### PART 1: Quick Reference (quick_reference)
+Generate an object with these EXACT fields:
+- primary_technology: String "TechName version" (e.g., "LangGraph 0.6.7 + PostgreSQL 14")
+- complexity: String "Level (Est. X-Y hours)" (e.g., "Intermediate (Est. 3-4 hours)")
+- prerequisites: List of 0-4 strings (e.g., ["Python 3.11+", "Docker installed"])
+- critical_commands: List of 0-6 copy-paste commands (e.g., ["pip install langgraph==0.6.7"])
+- files_to_modify: List of 0-10 file paths with purpose
+- files_disclaimer: String (use default: "⚠️ AI-suggested structure based on content patterns")
+- gotchas: List of 0-5 objects, each with:
+    * issue: String - the pitfall description
+    * symptom: String - what you'll see when this happens
+    * quick_fix: String - how to fix it
+
+### PART 2: TL;DR Section (tldr)
+Generate an object with these EXACT fields:
+- summary: String 50-500 chars, 2-3 sentences overview
+- key_takeaways: List of 3-5 concrete outcomes (strings)
+- time_to_implement: String "Total time (breakdown)" (e.g., "4-6 hours (2h setup, 2h impl)")
+
+### PART 3: AI Assistant Prompt (ai_assistant_prompt)
+Pre-formatted context for AI coding assistants with these EXACT fields:
+- context: String 50-1000 chars, architectural background
+- implementation_steps: List of 5-10 ordered imperative commands (strings)
+- code_snippets: Dict of purpose→complete runnable code (max 5 keys)
+- file_structure: Dict of file_path→responsibility description
+- success_criteria: List of 3-7 testable outcomes (strings)
+
+### PART 4: Diagrams (diagrams)
+Generate a list of 1-3 Mermaid diagram objects, each with these EXACT fields:
+- title: String 5-100 chars, diagram name
+- type: String, one of: "flowchart", "sequence", "class", "state", "er", "gantt"
+- mermaid_code: String, valid Mermaid.js syntax (NOT "content"!)
+- description: String 30-500 chars, what the diagram shows
+
+**CRITICAL DIAGRAM CONSTRAINTS** (prevents rendering issues):
+- Diamond nodes {label}: MAX 5 chars (use {OK?}, {Yes}, {No} - NOT {Valid?})
+- Rectangle nodes [label]: Split long text, max 15 chars/word
+- Terminal nodes: Keep concise ([Done], [End], [Error])
+
+### PART 5: Glossary (glossary)
+Generate a list of 5-10 term objects, each with these EXACT fields:
+- term: String 1-100 chars, the technical term or acronym
+- definition: String 20-500 chars, clear definition
+- see_also: List of 0-5 related term names (strings)
+
+## DOCUMENTATION QUALITY REQUIREMENTS
+1. **Actionable**: Every section enables immediate action
+2. **Specific**: Include versions, paths, commands - no vague guidance
+3. **Complete**: Code snippets must be runnable, diagrams must render
+4. **Scannable**: TL;DR readable in 10 seconds, full docs in 5 minutes
+
+## Agent Findings Summary:
+{{ agent_findings }}
+
+## CRITICAL OUTPUT FORMAT
+Return VALID JSON matching DocsSynthesisSchema EXACTLY:
+```json
+{
+  "quick_reference": {...exact fields above...},
+  "tldr": {...exact fields above...},
+  "ai_assistant_prompt": {...exact fields above...},
+  "diagrams": [...1-3 diagram objects with mermaid_code NOT content...],
+  "glossary": [...5-10 term objects...]
+}
+```
+Field names and structures must match EXACTLY or validation will fail.

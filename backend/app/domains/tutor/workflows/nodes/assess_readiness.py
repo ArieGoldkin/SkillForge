@@ -1,6 +1,7 @@
 """Assess readiness node for tutor workflow.
 
 This node evaluates user understanding using LLM-based assessment.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 import json
@@ -17,11 +18,12 @@ from app.core.tracing import robust_traceable, update_current_trace
 from app.db.session import get_session_factory
 from app.domains.tutor.repositories.session_repository import TutorSessionRepository
 from app.domains.tutor.schemas.assessment import ReadinessAssessment
-from app.domains.tutor.workflows.config import READINESS_ASSESSMENT_PROMPT, TUTOR_COMPACTION_CONFIG
+from app.domains.tutor.workflows.config import PROMPT_READINESS_ASSESSMENT, TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 if TYPE_CHECKING:
@@ -114,11 +116,15 @@ async def assess_readiness(state: TutorState) -> dict[str, object]:  # noqa: PLR
                         if isinstance(lesson, dict):
                             concept = str(lesson.get("concept", concept))
 
-        # Build prompt
-        prompt = READINESS_ASSESSMENT_PROMPT.format(
-            concept=concept,
-            user_response=last_user_message or "No response yet",
-            understanding_scores=json.dumps(understanding_scores),
+        # Build prompt using PromptManager
+        prompt_manager = get_prompt_manager()
+        prompt = await prompt_manager.get_prompt(
+            PROMPT_READINESS_ASSESSMENT,
+            variables={
+                "concept": concept,
+                "user_response": last_user_message or "No response yet",
+                "understanding_scores": json.dumps(understanding_scores),
+            },
         )
 
         # Get LLM model and compiler

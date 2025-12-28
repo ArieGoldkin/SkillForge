@@ -10,7 +10,7 @@ from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
 from app.core.timeout_config import create_runnable_config
 from app.core.tracing import robust_traceable, update_current_trace
-from app.domains.tutor.workflows.config import LESSON_DELIVERY_PROMPT, TUTOR_COMPACTION_CONFIG
+from app.domains.tutor.workflows.config import PROMPT_LESSON_DELIVERY, TUTOR_COMPACTION_CONFIG
 from app.domains.tutor.workflows.nodes.response_helpers import extract_string_content
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
@@ -124,7 +124,7 @@ async def deliver_lesson(state: TutorState) -> dict[str, object]:  # noqa: PLR09
         lesson_title = lesson.get("title", "Unknown lesson")
 
         # Build prompt
-        prompt = LESSON_DELIVERY_PROMPT.format(
+        prompt = PROMPT_LESSON_DELIVERY.format(
             concept=concept,
             section_title=section_title,
             lesson_title=lesson_title,

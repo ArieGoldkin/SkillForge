@@ -1,0 +1,18 @@
+{#- Tutor: Syllabus Generation -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+
+Generate a personalized curriculum for teaching the following content.
+
+Content Summary:
+{{ analysis_summary }}
+
+User Level: {{ user_level }}
+
+Create a curriculum with 2-4 sections, each containing 2-3 lessons.
+Each lesson should cover one key concept with:
+- Clear explanation
+- Analogical explanation (if helpful)
+- Concrete example
+- Practice exercise/question
+
+Return as JSON matching the Syllabus schema.

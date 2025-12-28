@@ -1,6 +1,7 @@
 """Rephrase explanation node for tutor workflow.
 
 This node provides adaptive re-explanation with hints when user is not ready.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 from app.core.config import settings
@@ -14,12 +15,16 @@ from app.domains.tutor.workflows.nodes.response_helpers import extract_string_co
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 logger = get_logger(__name__)
 
 # Module-level compiler (lazy init)
 _tutor_compiler = None
+
+# Prompt name for PromptManager
+PROMPT_NAME = "tutor-rephrase-explanation"
 
 
 def _get_tutor_compiler():
@@ -28,26 +33,6 @@ def _get_tutor_compiler():
     if _tutor_compiler is None:
         _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
     return _tutor_compiler
-
-
-REPHRASE_EXPLANATION_PROMPT = """Rephrase the explanation to help the user understand better.
-
-Original Concept: {concept}
-User's Response: {user_response}
-User Level: {user_level}
-Attempt Number: {attempts}
-
-The user didn't fully understand. Provide:
-1. A simpler explanation (use analogies if helpful)
-2. A hint (don't give the answer, guide them)
-3. An encouraging message
-
-Adapt based on attempt number:
-- Attempt 1: Slightly simpler, one hint
-- Attempt 2: Much simpler, more hints
-- Attempt 3: Very simple, direct guidance (last attempt)
-
-Return the rephrased explanation."""
 
 
 @robust_traceable(
@@ -124,12 +109,16 @@ async def rephrase_explain(state: TutorState) -> dict[str, object]:
                         if isinstance(lesson, dict):
                             concept = str(lesson.get("concept", concept))
 
-        # Build prompt
-        prompt = REPHRASE_EXPLANATION_PROMPT.format(
-            concept=concept,
-            user_response=last_user_message or "No response",
-            user_level=user_level,
-            attempts=attempts,
+        # Build prompt using PromptManager
+        prompt_manager = get_prompt_manager()
+        prompt = await prompt_manager.get_prompt(
+            PROMPT_NAME,
+            variables={
+                "concept": concept,
+                "user_response": last_user_message or "No response",
+                "user_level": user_level,
+                "attempts": attempts,
+            },
         )
 
         # Get LLM model and compiler

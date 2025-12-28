@@ -1,6 +1,7 @@
 """Guide reflection node for tutor workflow.
 
 This node provides real-world application suggestions and marks session as completed.
+Issue #414: Migrated to PromptManager with Jinja2 templates.
 """
 
 from typing import TYPE_CHECKING
@@ -17,6 +18,7 @@ from app.domains.tutor.workflows.nodes.response_helpers import extract_string_co
 from app.domains.tutor.workflows.nodes.sse_helpers import emit_tutor_event as _emit_tutor_event
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 from app.shared.workflows.context_compiler import create_workflow_compiler
 
 if TYPE_CHECKING:
@@ -27,6 +29,9 @@ logger = get_logger(__name__)
 # Module-level compiler (lazy init)
 _tutor_compiler = None
 
+# Prompt name for PromptManager
+PROMPT_NAME = "tutor-reflection"
+
 
 def _get_tutor_compiler():
     """Get or create tutor compiler instance (lazy initialization)."""
@@ -34,20 +39,6 @@ def _get_tutor_compiler():
     if _tutor_compiler is None:
         _tutor_compiler = create_workflow_compiler("tutor", config=TUTOR_COMPACTION_CONFIG)
     return _tutor_compiler
-
-
-REFLECTION_PROMPT = """Guide the user in reflecting on their learning and applying concepts.
-
-Syllabus: {syllabus_summary}
-Understanding Scores: {understanding_scores}
-
-Provide:
-1. Real-world applications of the concepts learned
-2. Next steps for continued learning
-3. Resources for deeper exploration
-4. Encouragement and reflection questions
-
-Help the user connect concepts to practice and plan their continued learning journey."""
 
 
 @robust_traceable(
@@ -110,10 +101,14 @@ async def guide_reflection(state: TutorState) -> dict[str, object]:
                 section_titles = [s.get("title", "") for s in sections if isinstance(s, dict)]
                 syllabus_summary = f"Completed: {', '.join(section_titles)}"
 
-        # Build prompt
-        prompt = REFLECTION_PROMPT.format(
-            syllabus_summary=syllabus_summary,
-            understanding_scores=str(understanding_scores),
+        # Build prompt using PromptManager
+        prompt_manager = get_prompt_manager()
+        prompt = await prompt_manager.get_prompt(
+            PROMPT_NAME,
+            variables={
+                "syllabus_summary": syllabus_summary,
+                "understanding_scores": str(understanding_scores),
+            },
         )
 
         # Get LLM model and compiler

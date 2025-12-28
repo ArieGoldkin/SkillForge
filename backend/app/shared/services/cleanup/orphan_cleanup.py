@@ -174,28 +174,30 @@ class OrphanCleaner:
     async def delete_orphans_batch(
         self,
         orphan_ids: list[uuid.UUID],
-        hard_delete: bool = False,
     ) -> int:
-        """Delete orphaned chunks in batches.
+        """Delete orphaned chunks in batches (ALWAYS hard delete).
 
         Processes deletions in batches to avoid memory issues and
         provide progress feedback for large datasets.
 
+        IMPORTANT: This method ALWAYS performs hard deletes (permanent removal).
+        Soft delete functionality is not implemented - see issue #220 for migration plan.
+
         Args:
-            orphan_ids: List of chunk IDs to delete
-            hard_delete: If True, permanently delete; if False, soft delete (mark as deleted)
+            orphan_ids: List of chunk IDs to permanently delete
 
         Returns:
             Total number of chunks deleted
 
         Example:
             >>> orphan_ids = await cleaner.find_orphans_missing_parent()
-            >>> deleted = await cleaner.delete_orphans_batch(orphan_ids, hard_delete=False)
+            >>> deleted = await cleaner.delete_orphans_batch(orphan_ids)
             >>> print(f"Deleted {deleted} orphaned chunks")
 
-        Note:
-            Soft delete requires migration to add is_deleted column to analysis_chunks.
-            Hard delete is immediate and permanent - use with caution.
+        Warning:
+            This is a destructive operation. Deleted chunks cannot be recovered.
+            Ensure you have backups or have verified the orphan detection logic
+            before running in production.
 
         """
         if not orphan_ids:
@@ -208,14 +210,8 @@ class OrphanCleaner:
         for i in range(0, len(orphan_ids), self.batch_size):
             batch = orphan_ids[i : i + self.batch_size]
 
-            if hard_delete:
-                # Permanent deletion
-                stmt = delete(AnalysisChunk).where(AnalysisChunk.id.in_(batch))
-            else:
-                # Soft delete: Mark as deleted (requires migration for is_deleted column)
-                # For now, we'll use hard delete since is_deleted doesn't exist yet
-                # TODO(cleanup): Add is_deleted column migration - see issue #220
-                stmt = delete(AnalysisChunk).where(AnalysisChunk.id.in_(batch))
+            # Permanent deletion (ALWAYS hard delete)
+            stmt = delete(AnalysisChunk).where(AnalysisChunk.id.in_(batch))
 
             result = await self.session.execute(stmt)
             batch_deleted = result.rowcount or 0  # type: ignore[attr-defined]
@@ -235,35 +231,36 @@ class OrphanCleaner:
             "delete_orphans_batch_complete",
             total_deleted=total_deleted,
             total_orphans=len(orphan_ids),
-            hard_delete=hard_delete,
         )
 
         return total_deleted
 
     async def cleanup_all_orphans(
         self,
-        hard_delete: bool = False,
         include_superseded: bool = False,
     ) -> dict[str, int]:
-        """Run all orphan detection and cleanup routines.
+        """Run all orphan detection and cleanup routines (ALWAYS hard delete).
 
-        Comprehensive cleanup that finds and removes:
+        Comprehensive cleanup that finds and permanently removes:
         - Chunks with missing parent analysis
         - Chunks from old failed analyses
         - Chunks from superseded analyses (optional)
 
+        IMPORTANT: This method ALWAYS performs hard deletes (permanent removal).
+        Soft delete functionality is not implemented - see issue #220 for migration plan.
+
         Args:
-            hard_delete: If True, permanently delete; if False, soft delete
             include_superseded: If True, also clean up superseded analysis chunks
 
         Returns:
             Dictionary with cleanup statistics
 
         Example:
-            >>> stats = await cleaner.cleanup_all_orphans(
-            ...     hard_delete=False, include_superseded=True
-            ... )
+            >>> stats = await cleaner.cleanup_all_orphans(include_superseded=True)
             >>> print(f"Cleaned up {stats['total_deleted']} chunks")
+
+        Warning:
+            This is a destructive operation. Deleted chunks cannot be recovered.
 
         """
         stats: dict[str, int] = {
@@ -275,18 +272,16 @@ class OrphanCleaner:
 
         # 1. Find and delete chunks with missing parent
         missing_parent_ids = await self.find_orphans_missing_parent()
-        stats["missing_parent"] = await self.delete_orphans_batch(missing_parent_ids, hard_delete)
+        stats["missing_parent"] = await self.delete_orphans_batch(missing_parent_ids)
 
         # 2. Find and delete chunks from old failed analyses
         failed_analysis_ids = await self.find_orphans_failed_analysis()
-        stats["failed_analysis"] = await self.delete_orphans_batch(failed_analysis_ids, hard_delete)
+        stats["failed_analysis"] = await self.delete_orphans_batch(failed_analysis_ids)
 
         # 3. Optionally find and delete chunks from superseded analyses
         if include_superseded:
             superseded_ids = await self.find_orphans_superseded_analysis()
-            stats["superseded_analysis"] = await self.delete_orphans_batch(
-                superseded_ids, hard_delete
-            )
+            stats["superseded_analysis"] = await self.delete_orphans_batch(superseded_ids)
 
         stats["total_deleted"] = sum(
             [stats["missing_parent"], stats["failed_analysis"], stats["superseded_analysis"]]
@@ -295,7 +290,6 @@ class OrphanCleaner:
         logger.info(
             "cleanup_all_orphans_complete",
             stats=stats,
-            hard_delete=hard_delete,
             include_superseded=include_superseded,
         )
 

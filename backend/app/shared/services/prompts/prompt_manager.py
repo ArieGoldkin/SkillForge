@@ -45,6 +45,14 @@ from app.shared.services.prompts.template_loader import TemplatePaths, render_te
 
 logger = get_logger(__name__)
 
+# Public API exports
+__all__ = [
+    "TEMPLATE_MAPPING",
+    "LRUCache",
+    "PromptManager",
+    "get_prompt_manager",
+]
+
 # Issue #414: Mapping from prompt names to Jinja2 template paths
 # Replaces the 1600-line HARDCODED_PROMPTS dictionary with clean template references
 TEMPLATE_MAPPING: dict[str, str] = {
@@ -64,13 +72,13 @@ TEMPLATE_MAPPING: dict[str, str] = {
     "analysis-agent-trend-validator": TemplatePaths.AGENT_TREND_VALIDATOR,
     "analysis-agent-integration-feasibility": TemplatePaths.AGENT_INTEGRATION_FEASIBILITY,
     "analysis-agent-code-quality-critic": TemplatePaths.AGENT_CODE_QUALITY_CRITIC,
-    "analysis-agent-fact-validator": TemplatePaths.AGENT_FACT_VALIDATOR,
     # Tier 3 Agents (Research - Deep Dive with memory/tools)
     "analysis-agent-deep-researcher": TemplatePaths.AGENT_DEEP_RESEARCHER,
     "analysis-agent-community-pulse": TemplatePaths.AGENT_COMMUNITY_PULSE,
     "analysis-agent-knowledge-curator": TemplatePaths.AGENT_KNOWLEDGE_CURATOR,
     "analysis-agent-learning-path-advisor": TemplatePaths.AGENT_LEARNING_PATH_ADVISOR,
-    # Archive (Dead agents - kept for reference, may be revived)
+    # Archived agents (not connected to workflow - see agents/archive/README.md)
+    "analysis-agent-fact-validator": TemplatePaths.AGENT_FACT_VALIDATOR,
     "analysis-agent-research-analyst": TemplatePaths.AGENT_RESEARCH_ANALYST,
     "analysis-agent-freshness-checker": TemplatePaths.AGENT_FRESHNESS_CHECKER,
     "analysis-agent-alternatives-finder": TemplatePaths.AGENT_ALTERNATIVES_FINDER,
@@ -81,6 +89,26 @@ TEMPLATE_MAPPING: dict[str, str] = {
     "evaluator-quality-accuracy": TemplatePaths.EVALUATOR_ACCURACY,
     "evaluator-quality-coherence": TemplatePaths.EVALUATOR_COHERENCE,
     "evaluator-quality-overall": TemplatePaths.EVALUATOR_OVERALL,
+    # Tutor workflow
+    "tutor-syllabus-generation": TemplatePaths.TUTOR_SYLLABUS_GENERATION,
+    "tutor-lesson-delivery": TemplatePaths.TUTOR_LESSON_DELIVERY,
+    "tutor-socratic-question": TemplatePaths.TUTOR_SOCRATIC_QUESTION,
+    "tutor-readiness-assessment": TemplatePaths.TUTOR_READINESS_ASSESSMENT,
+    "tutor-rephrase-explanation": TemplatePaths.TUTOR_REPHRASE_EXPLANATION,
+    "tutor-section-review": TemplatePaths.TUTOR_SECTION_REVIEW,
+    "tutor-reflection": TemplatePaths.TUTOR_REFLECTION,
+    "tutor-final-challenge": TemplatePaths.TUTOR_FINAL_CHALLENGE,
+    # Synthesis prompts (Issue #414)
+    "synthesis-core": TemplatePaths.SYNTHESIS_CORE,
+    "synthesis-learning": TemplatePaths.SYNTHESIS_LEARNING,
+    "synthesis-docs": TemplatePaths.SYNTHESIS_DOCS,
+    "synthesis-compression": TemplatePaths.SYNTHESIS_COMPRESSION,
+    "synthesis-system": TemplatePaths.SYNTHESIS_SYSTEM,
+    "synthesis-minimal-system": TemplatePaths.SYNTHESIS_MINIMAL_SYSTEM,
+    "synthesis-trend-summary": TemplatePaths.SYNTHESIS_TREND_SUMMARY,
+    # System prompts (Issue #414)
+    "system-tutor": TemplatePaths.SYSTEM_TUTOR,
+    "system-analysis": TemplatePaths.SYSTEM_ANALYSIS,
 }
 
 

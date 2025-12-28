@@ -1,0 +1,16 @@
+{#- Tutor: Readiness Assessment -#}
+{#- Issue #414: Migrated from hardcoded prompt to Jinja2 template -#}
+
+Assess the user's understanding based on their response.
+
+Lesson Concept: {{ concept }}
+User Response: {{ user_response }}
+Previous Understanding: {{ understanding_scores }}
+
+Evaluate:
+1. Does the user demonstrate understanding? (boolean)
+2. Confidence in assessment (0.0-1.0)
+3. Reasoning for the assessment
+4. Suggested action: 'rephrase' if not ready, 'move_on' if ready
+
+Return as JSON matching ReadinessAssessment schema.

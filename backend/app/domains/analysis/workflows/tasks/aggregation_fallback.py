@@ -8,6 +8,8 @@ Issue #299-304: Implements tiered fallback chain with graceful degradation:
 
 This prevents same-model-same-prompt retry loops and ensures synthesis
 always completes even if all LLM tiers fail.
+
+Issue #414: Migrated MINIMAL_SYSTEM_PROMPT and TREND_SUMMARY_SYSTEM_PROMPT to Jinja2 templates.
 """
 
 import time
@@ -25,6 +27,7 @@ from app.domains.analysis.workflows.agents.response_processing import extract_st
 from app.domains.analysis.workflows.tasks.aggregation_helpers import format_findings_for_llm
 from app.domains.analysis.workflows.tasks.prompt_builders import build_synthesis_user_prompt
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 
 logger = get_logger(__name__)
 
@@ -403,13 +406,13 @@ async def _attempt_synthesis(  # noqa: PLR0913
     # Format findings for LLM
     formatted_findings = format_findings_for_llm(validated_findings, conflicts, confidence_scores)
 
-    # Import default system prompt if not provided
+    # Issue #414: Get default system prompt from PromptManager if not provided
     if system_prompt is None:
         from app.domains.analysis.workflows.tasks.aggregation.synthesis import (
-            SYNTHESIS_SYSTEM_PROMPT,
+            get_synthesis_system_prompt,
         )
 
-        system_prompt = SYNTHESIS_SYSTEM_PROMPT
+        system_prompt = await get_synthesis_system_prompt()
 
     # Create agent with custom schema
     synthesis_agent = create_structured_agent(
@@ -435,45 +438,30 @@ async def _attempt_synthesis(  # noqa: PLR0913
     return extract_structured_response(final_result, "aggregation")
 
 
-MINIMAL_SYSTEM_PROMPT = """You are an expert technical analyst creating a MINIMAL
-emergency synthesis.
+async def get_minimal_system_prompt() -> str:
+    """Get minimal synthesis system prompt from PromptManager.
 
-Due to processing constraints, you must generate ONLY the essential fields:
-- executive_summary: 2-3 sentences capturing the essence
-- key_findings: 3-5 bullet points prioritized by impact
-- synthesis: Brief technical analysis, implementation guidance, risk assessment, recommendations
+    Issue #414: Uses Jinja2 template instead of hardcoded string.
 
-DO NOT attempt to generate:
-- Diagrams, glossaries, exercises, quizzes
-- AI assistant prompts or code snippets
-- Detailed learning materials
+    Returns:
+        Minimal system prompt string
 
-Focus on accuracy and completeness of the core synthesis only.
-"""
+    """
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(name="synthesis-minimal-system")
 
-TREND_SUMMARY_SYSTEM_PROMPT = """You are an expert analyst creating a TREND SUMMARY artifact.
 
-The source content you're analyzing has LOW IMPLEMENTATION COVERAGE - it's likely a news article,
-announcement, or high-level discussion rather than a technical tutorial.
+async def get_trend_summary_system_prompt() -> str:
+    """Get trend summary system prompt from PromptManager.
 
-CRITICAL RULES:
-1. DO NOT hallucinate implementation details that aren't in the source
-2. DO NOT generate code snippets, file structures, or step-by-step guides
-3. DO NOT claim the content covers topics it doesn't actually discuss
-4. FOCUS on summarizing what was actually announced/discussed
+    Issue #414: Uses Jinja2 template instead of hardcoded string.
 
-Your output should include:
-- executive_summary: 2-3 sentences about what this content announces or discusses
-- key_findings: 3-5 actual takeaways from the content (not inferred details)
-- synthesis:
-  - overview: What was announced/discussed
-  - key_trends: Main trends or developments identified
-  - industry_impact: Potential impact on the industry
-  - what_to_watch: Things to monitor going forward
+    Returns:
+        Trend summary system prompt string
 
-This is NOT an implementation guide - it's a trend/news summary.
-If you're unsure about something, say "the source does not specify" rather than guessing.
-"""
+    """
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(name="synthesis-trend-summary")
 
 
 async def synthesize_trend_summary(
@@ -535,9 +523,12 @@ async def synthesize_trend_summary(
     user_prompt = "\n".join(prompt_parts)
 
     try:
+        # Issue #414: Get system prompt from PromptManager
+        system_prompt = await get_trend_summary_system_prompt()
+
         # Create agent with trend summary schema
         synthesis_agent = create_structured_agent(
-            system_prompt=TREND_SUMMARY_SYSTEM_PROMPT,
+            system_prompt=system_prompt,
             response_schema=TrendSummarySchema,
         )
 
@@ -694,6 +685,9 @@ async def synthesize_with_fallback_chain(
         Tuple of (result_dict, tier_used)
 
     """
+    # Issue #414: Get minimal system prompt from PromptManager
+    minimal_system_prompt = await get_minimal_system_prompt()
+
     # Define fallback chain
     fallback_chain = [
         # Tier 1: Try full schema with best model
@@ -716,7 +710,7 @@ async def synthesize_with_fallback_chain(
             model="gemini-2.0-flash-lite",
             response_schema=MinimalSynthesisSchema,
             timeout=30,
-            system_prompt=MINIMAL_SYSTEM_PROMPT,
+            system_prompt=minimal_system_prompt,
         ),
         # Tier 4: Static fallback - never fails
         FallbackConfig(

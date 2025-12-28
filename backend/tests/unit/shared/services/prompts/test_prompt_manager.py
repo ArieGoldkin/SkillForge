@@ -437,6 +437,74 @@ Content to analyze: {content}"""
         assert TEMPLATE_MAPPING["analysis-supervisor-routing"].endswith(".j2")
 
 
+class TestModuleExports:
+    """Test module __all__ exports for proper public API."""
+
+    def test_all_exports_defined(self):
+        """Test that __all__ is defined and contains expected exports."""
+        from app.shared.services.prompts import prompt_manager
+
+        assert hasattr(prompt_manager, "__all__")
+        assert isinstance(prompt_manager.__all__, list)
+        assert len(prompt_manager.__all__) > 0
+
+    def test_all_exports_importable(self):
+        """Test that all items in __all__ can be imported."""
+        from app.shared.services.prompts import prompt_manager
+
+        for export_name in prompt_manager.__all__:
+            assert hasattr(prompt_manager, export_name), f"{export_name} not found in module"
+
+    def test_template_mapping_in_all(self):
+        """Test that TEMPLATE_MAPPING is explicitly exported in __all__."""
+        from app.shared.services.prompts import prompt_manager
+
+        assert "TEMPLATE_MAPPING" in prompt_manager.__all__
+
+    def test_star_import_works(self):
+        """Test that star import exposes expected symbols.
+
+        This verifies the fix for Issue #2 where TEMPLATE_MAPPING was
+        defined but not exported via __all__, breaking script imports.
+        """
+        # Import module first to populate namespace
+        import app.shared.services.prompts.prompt_manager as pm
+
+        # Verify star import would include TEMPLATE_MAPPING
+        star_imports = {name for name in dir(pm) if name in pm.__all__}
+
+        assert "PromptManager" in star_imports
+        assert "get_prompt_manager" in star_imports
+        assert "TEMPLATE_MAPPING" in star_imports
+        assert "LRUCache" in star_imports
+
+    def test_template_mapping_directly_importable(self):
+        """Test that TEMPLATE_MAPPING can be imported directly.
+
+        This was the original bug - TEMPLATE_MAPPING existed but wasn't
+        in __all__, causing import errors in scripts.
+        """
+        from app.shared.services.prompts.prompt_manager import TEMPLATE_MAPPING
+
+        assert isinstance(TEMPLATE_MAPPING, dict)
+        assert len(TEMPLATE_MAPPING) > 0
+
+    def test_all_public_api_items_importable(self):
+        """Test that all public API items can be imported individually."""
+        from app.shared.services.prompts.prompt_manager import (
+            LRUCache,
+            PromptManager,
+            TEMPLATE_MAPPING,
+            get_prompt_manager,
+        )
+
+        # Verify all imports succeeded
+        assert PromptManager is not None
+        assert get_prompt_manager is not None
+        assert TEMPLATE_MAPPING is not None
+        assert LRUCache is not None
+
+
 class TestPromptManagerIntegration:
     """Integration tests with real dependencies (when available)."""
 

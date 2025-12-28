@@ -7,6 +7,8 @@ Issue #299-304: Implements LangGraph-native resilience patterns:
 - Model fallback chain via LangChain's with_fallbacks()
 - Heartbeat events during long LLM synthesis
 - Graceful degradation instead of hanging forever
+
+Issue #414: Migrated SYNTHESIS_SYSTEM_PROMPT to Jinja2 template.
 """
 
 import time
@@ -19,6 +21,7 @@ from app.core.types import AnalysisID
 from app.domains.analysis.schemas.tasks.aggregated_insights import AggregatedInsights
 from app.domains.analysis.workflows.agents.base import create_structured_agent
 from app.shared.services.messaging.sse_helpers import emit_streaming_event
+from app.shared.services.prompts.prompt_manager import get_prompt_manager
 
 if TYPE_CHECKING:
     from langchain_core.runnables import Runnable
@@ -28,146 +31,24 @@ logger = get_logger(__name__)
 # Heartbeat interval for SSE events during synthesis (seconds)
 SYNTHESIS_HEARTBEAT_INTERVAL: float = 5.0
 
-# LLM Synthesis System Prompt (Issue #303: Triple-Consumer Output)
-SYNTHESIS_SYSTEM_PROMPT = """You are an expert technical analyst creating TRIPLE-PURPOSE artifacts
-that serve THREE distinct audiences from the SAME content:
 
-1. **AI CODING ASSISTANTS** (Claude Code, Cursor, Copilot, Windsurf)
-   - Need: Context, implementation steps, code snippets, file structure, success criteria
-   - Format: Pre-formatted prompts that enable accurate code generation on first attempt
+async def get_synthesis_system_prompt() -> str:
+    """Get synthesis system prompt from PromptManager.
 
-2. **TUTOR SYSTEM** (Socratic learning, adaptive curriculum)
-   - Need: Core concepts with difficulty levels, exercises, quiz questions, mastery checklists
-   - Format: Pedagogical structure for progressive skill building
+    Issue #414: Uses Jinja2 template instead of hardcoded string.
 
-3. **HUMAN READERS** (Developers, learners, documentation consumers)
-   - Need: TL;DR for quick scanning, visual diagrams, glossary, clear explanations
-   - Format: Scannable in 10-30 seconds with deep-dive capability
+    Returns:
+        Synthesis system prompt string
 
-AGENTS PROVIDED (8 specialized analysts):
-1. Tech Comparator - Technology comparisons and alternatives
-2. Security Auditor - Security risks and best practices
-3. Implementation Planner - Step-by-step implementation guidance
-4. Integration Feasibility - Integration with modern stacks
-5. Performance Analyst - Performance trade-offs and optimization
-6. Code Quality Critic - Best practices and antipatterns
-7. Trend Validator - Technology trend alignment (2025+)
-8. Dependency Mapper - Required libraries and dependencies
-
-=== REQUIRED OUTPUTS ===
-
-**BASIC SYNTHESIS (always required):**
-- executive_summary: 2-3 sentences capturing the essence
-- key_findings: 3-7 bullet points prioritized by impact
-- synthesis: Technical analysis, implementation guidance, risk assessment, recommendations
-
-**FOR AI ASSISTANTS (ai_assistant_prompt):**
-Generate a pre-formatted prompt containing:
-- context: Architectural background (where this fits in the system)
-- implementation_steps: 5-10 ordered, imperative commands
-- code_snippets: Dict of purpose→complete code (max 5, runnable with comments)
-- file_structure: Dict of file_path→responsibility
-- success_criteria: 3-7 testable outcomes
-
-**FOR TUTOR SYSTEM (core_concepts, exercises, self_assessment):**
-Generate learning materials:
-- core_concepts: 3-7 concepts with definition, why_it_matters, complexity_level, related_concepts
-- exercises: 2-4 hands-on tasks with title, difficulty, description, hints, learning_objectives
-- self_assessment: 5-10 quiz questions with options, correct_answer, explanation
-  + 5-10 item mastery_checklist
-
-**FOR HUMAN READERS (tldr, diagrams, glossary):**
-Generate scannable content:
-- tldr: Summary (50-500 chars), 3-5 key_takeaways, time_to_implement estimate
-- diagrams: 1-3 Mermaid diagrams (flowchart/sequence/class) with valid syntax
-  CRITICAL DIAGRAM CONSTRAINTS (prevents rendering issues):
-  * Diamond nodes {label}: MAX 5 chars (use {OK?}, {Yes}, {No} - NOT {Valid?})
-  * Rectangle nodes [label]: Split long text into words, max 15 chars/word
-  * Terminal nodes: Keep concise ([Done], [End], [Error])
-  * Always test: labels must fit inside their shapes without truncation
-- glossary: 5-10 technical terms with definitions and see_also links
-
-**CROSS-DOMAIN SYNTHESIS:**
-When multiple agents contribute, identify connections:
-- Security + Performance: trade-offs, overhead, optimization vs protection
-- Dependencies + Security: vulnerable packages, version risks
-- Implementation + Code Quality: maintainability patterns
-- Trends + Technology: adoption timing, legacy migration
-
-**CONFIDENCE HANDLING:**
-Each agent provides confidence_score (0.0-1.0). When agents disagree:
-- Prioritize higher confidence scores
-- Document conflicts in conflicts_resolved with reasoning
-
-**COVERAGE ACKNOWLEDGMENT (Issue #299-304):**
-Each agent now reports `data_availability` (sufficient/limited/insufficient) and
-`data_availability_note`."
-
-When processing findings:
-1. Check each agent's `data_availability` field:
-   - "sufficient": Agent had full data for thorough analysis - trust findings completely
-   - "limited": Agent had partial data - acknowledge gaps in coverage_gaps
-   - "insufficient": Agent found minimal relevant data - mark as coverage gap
-
-2. Populate `coverage_gaps` for agents with "limited" or "insufficient" data:
-   - missing_agent: The agent name
-   - missing_perspective: What analysis couldn't be done (use data_availability_note)
-   - impact: How this affects the overall analysis
-
-3. Acknowledge gaps in `executive_summary` when:
-   - Multiple agents report "limited" or "insufficient"
-   - Coverage_score < 0.5
-   - Example: "Note: This analysis is based on conceptual content without code "
-             "examples, so implementation guidance is inferred rather than extracted."
-
-4. This enables HONEST synthesis - don't hallucinate details that weren't in the content.
-   It's better to say "No security patterns detected" than to fabricate risks.
-
-=== OUTPUT QUALITY REQUIREMENTS ===
-
-1. **Actionable**: Every section should enable immediate action
-2. **Specific**: Include versions, paths, commands - no vague guidance
-3. **Complete**: Code snippets must be runnable, diagrams must render
-4. **Consistent**: Same information shouldn't contradict across sections
-5. **Scannable**: TL;DR readable in 10 seconds, full artifact in 5 minutes
-
-=== CRITICAL: SINGLE RESPONSE REQUIREMENT ===
-
-**YOU MUST RETURN EXACTLY ONE STRUCTURED RESPONSE** containing ALL fields.
-Do NOT split your response into multiple tool calls.
-ALL sections (executive_summary, ai_assistant_prompt, core_concepts, tldr, diagrams, etc.)
-must be included in a SINGLE AggregatedInsights response.
-
-If you return multiple responses, the system will fail. Return ONE complete response.
-
-=== CRITICAL MARKDOWN FORMATTING RULES ===
-
-You MUST follow these formatting rules exactly:
-
-1. **Paragraph Separation**: Use TWO newlines (blank line) between paragraphs.
-Never run paragraphs together."
-
-2. **Section Headers**: When using bold headers like **Title:**, ALWAYS put the content
-on a new line:
-   CORRECT:
-   **Immediate Actions:**
-   Start with implementation...
-
-   WRONG:
-   **Immediate Actions:** Start with implementation...
-
-3. **List Items**: Use proper markdown bullets with a space after the dash:
-   - Item one
-   - Item two
-
-4. **Code Blocks**: Always specify the language after triple backticks.
-
-These rules ensure the artifact renders correctly in the UI.
-"""
+    """
+    prompt_manager = get_prompt_manager()
+    return await prompt_manager.get_prompt(name="synthesis-system")
 
 
-def create_synthesis_agent() -> "Runnable":
+async def create_synthesis_agent() -> "Runnable":
     """Create structured agent for LLM synthesis.
+
+    Issue #414: Now fetches system prompt from PromptManager.
 
     Returns:
         Structured agent instance configured for synthesis
@@ -178,8 +59,9 @@ def create_synthesis_agent() -> "Runnable":
         because it performs complex multi-agent aggregation requiring high quality.
 
     """
+    system_prompt = await get_synthesis_system_prompt()
     return create_structured_agent(
-        system_prompt=SYNTHESIS_SYSTEM_PROMPT,
+        system_prompt=system_prompt,
         response_schema=AggregatedInsights,
         task_type="synthesis",
     )
@@ -200,12 +82,14 @@ def create_fallback_synthesis_model() -> "Runnable":
     return fallback_model.with_structured_output(AggregatedInsights)
 
 
-def create_synthesis_agent_with_fallback() -> "Runnable":
+async def create_synthesis_agent_with_fallback() -> "Runnable":
     """Create synthesis agent with fallback chain for resilience.
 
     Issue #299-304: Implements LangChain's with_fallbacks() pattern.
     If primary model fails (timeout, error, etc.), automatically
     falls back to lighter model for graceful degradation.
+
+    Issue #414: Now async to support PromptManager.
 
     Fallback Chain:
     1. Primary: Full synthesis agent (current LLM_MODEL)
@@ -215,7 +99,7 @@ def create_synthesis_agent_with_fallback() -> "Runnable":
         Synthesis agent with fallback chain attached
 
     """
-    primary_agent = create_synthesis_agent()
+    primary_agent = await create_synthesis_agent()
     fallback_model = create_fallback_synthesis_model()
 
     logger.info(

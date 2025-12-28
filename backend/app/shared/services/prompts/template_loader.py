@@ -138,3 +138,26 @@ class TemplatePaths:
     EVALUATOR_ACCURACY = "evaluators/accuracy.j2"
     EVALUATOR_COHERENCE = "evaluators/coherence.j2"
     EVALUATOR_OVERALL = "evaluators/overall.j2"
+
+    # Tutor templates
+    TUTOR_SYLLABUS_GENERATION = "tutor/syllabus_generation.j2"
+    TUTOR_LESSON_DELIVERY = "tutor/lesson_delivery.j2"
+    TUTOR_SOCRATIC_QUESTION = "tutor/socratic_question.j2"
+    TUTOR_READINESS_ASSESSMENT = "tutor/readiness_assessment.j2"
+    TUTOR_REPHRASE_EXPLANATION = "tutor/rephrase_explanation.j2"
+    TUTOR_SECTION_REVIEW = "tutor/section_review.j2"
+    TUTOR_REFLECTION = "tutor/reflection.j2"
+    TUTOR_FINAL_CHALLENGE = "tutor/final_challenge.j2"
+
+    # Synthesis templates (Issue #414)
+    SYNTHESIS_CORE = "synthesis/core_synthesis.j2"
+    SYNTHESIS_LEARNING = "synthesis/learning_synthesis.j2"
+    SYNTHESIS_DOCS = "synthesis/docs_synthesis.j2"
+    SYNTHESIS_COMPRESSION = "synthesis/compression.j2"
+    SYNTHESIS_SYSTEM = "synthesis/synthesis_system.j2"
+    SYNTHESIS_MINIMAL_SYSTEM = "synthesis/minimal_system.j2"
+    SYNTHESIS_TREND_SUMMARY = "synthesis/trend_summary.j2"
+
+    # System templates (Issue #414)
+    SYSTEM_TUTOR = "system/tutor_system.j2"
+    SYSTEM_ANALYSIS = "system/analysis_system.j2"
