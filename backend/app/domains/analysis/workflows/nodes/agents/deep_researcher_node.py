@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="deep_researcher", capture_input=True, capture_output=True)
-async def deep_researcher_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915 - Agent node requires comprehensive error handling
+async def deep_researcher_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Deep researcher agent node.
 
     Executes comprehensive external research and returns findings.

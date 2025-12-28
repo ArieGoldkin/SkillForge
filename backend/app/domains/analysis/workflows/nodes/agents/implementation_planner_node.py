@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="implementation_planner", capture_input=True, capture_output=True)
-async def implementation_planner_node(state: AnalysisState) -> dict[str, object]:
+async def implementation_planner_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Execute implementation planning analysis.
 
     Executes implementation planning analysis and returns findings.

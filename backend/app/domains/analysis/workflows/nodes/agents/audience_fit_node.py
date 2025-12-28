@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="audience_fit", capture_input=True, capture_output=True)
-async def audience_fit_node(state: AnalysisState) -> dict[str, object]:
+async def audience_fit_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Audience fit agent node.
 
     Executes audience analysis and returns findings.

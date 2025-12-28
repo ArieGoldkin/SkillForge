@@ -195,8 +195,8 @@ describe('ProgressTracker Loading States Integration', () => {
       render(<ProgressTracker analysisId="test-id" />)
 
       expect(screen.getByText('Analysis Progress')).toBeInTheDocument()
-      // Should show completion message
-      expect(screen.getByText(/complete/i)).toBeInTheDocument()
+      // Should show completion message - use more specific text to avoid matching stage status
+      expect(screen.getByText('Analysis Complete')).toBeInTheDocument()
     })
   })
 

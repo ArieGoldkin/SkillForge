@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="knowledge_curator", capture_input=True, capture_output=True)
-async def knowledge_curator_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915 - Agent node requires comprehensive error handling
+async def knowledge_curator_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Knowledge curator agent node.
 
     Executes knowledge graph curation and returns findings.

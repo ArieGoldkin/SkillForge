@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="tech_comparator", capture_input=True, capture_output=True)
-async def tech_comparator_node(state: AnalysisState) -> dict[str, object]:
+async def tech_comparator_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Tech comparator agent node.
 
     Executes tech comparison analysis and returns findings.

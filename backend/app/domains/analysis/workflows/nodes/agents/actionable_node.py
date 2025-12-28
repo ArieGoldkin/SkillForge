@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="actionable", capture_input=True, capture_output=True)
-async def actionable_node(state: AnalysisState) -> dict[str, object]:
+async def actionable_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Actionable agent node.
 
     Executes actionable next steps extraction and returns findings.

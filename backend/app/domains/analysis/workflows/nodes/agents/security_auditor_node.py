@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="security_auditor", capture_input=True, capture_output=True)
-async def security_auditor_node(state: AnalysisState) -> dict[str, object]:
+async def security_auditor_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Security auditor agent node.
 
     Executes security audit analysis and returns findings.

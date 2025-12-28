@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="pros_cons", capture_input=True, capture_output=True)
-async def pros_cons_node(state: AnalysisState) -> dict[str, object]:
+async def pros_cons_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Pros/cons agent node.
 
     Executes balanced advantage/disadvantage analysis and returns findings.

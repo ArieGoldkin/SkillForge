@@ -51,7 +51,7 @@ logger = get_logger(__name__)
     capture_input=True,
     capture_output=True,
 )
-async def learning_path_advisor_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0915 - Agent node requires comprehensive error handling
+async def learning_path_advisor_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Learning path advisor agent node.
 
     Executes personalized learning path creation using memory (prior_memory) and

@@ -163,7 +163,7 @@ async def dependency_mapper_node(state: AnalysisState) -> dict[str, object]:
         GeneratorExit,
         TimeoutError,
         ValueError,
-        Exception,
+        Exception,  # noqa: BLE001
     ) as e:
         # Centralized error handling via shared helper (reduces return statements)
         duration = time.time() - start_time

@@ -45,7 +45,7 @@ logger = get_logger(__name__)
 
 
 @observe(as_type="agent", name="key_insights", capture_input=True, capture_output=True)
-async def key_insights_node(state: AnalysisState) -> dict[str, object]:
+async def key_insights_node(state: AnalysisState) -> dict[str, object]:  # noqa: PLR0911, PLR0915 - Agent node requires comprehensive error handling
     """Key insights agent node.
 
     Executes key insights extraction and returns findings.

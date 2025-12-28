@@ -83,10 +83,10 @@ describe('LoadingStateDisplay', () => {
     expect(screen.getByText('Something went wrong')).toBeInTheDocument()
   })
 
-  it('displays default loading state for unknown types', () => {
+  it('displays connecting state', () => {
     renderComponent({ type: 'connecting', startTime: Date.now() })
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
-    expect(screen.getByText('Please wait')).toBeInTheDocument()
+    expect(screen.getByText('Connecting...')).toBeInTheDocument()
+    expect(screen.getByText('Establishing connection')).toBeInTheDocument()
   })
 })
