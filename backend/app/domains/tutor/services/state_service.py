@@ -74,7 +74,10 @@ async def load_state_from_session(
     try:
         state_snapshot = await tutor_workflow.aget_state(config)
         current_state = state_snapshot.values if state_snapshot else {}
-    except Exception:  # noqa: BLE001 - Langfuse may not be available, catch all to continue
+    except Exception as e:  # noqa: BLE001 - Graceful degradation: checkpoint may be unavailable/corrupted
+        import logging
+
+        logging.getLogger(__name__).debug("State snapshot retrieval failed: %s", e)
         current_state = {}
 
     # Load conversation history from database

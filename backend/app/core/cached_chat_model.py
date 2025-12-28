@@ -371,12 +371,14 @@ class CachedChatModel(BaseChatModel):
 
             return result
 
-        except Exception:
+        except Exception as e:
             # Log but re-raise - we don't want to catch LLM errors
             logger.exception(
                 "llm_generation_failed",
                 agent_type=self.agent_type,
                 cache_key=cache_key[:16] + "..." if cache_key else "unknown",
+                error_type=type(e).__name__,
+                error=str(e),
             )
             raise
 

@@ -113,9 +113,11 @@ def robust_traceable(
                                 update_kwargs["metadata"] = metadata
                             if update_kwargs:
                                 langfuse.update_current_trace(**update_kwargs)
-                    except Exception:  # noqa: BLE001 - Silent fallback when Langfuse unavailable
-                        # Langfuse context not available - continue without
-                        pass
+                    except Exception as e:  # noqa: BLE001 - Silent fallback: Langfuse unavailable/no trace context
+                        # Langfuse context not available - continue without tracing
+                        import logging
+
+                        logging.getLogger(__name__).debug("Langfuse trace update skipped: %s", e)
 
                     return await observed_func(*args, **kwargs)
 
@@ -178,9 +180,11 @@ def update_current_trace(
     except ImportError:
         # Langfuse not installed - silently skip
         pass
-    except Exception:  # noqa: BLE001 - Silent fallback for trace context errors
+    except Exception as e:  # noqa: BLE001 - Silent fallback: not in trace context/Langfuse error
         # Not in trace context or other error - silently skip
-        pass
+        import logging
+
+        logging.getLogger(__name__).debug("Langfuse update_current_trace failed: %s", e)
 
 
 def get_current_trace_id() -> str | None:
@@ -201,7 +205,10 @@ def get_current_trace_id() -> str | None:
 
     except ImportError:
         return None
-    except Exception:  # noqa: BLE001
+    except Exception as e:  # noqa: BLE001 - Silent fallback: not in trace context/Langfuse error
+        import logging
+
+        logging.getLogger(__name__).debug("get_current_trace_id failed: %s", e)
         return None
 
 
@@ -260,8 +267,10 @@ def traced_tool(
                             update_kwargs["metadata"] = metadata
                         if update_kwargs:
                             langfuse.update_current_span(**update_kwargs)
-                    except Exception:  # noqa: BLE001
-                        pass
+                    except Exception as e:  # noqa: BLE001 - Silent fallback: Langfuse unavailable/no span context
+                        import logging
+
+                        logging.getLogger(__name__).debug("Langfuse span update skipped: %s", e)
 
                     return await observed_func(*args, **kwargs)
 
@@ -328,5 +337,7 @@ def update_current_observation(
 
     except ImportError:
         pass
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as e:  # noqa: BLE001 - Silent fallback: not in observation context/Langfuse error
+        import logging
+
+        logging.getLogger(__name__).debug("update_current_observation failed: %s", e)

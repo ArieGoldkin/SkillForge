@@ -466,8 +466,8 @@ class LLMBenchmark:
                 ls_dataset_name = f"{dataset_name}_{task_type}"
                 try:
                     ls_dataset = self.client.read_dataset(dataset_name=ls_dataset_name)
-                except Exception:  # noqa: BLE001
-                    # Dataset doesn't exist, create it
+                except Exception as e:  # noqa: BLE001 - Expected: dataset may not exist, create it
+                    self.logger.debug("Dataset %s not found, creating: %s", ls_dataset_name, e)
                     ls_dataset = self.client.create_dataset(
                         dataset_name=ls_dataset_name,
                         description=f"Golden dataset for {task_type} task evaluation",

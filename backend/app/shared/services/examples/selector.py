@@ -285,9 +285,6 @@ class SemanticExampleSelector:
             result = await self.session.execute(query)
             count = result.scalar_one()
             return count or 0
-        except Exception:
-            logger.exception(
-                "example_selection_count_failed",
-                agent_type=agent_type,
-            )
+        except Exception as e:  # noqa: BLE001 - Graceful degradation on DB errors, return 0 to avoid blocking example selection
+            logger.debug("example_selection_count_failed: %s", e)
             return 0

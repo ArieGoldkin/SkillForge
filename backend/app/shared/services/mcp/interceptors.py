@@ -299,7 +299,9 @@ class ResultEnrichmentInterceptor:
 
             return result
 
-        except Exception:
+        except (
+            Exception
+        ) as e:  # Log all MCP tool errors for observability, then re-raise for upstream handling
             # Log error with enrichment metadata
             duration_seconds = time.time() - start_time
 
@@ -310,6 +312,7 @@ class ResultEnrichmentInterceptor:
                 duration_seconds=round(duration_seconds, 3),
                 trace_id=trace_id,
                 success=False,
+                error_type=type(e).__name__,
             )
 
             raise
@@ -401,7 +404,9 @@ class LoggingInterceptor:
 
             return result
 
-        except Exception:
+        except (
+            Exception
+        ) as e:  # Log all MCP tool errors for debugging, then re-raise for caller handling
             # Log error
             duration_seconds = time.time() - start_time
 
@@ -411,6 +416,7 @@ class LoggingInterceptor:
                 tool=request.name,
                 duration_seconds=round(duration_seconds, 3),
                 langfuse_trace_id=langfuse_trace_id,
+                error_type=type(e).__name__,
             )
 
             raise

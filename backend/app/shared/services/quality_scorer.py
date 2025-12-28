@@ -402,7 +402,8 @@ def _estimate_token_count(output: dict[str, Any]) -> int:
     try:
         output_str = json.dumps(output)
         return len(output_str) // 4
-    except Exception:  # noqa: BLE001 - Graceful fallback
+    except Exception as e:  # noqa: BLE001 - Graceful fallback on JSON serialization errors (e.g., non-serializable objects)
+        logger.debug("token_count_estimation_failed: %s", e)
         return 0
 
 
