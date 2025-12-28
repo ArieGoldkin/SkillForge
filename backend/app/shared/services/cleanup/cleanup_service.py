@@ -106,7 +106,6 @@ class CleanupService:
                 }
             else:
                 orphan_stats = await self.orphan_cleaner.cleanup_all_orphans(
-                    hard_delete=hard_delete,
                     include_superseded=include_superseded,
                 )
                 report["orphan_cleanup"] = {
@@ -406,7 +405,7 @@ class CleanupService:
                 dry_run=False,
             )
         elif cleanup_type == "orphans":
-            stats = await self.orphan_cleaner.cleanup_all_orphans(hard_delete=False)
+            stats = await self.orphan_cleaner.cleanup_all_orphans()
             result = {"orphan_cleanup": stats}
         elif cleanup_type == "ttl":
             stats = await self.ttl_cleaner.delete_expired_analyses()
