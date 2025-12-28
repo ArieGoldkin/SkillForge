@@ -77,9 +77,9 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
