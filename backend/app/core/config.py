@@ -63,6 +63,11 @@ LLM_PROVIDER_ALIAS_MAP: Final[dict[str, str]] = {
     "groq": "groq",
     "deepseek": "deepseek",
     "deepseek-v3": "deepseek",
+    # Local Ollama models (Issue #606)
+    "ollama": "ollama",
+    "local": "ollama",
+    "deepseek-r1": "ollama",
+    "qwen": "ollama",
 }
 
 LLM_PROVIDER_API_FIELDS: Final[dict[str, str]] = {
@@ -702,6 +707,68 @@ class Settings(BaseSettings):
         description=(
             "Minimum batch size for OpenAI Batch API. Smaller batches use real-time API. "
             "Batch API overhead makes it inefficient for very small request counts."
+        ),
+    )
+
+    # Ollama Local Models Configuration (Issue #606)
+    # Enables running LLMs locally on M4 Max 256GB for 93% CI cost reduction
+    OLLAMA_ENABLED: bool = Field(
+        default=False,
+        description=(
+            "Enable Ollama for local LLM inference. When enabled, uses local models "
+            "via Ollama server instead of cloud APIs. Requires Ollama to be running "
+            "on OLLAMA_HOST. Ideal for CI/CD on self-hosted runners."
+        ),
+    )
+    OLLAMA_HOST: str = Field(
+        default="http://localhost:11434",
+        description="Ollama server URL for local model inference.",
+    )
+    OLLAMA_MODEL_REASONING: str = Field(
+        default="deepseek-r1:70b",
+        description=(
+            "Ollama model for reasoning tasks (G-Eval, synthesis, complex QA). "
+            "DeepSeek R1 70B matches GPT-4/o1 level on benchmarks. "
+            "Requires ~42GB memory with Q4 quantization."
+        ),
+    )
+    OLLAMA_MODEL_CODING: str = Field(
+        default="qwen2.5-coder:32b",
+        description=(
+            "Ollama model for coding tasks (agent analysis, reranking, summarization). "
+            "Qwen 2.5 Coder 32B scores 73.7% on Aider benchmark (≈ GPT-4o). "
+            "Requires ~35GB memory with Q8 quantization."
+        ),
+    )
+    OLLAMA_MODEL_EMBED: str = Field(
+        default="nomic-embed-text",
+        description=(
+            "Ollama model for local embeddings (replaces OpenAI text-embedding-3-small). "
+            "Nomic Embed v1.5 is lightweight (~0.5GB) and fast. "
+            "Used for CI evaluation when deterministic embeddings are needed."
+        ),
+    )
+    OLLAMA_EMBEDDING_DIMENSIONS: int = Field(
+        default=768,
+        description=(
+            "Embedding dimensions for Ollama embed model. "
+            "Nomic Embed v1.5 uses 768 dimensions (vs 1536 for OpenAI)."
+        ),
+    )
+    OLLAMA_TIMEOUT: float = Field(
+        default=120.0,
+        description=(
+            "Timeout in seconds for Ollama API calls. Higher than cloud APIs "
+            "because local inference can be slower on first token. "
+            "Default: 120s to accommodate large model loading."
+        ),
+    )
+    OLLAMA_NUM_CTX: int = Field(
+        default=32768,
+        description=(
+            "Context window size for Ollama models. Affects memory usage. "
+            "32768 tokens is a good default for most tasks. "
+            "Increase for long document processing."
         ),
     )
 
