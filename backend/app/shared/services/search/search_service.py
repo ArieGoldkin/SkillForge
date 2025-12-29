@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.constants import (
     DOCUMENT_PATH_BOOST_FACTOR,
     SEARCH_TOP_K_MAX,
@@ -51,6 +52,7 @@ from app.schemas.search import (
 )
 from app.shared.services.embeddings.service import EmbeddingService
 from app.shared.services.metrics import get_metrics_service
+from app.shared.services.search.decomposer import QueryDecomposer
 from app.shared.services.search.reranker import ReRanker
 
 if TYPE_CHECKING:
@@ -173,13 +175,8 @@ class SearchService:
         start_time = time.perf_counter()
         reranked = False
 
-        # Route to appropriate search method
-        if mode == SearchMode.SEMANTIC:
-            results = await self._semantic_search(query, fetch_k, filters)
-        elif mode == SearchMode.KEYWORD:
-            results = await self._keyword_search(query, fetch_k, filters)
-        else:  # SearchMode.HYBRID
-            results = await self._hybrid_search(query, fetch_k, filters)
+        # Execute search with optional query decomposition (Issue #601)
+        results = await self._execute_search(query, mode, fetch_k, filters)
 
         # Apply re-ranking if enabled
         if rerank and rerank.enabled:
@@ -213,6 +210,134 @@ class SearchService:
         )
 
         return results
+
+    async def _execute_search(
+        self,
+        query: str,
+        mode: SearchMode,
+        fetch_k: int,
+        filters: SearchFilters | None,
+    ) -> list[SearchResult]:
+        """Execute search with optional query decomposition.
+
+        This method handles the query decomposition logic for multi-concept queries
+        and routes to appropriate search methods.
+
+        Args:
+            query: Search query string
+            mode: Search strategy (SEMANTIC, KEYWORD, or HYBRID)
+            fetch_k: Number of results to fetch
+            filters: Optional search filters
+
+        Returns:
+            List of SearchResult objects
+
+        """
+        # Query Decomposition (Issue #601)
+        # For multi-concept queries, decompose and search each concept in parallel
+        if settings.QUERY_DECOMPOSITION_ENABLED:
+            decomposer = QueryDecomposer(embedding_service=self.embedding_service)
+            decomp_result = await decomposer.decompose(query)
+
+            logger.info(
+                "query_decomposition_result",
+                query=query[:100],
+                is_multi_concept=decomp_result.is_multi_concept,
+                num_concepts=len(decomp_result.concepts),
+                source=decomp_result.source.value,
+                latency_ms=decomp_result.latency_ms,
+            )
+
+            if decomp_result.is_multi_concept:
+                return await self._multi_concept_search(
+                    query=query,
+                    mode=mode,
+                    fetch_k=fetch_k,
+                    filters=filters,
+                    concepts=decomp_result.concepts,
+                )
+
+        # Single-concept query or decomposition disabled - use standard search flow
+        return await self._single_concept_search(query, mode, fetch_k, filters)
+
+    async def _multi_concept_search(
+        self,
+        query: str,
+        mode: SearchMode,
+        fetch_k: int,
+        filters: SearchFilters | None,
+        concepts: list[str],
+    ) -> list[SearchResult]:
+        """Execute multi-concept search with parallel retrieval and RRF fusion.
+
+        Args:
+            query: Original query for snippet generation
+            mode: Search strategy
+            fetch_k: Number of results per concept
+            filters: Optional search filters
+            concepts: List of concept queries from decomposition
+
+        Returns:
+            List of SearchResult objects with fused scores
+
+        """
+        decomposer = QueryDecomposer(embedding_service=self.embedding_service)
+
+        # Define concept search function for parallel retrieval
+        async def concept_search(concept: str, concept_top_k: int) -> list[tuple[str, float]]:
+            """Search a single concept and return (chunk_id, score) tuples."""
+            concept_results = await self._single_concept_search(
+                concept, mode, concept_top_k, filters
+            )
+            return [(result.chunk_id, result.score) for result in concept_results]
+
+        # Execute parallel retrieval with RRF fusion
+        fused_chunk_scores = await decomposer.parallel_retrieve(
+            concepts=concepts,
+            search_fn=concept_search,
+            top_k_per_concept=fetch_k,
+        )
+
+        # Convert fused (chunk_id, score) tuples back to SearchResult objects
+        results = await self._fused_scores_to_results(
+            fused_chunk_scores=fused_chunk_scores,
+            query=query,
+            top_k=fetch_k,
+        )
+
+        logger.info(
+            "multi_concept_search_completed",
+            query=query[:100],
+            num_concepts=len(concepts),
+            fused_results_count=len(results),
+        )
+
+        return results
+
+    async def _single_concept_search(
+        self,
+        query: str,
+        mode: SearchMode,
+        fetch_k: int,
+        filters: SearchFilters | None,
+    ) -> list[SearchResult]:
+        """Execute single-concept search using the specified mode.
+
+        Args:
+            query: Search query string
+            mode: Search strategy
+            fetch_k: Number of results to fetch
+            filters: Optional search filters
+
+        Returns:
+            List of SearchResult objects
+
+        """
+        if mode == SearchMode.SEMANTIC:
+            return await self._semantic_search(query, fetch_k, filters)
+        if mode == SearchMode.KEYWORD:
+            return await self._keyword_search(query, fetch_k, filters)
+        return await self._hybrid_search(query, fetch_k, filters)
 
     async def _semantic_search(
         self,
@@ -378,6 +503,60 @@ class SearchService:
         # Apply metadata-based boosts for improved ranking
         # This boosts results where query terms match section titles or document paths
         return self._apply_metadata_boosts(results, query)
+
+    async def _fused_scores_to_results(
+        self,
+        fused_chunk_scores: list[tuple[str, float]],
+        query: str,
+        top_k: int,
+    ) -> list[SearchResult]:
+        """Convert fused (chunk_id, score) tuples to SearchResult objects.
+
+        This method takes the output of RRF fusion (chunk_id, score pairs) and
+        fetches the full chunk data from the database to construct SearchResult
+        objects with snippets and metadata.
+
+        Args:
+            fused_chunk_scores: List of (chunk_id, rrf_score) tuples from fusion
+            query: Original query for snippet generation
+            top_k: Maximum number of results to return
+
+        Returns:
+            List of SearchResult objects with full chunk data and snippets
+
+        """
+        if not fused_chunk_scores:
+            return []
+
+        # Limit to top_k
+        fused_chunk_scores = fused_chunk_scores[:top_k]
+
+        # Extract chunk IDs
+        chunk_ids = [chunk_id for chunk_id, _ in fused_chunk_scores]
+
+        # Fetch chunks from database
+        chunks = await self.chunk_repo.get_by_ids(chunk_ids)
+
+        # Create mapping from chunk_id to chunk for fast lookup
+        chunk_map = {str(chunk.id): chunk for chunk in chunks}
+
+        # Build SearchResult objects, preserving RRF score order
+        results = []
+        for chunk_id, rrf_score in fused_chunk_scores:
+            chunk = chunk_map.get(chunk_id)
+            if chunk:
+                # Convert chunk to SearchResult with RRF score
+                result = self._chunk_to_result(chunk, rrf_score, query)
+                results.append(result)
+
+        logger.debug(
+            "fused_scores_converted",
+            input_count=len(fused_chunk_scores),
+            output_count=len(results),
+            missing_chunks=len(fused_chunk_scores) - len(results),
+        )
+
+        return results
 
     def _generate_snippet(
         self,

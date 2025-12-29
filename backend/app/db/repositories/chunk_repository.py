@@ -319,6 +319,41 @@ class ChunkRepository:
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
+    async def get_by_ids(
+        self,
+        chunk_ids: list[str],
+    ) -> list[AnalysisChunk]:
+        """Get chunks by their IDs.
+
+        Retrieves chunks matching the provided list of chunk IDs. Useful for
+        fetching full chunk data after RRF fusion returns only chunk IDs and scores.
+
+        Args:
+            chunk_ids: List of chunk ID strings (UUIDs)
+
+        Returns:
+            List of AnalysisChunk objects (order may not match input order)
+
+        Example:
+            ```python
+            chunk_ids = ["123e4567-e89b-12d3-a456-426614174000", "..."]
+            chunks = await repo.get_by_ids(chunk_ids)
+            ```
+
+        Note:
+            - Uses IN clause for efficient batch lookup
+            - Returns only chunks that exist (missing IDs are silently ignored)
+            - For very large lists (>1000 IDs), consider batching
+
+        """
+        if not chunk_ids:
+            return []
+
+        query = select(AnalysisChunk).where(AnalysisChunk.id.in_(chunk_ids))
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
     async def create_many(self, items: Iterable[dict]) -> list[AnalysisChunk]:
         """Bulk insert chunks efficiently.
 

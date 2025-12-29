@@ -772,6 +772,63 @@ class Settings(BaseSettings):
         ),
     )
 
+    # Query Decomposition Configuration (Issue #601)
+    # Improves retrieval for multi-concept queries via decomposition + RRF fusion
+    QUERY_DECOMPOSITION_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Enable query decomposition for multi-concept retrieval. "
+            "When enabled, complex queries are decomposed into constituent concepts, "
+            "searched separately, and fused with RRF. Improves recall for queries "
+            "spanning multiple topics (e.g., 'chunking vs reranking in RAG')."
+        ),
+    )
+    QUERY_DECOMPOSITION_MIN_WORDS: int = Field(
+        default=6,
+        ge=3,
+        le=15,
+        description=(
+            "Minimum word count to consider query for decomposition (3-15). "
+            "Shorter queries are assumed single-concept. Default: 6 words."
+        ),
+    )
+    QUERY_DECOMPOSITION_MAX_CONCEPTS: int = Field(
+        default=5,
+        ge=2,
+        le=10,
+        description=(
+            "Maximum concepts to extract from a query (2-10). "
+            "Limits parallel searches to avoid DB connection exhaustion. Default: 5."
+        ),
+    )
+    QUERY_DECOMPOSITION_LLM_TIMEOUT: float = Field(
+        default=2.0,
+        ge=0.5,
+        le=10.0,
+        description=(
+            "Timeout in seconds for LLM decomposition (0.5-10s). "
+            "If exceeded, falls back to heuristic decomposition. Default: 2s."
+        ),
+    )
+    QUERY_DECOMPOSITION_CACHE_L1_SIZE: int = Field(
+        default=1000,
+        ge=100,
+        le=10000,
+        description=(
+            "Maximum entries in L1 in-memory decomposition cache (100-10000). "
+            "Each entry ~1KB, so 1000 entries = ~1MB memory. Default: 1000."
+        ),
+    )
+    QUERY_DECOMPOSITION_CACHE_L1_TTL: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+        description=(
+            "TTL in seconds for L1 decomposition cache (1-60 minutes). "
+            "Default: 5 minutes. Shorter TTL = fresher decompositions."
+        ),
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",
