@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/agent-registry.schema.json",
-  "version": "3.0.0",
-  "description": "Dynamic agent and skill registry with implementation-focused agents (2025 best practices). Removed low-value orchestration/planning agents, added database-engineer, security-auditor, test-generator, debug-investigator",
+  "version": "3.1.0",
+  "description": "Dynamic agent and skill registry with implementation-focused agents (2025 best practices). Split ai-ml-engineer into 3 specialized agents: data-pipeline-engineer, llm-integrator, workflow-architect. Removed low-value orchestration/planning agents, added database-engineer, security-auditor, test-generator, debug-investigator",
   "last_updated": "2025-12-29",
 
   "discovery": {
@@ -114,56 +114,133 @@
       }
     },
 
-    "ai-ml-engineer": {
-      "display_name": "AI/ML Engineer",
+    "data-pipeline-engineer": {
+      "display_name": "Data Pipeline Engineer",
+      "color": "emerald",
+      "model_preference": {
+        "batch_processing": "sonnet",
+        "simple_ops": "haiku"
+      },
+      "capabilities": [
+        "embeddings",
+        "chunking",
+        "vector-indexing",
+        "data-transformation",
+        "batch-processing",
+        "cache-warming",
+        "data-quality"
+      ],
+      "can_solve_examples": [
+        "Regenerate embeddings for the docs folder",
+        "Implement semantic chunking with overlap",
+        "Rebuild HNSW index with new config",
+        "Warm cache with common queries",
+        "Validate embedding quality metrics",
+        "Transform raw content for embedding"
+      ],
+      "skills_used": [
+        "ai-native-development",
+        "pgvector-search",
+        "golden-dataset-management"
+      ],
+      "tools": ["Bash", "Read", "Write", "Edit", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["backend/app/shared/services/embeddings/**", "backend/scripts/**", "tests/unit/services/**"],
+        "forbidden": ["frontend/**", "workflow_definitions/**"]
+      },
+      "handoff_to": ["database-engineer", "llm-integrator"],
+      "mcp_tools": {
+        "database": ["postgres-mcp"],
+        "documentation": ["context7"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "llm-integrator": {
+      "display_name": "LLM Integrator",
       "color": "orange",
       "model_preference": {
-        "prompt_engineering": "opus",
+        "prompt_engineering": "sonnet",
         "integration": "sonnet",
         "simple_queries": "haiku"
       },
       "capabilities": [
         "llm-integration",
         "prompt-engineering",
-        "rag-pipelines",
-        "embeddings",
-        "vector-search",
-        "streaming-responses",
         "function-calling",
+        "streaming-responses",
         "cost-optimization",
-        "langchain",
-        "langgraph"
+        "provider-fallback",
+        "rate-limiting"
       ],
       "can_solve_examples": [
         "Integrate OpenAI API with streaming",
-        "Build a RAG pipeline for document Q&A",
+        "Design versioned prompt templates",
+        "Add function calling to the chat endpoint",
         "Implement prompt caching for cost reduction",
-        "Add function calling to the chatbot",
-        "Design a multi-agent workflow",
-        "Optimize token usage"
+        "Set up provider fallback chain",
+        "Configure Langfuse tracing"
       ],
       "skills_used": [
         "ai-native-development",
         "streaming-api-patterns",
-        "observability-monitoring",
-        "performance-optimization",
-        "database-schema-designer",
-        "langfuse-observability",
-        "langgraph-workflows",
         "llm-caching-patterns",
-        "pgvector-search",
-        "browser-content-capture",
+        "langfuse-observability",
         "resilience-patterns"
       ],
-      "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "WebFetch"],
+      "tools": ["Read", "Edit", "MultiEdit", "Write", "Bash", "WebFetch", "Grep", "Glob"],
       "boundaries": {
-        "allowed": ["backend/app/workflows/**", "backend/app/services/**", "ml/**", "prompts/**", "backend/app/models/**"],
-        "forbidden": ["infrastructure/**", "deployment/**"]
+        "allowed": ["backend/app/shared/services/llm/**", "backend/app/api/**", "prompts/**"],
+        "forbidden": ["embedding_generation/**", "workflow_graphs/**"]
       },
-      "handoff_to": ["code-quality-reviewer", "backend-system-architect"],
+      "handoff_to": ["test-generator", "workflow-architect"],
       "mcp_tools": {
+        "prompts": ["langfuse"],
         "documentation": ["context7"],
-        "observability": ["skillforge-langfuse"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "workflow-architect": {
+      "display_name": "Workflow Architect",
+      "color": "blue",
+      "model_preference": {
+        "architecture": "opus",
+        "simple_graphs": "sonnet"
+      },
+      "capabilities": [
+        "langgraph",
+        "multi-agent",
+        "state-management",
+        "supervisor-worker",
+        "conditional-routing",
+        "checkpointing",
+        "rag-orchestration"
+      ],
+      "can_solve_examples": [
+        "Design a multi-agent analysis pipeline",
+        "Implement supervisor-worker pattern",
+        "Add checkpointing to workflow for fault tolerance",
+        "Create conditional routing based on state",
+        "Orchestrate RAG retrieval pipeline",
+        "Configure parallel agent execution"
+      ],
+      "skills_used": [
+        "langgraph-workflows",
+        "ai-native-development",
+        "langfuse-observability",
+        "observability-monitoring"
+      ],
+      "tools": ["Bash", "Read", "Write", "Edit", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["backend/app/workflows/**", "backend/app/services/**", "docs/workflows/**"],
+        "forbidden": ["frontend/**", "direct_llm_calls/**"]
+      },
+      "handoff_to": ["llm-integrator", "data-pipeline-engineer"],
+      "mcp_tools": {
+        "reasoning": ["sequential-thinking"],
+        "memory": ["memory"],
+        "documentation": ["context7"],
         "discovery": ["mcp-find"]
       }
     },
@@ -367,7 +444,7 @@
         "allowed": ["**/*"],
         "forbidden_actions": ["write", "modify", "fix_bugs"]
       },
-      "handoff_to": ["backend-system-architect", "frontend-ui-developer", "ai-ml-engineer"],
+      "handoff_to": ["backend-system-architect", "frontend-ui-developer", "llm-integrator", "workflow-architect"],
       "mcp_tools": {
         "reasoning": ["sequential-thinking"],
         "memory": ["memory"],
@@ -508,7 +585,7 @@
         "cost-optimization",
         "observability"
       ],
-      "used_by_agents": ["ai-ml-engineer"],
+      "used_by_agents": ["data-pipeline-engineer", "llm-integrator", "workflow-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -627,7 +704,7 @@
         "backpressure-handling",
         "reconnection-strategies"
       ],
-      "used_by_agents": ["backend-system-architect", "ai-ml-engineer"],
+      "used_by_agents": ["backend-system-architect", "llm-integrator"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -671,7 +748,7 @@
         "build-log-analysis",
         "evidence-templates"
       ],
-      "used_by_agents": ["code-quality-reviewer", "studio-coach"],
+      "used_by_agents": ["code-quality-reviewer"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -693,7 +770,7 @@
         "gate-validation",
         "stuck-detection"
       ],
-      "used_by_agents": ["studio-coach", "code-quality-reviewer"],
+      "used_by_agents": ["code-quality-reviewer"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md"
@@ -736,7 +813,7 @@
         "distributed-tracing",
         "alerting-strategies"
       ],
-      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "used_by_agents": ["workflow-architect", "backend-system-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -757,7 +834,7 @@
         "decision-documentation",
         "tradeoff-analysis"
       ],
-      "used_by_agents": ["product-manager", "backend-system-architect"],
+      "used_by_agents": ["backend-system-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -779,7 +856,7 @@
         "incremental-validation",
         "idea-refinement"
       ],
-      "used_by_agents": ["product-manager", "ux-researcher", "studio-coach"],
+      "used_by_agents": ["ux-researcher"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md"
@@ -823,7 +900,7 @@
         "infrastructure-as-code",
         "deployment-strategies"
       ],
-      "used_by_agents": ["backend-system-architect", "studio-coach"],
+      "used_by_agents": ["backend-system-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md"
@@ -869,7 +946,7 @@
         "cost-optimization",
         "cache-observability"
       ],
-      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "used_by_agents": ["llm-integrator", "backend-system-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -895,7 +972,7 @@
         "session-tracking",
         "langfuse-integration"
       ],
-      "used_by_agents": ["ai-ml-engineer", "code-quality-reviewer"],
+      "used_by_agents": ["llm-integrator", "workflow-architect", "code-quality-reviewer"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md"
@@ -917,7 +994,7 @@
         "checkpoints-persistence",
         "multi-agent-coordination"
       ],
-      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "used_by_agents": ["workflow-architect", "backend-system-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -942,7 +1019,7 @@
         "metadata-filtering",
         "score-boosting"
       ],
-      "used_by_agents": ["ai-ml-engineer", "backend-system-architect"],
+      "used_by_agents": ["data-pipeline-engineer", "database-engineer", "backend-system-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -991,7 +1068,7 @@
         "gh-automation",
         "gh-releases"
       ],
-      "used_by_agents": ["backend-system-architect", "sprint-prioritizer"],
+      "used_by_agents": ["backend-system-architect"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -1013,7 +1090,7 @@
         "auth-handling",
         "multi-page-crawl"
       ],
-      "used_by_agents": ["ai-ml-engineer"],
+      "used_by_agents": ["data-pipeline-engineer"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -1057,7 +1134,7 @@
         "workflow-viz",
         "progress-bars"
       ],
-      "used_by_agents": ["studio-coach", "whimsy-injector"],
+      "used_by_agents": [],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -1082,7 +1159,7 @@
         "error-classification",
         "llm-resilience"
       ],
-      "used_by_agents": ["backend-system-architect", "ai-ml-engineer", "code-quality-reviewer"],
+      "used_by_agents": ["backend-system-architect", "llm-integrator", "code-quality-reviewer"],
       "progressive_load": {
         "discovery": "capabilities.json",
         "overview": "SKILL.md",
@@ -1118,7 +1195,6 @@
         "react-server-components-framework/references/data-fetching.md",
         "type-safety-validation/templates/zod-schema.ts"
       ],
-      "orchestrator": "studio-coach",
       "agents": ["backend-system-architect", "frontend-ui-developer"],
       "estimated_tokens": 1200
     },
@@ -1129,7 +1205,7 @@
         "streaming-api-patterns/references/sse-deep-dive.md",
         "observability-monitoring/references/distributed-tracing.md"
       ],
-      "primary_agent": "ai-ml-engineer",
+      "agents": ["workflow-architect", "llm-integrator", "data-pipeline-engineer"],
       "validation_agent": "code-quality-reviewer",
       "estimated_tokens": 1000
     },
