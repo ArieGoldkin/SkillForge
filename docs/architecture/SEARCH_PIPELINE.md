@@ -1,8 +1,8 @@
 # Search Pipeline Architecture
 
-SkillForge implements a multi-stage search pipeline combining semantic search, keyword search, hybrid fusion, query decomposition, and optional re-ranking.
+SkillForge implements a multi-stage search pipeline combining semantic search, keyword search, hybrid fusion, query decomposition, HyDE (Hypothetical Document Embeddings), and optional re-ranking.
 
-**Target:** 87% retrieval pass rate (up from 73.6%)
+**Target:** 92% retrieval pass rate (up from 87%)
 
 ---
 
@@ -28,11 +28,24 @@ SkillForge implements a multi-stage search pipeline combining semantic search, k
 │       │                                                                         │
 │       ▼                                                                         │
 │   ┌─────────────────────────────────────────────────────────────────────────┐   │
-│   │ 2. PARALLEL SEARCH (per concept)                                        │   │
+│   │ 2. HyDE - HYPOTHETICAL DOCUMENT EMBEDDINGS (Issue #602)                 │   │
+│   │    ├─ Cache lookup (L1: <1ms)                                           │   │
+│   │    └─ LLM generation (200-400ms) if cache miss                          │   │
+│   │                                                                         │   │
+│   │    "scaling async pipelines" →                                          │   │
+│   │      "To scale async pipelines, use event-driven messaging..."          │   │
+│   │                                                                         │   │
+│   │    ✓ Bridges vocabulary gap between queries and documents               │   │
+│   │    ✓ Fixes 18% of failures due to terminology mismatch                  │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│       │                                                                         │
+│       ▼                                                                         │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │ 3. PARALLEL SEARCH (per concept)                                        │   │
 │   │                                                                         │   │
 │   │    ┌─────────────────────┐    ┌─────────────────────┐                   │   │
 │   │    │  SEMANTIC (HNSW)    │    │  KEYWORD (GIN)      │                   │   │
-│   │    │  vector <=> embed   │    │  tsvector @@ query  │                   │   │
+│   │    │  HyDE embed <=> doc │    │  tsvector @@ query  │                   │   │
 │   │    │  cosine similarity  │    │  ts_rank scoring    │                   │   │
 │   │    └─────────┬───────────┘    └─────────┬───────────┘                   │   │
 │   │              │                          │                               │   │
@@ -46,7 +59,7 @@ SkillForge implements a multi-stage search pipeline combining semantic search, k
 │       │                                                                         │
 │       ▼                                                                         │
 │   ┌─────────────────────────────────────────────────────────────────────────┐   │
-│   │ 3. MULTI-CONCEPT FUSION (if decomposed)                                 │   │
+│   │ 4. MULTI-CONCEPT FUSION (if decomposed)                                 │   │
 │   │                                                                         │   │
 │   │    Results from concept1 ─┐                                             │   │
 │   │    Results from concept2 ─┼─► RRF FUSION ─► Merged results              │   │
@@ -55,7 +68,7 @@ SkillForge implements a multi-stage search pipeline combining semantic search, k
 │       │                                                                         │
 │       ▼                                                                         │
 │   ┌─────────────────────────────────────────────────────────────────────────┐   │
-│   │ 4. OPTIONAL RE-RANKING                                                  │   │
+│   │ 5. OPTIONAL RE-RANKING                                                  │   │
 │   │    Cross-encoder model for fine-grained relevance                       │   │
 │   └─────────────────────────────────────────────────────────────────────────┘   │
 │       │                                                                         │
@@ -152,7 +165,129 @@ Output: ["chunking strategies", "reranking methods", "RAG pipeline"]
 
 ---
 
-## Stage 2: Hybrid Search
+## Stage 2: HyDE (Hypothetical Document Embeddings)
+
+**Location:** `backend/app/shared/services/search/hyde.py`
+
+### Purpose
+
+HyDE addresses vocabulary mismatch between user queries and document content. Instead of embedding the raw query, HyDE generates a hypothetical document that would answer the query, then embeds that document.
+
+**Problem:**
+```
+Query:      "scaling async data pipelines"
+Documents:  Use terms like "event-driven messaging", "Apache Kafka", "message brokers"
+Result:     Direct embedding fails due to vocabulary mismatch (18% of failures)
+```
+
+**Solution:**
+```
+Query:      "scaling async data pipelines"
+HyDE:       "To scale asynchronous data pipelines, use event-driven messaging
+             with Apache Kafka. Message brokers provide reliable delivery..."
+Embedding:  HyDE document now contains corpus vocabulary → Better matches!
+```
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            HyDE SERVICE                                          │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   Query/Concept: "scaling async data pipelines"                                 │
+│                     │                                                           │
+│                     ▼                                                           │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │ CACHE LOOKUP (<1ms)                                                     │   │
+│   │                                                                         │   │
+│   │   L1: In-memory dict with TTL                                           │   │
+│   │       • Size: 500 entries                                               │   │
+│   │       • TTL: 300 seconds (5 minutes)                                    │   │
+│   │       • Latency: <1ms                                                   │   │
+│   │       • Hit rate: 60-70% (concepts are reused across queries)           │   │
+│   │                                                                         │   │
+│   │   L2: Redis semantic cache (planned)                                    │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│                     │ miss                                                      │
+│                     ▼                                                           │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │ LLM GENERATION (200-400ms)                                              │   │
+│   │                                                                         │   │
+│   │   Model: Gemini Flash / Claude / Ollama (based on config)               │   │
+│   │   Output: HypotheticalDocument (Pydantic structured output)             │   │
+│   │   Timeout: 3 seconds (falls back to direct embedding)                   │   │
+│   │                                                                         │   │
+│   │   Prompt: "Given a search query, write a short factual document         │   │
+│   │            that would answer this query using technical terminology."   │   │
+│   │                                                                         │   │
+│   │   Output: {                                                             │   │
+│   │     "document": "To scale asynchronous data pipelines, use event-       │   │
+│   │                  driven messaging with Apache Kafka..."                 │   │
+│   │   }                                                                     │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│                     │                                                           │
+│                     ▼                                                           │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │ EMBEDDING GENERATION                                                    │   │
+│   │                                                                         │   │
+│   │   Input: Hypothetical document (or original query if fallback)          │   │
+│   │   Output: 1536-dimensional embedding                                    │   │
+│   │   Model: text-embedding-3-small (OpenAI) or Nomic (Ollama)              │   │
+│   └─────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Graceful Degradation
+
+HyDE is designed to never block or fail search:
+
+1. **LLM timeout (3s)** → Falls back to direct embedding of original query
+2. **LLM error** → Falls back to direct embedding of original query
+3. **Cache miss** → Proceeds to LLM, caches result for future queries
+
+### Integration with Search
+
+HyDE is integrated into `_semantic_search()` and `_hybrid_search()` methods:
+
+```python
+async def _semantic_search(self, query: str, ...) -> list[SearchResult]:
+    # Use HyDE for improved semantic matching (Issue #602)
+    hyde_result = await self.hyde_service.generate(query)
+    query_embedding = hyde_result.embedding  # HyDE embedding, not raw query
+
+    # Use HyDE embedding for vector search
+    chunks_with_scores = await self.chunk_repo.semantic_search(
+        query_embedding=query_embedding,
+        ...
+    )
+```
+
+### Expected Impact
+
+| Metric | Before HyDE | After HyDE | Improvement |
+|--------|-------------|------------|-------------|
+| Retrieval pass rate | 87% | 92% | +5 points |
+| Vocabulary mismatch failures | 18% | ~5% | -13 points |
+| P50 latency | 60ms | 260ms | +200ms |
+| P50 latency (cached) | 60ms | 65ms | +5ms |
+
+### Configuration
+
+HyDE configuration is in `backend/app/shared/services/search/hyde.py`:
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `HYDE_MAX_TOKENS` | `150` | Max tokens in hypothetical doc |
+| `HYDE_TIMEOUT_SECONDS` | `3.0` | LLM timeout before fallback |
+| `HYDE_TEMPERATURE` | `0.3` | LLM temperature (low for consistency) |
+| `HYDE_CACHE_L1_SIZE` | `500` | In-memory cache max entries |
+| `HYDE_CACHE_L1_TTL` | `300` | Cache TTL in seconds |
+
+---
+
+## Stage 3: Parallel Search (Hybrid)
 
 **Location:** `backend/app/db/repositories/chunk_repository.py:202-288`
 
@@ -218,7 +353,7 @@ def reciprocal_rank_fusion(
 
 ---
 
-## Stage 3: Multi-Concept Fusion
+## Stage 4: Multi-Concept Fusion
 
 **Location:** `backend/app/shared/services/search/search_service.py:263-299`
 
@@ -290,7 +425,7 @@ async def _multi_concept_search(
 
 ---
 
-## Stage 4: Re-Ranking (Optional)
+## Stage 5: Re-Ranking (Optional)
 
 **Location:** `backend/app/shared/services/search/reranker.py`
 
@@ -441,6 +576,8 @@ logger.info(
 ## References
 
 - [Issue #601: Query Decomposition](https://github.com/ArieGoldkin/SkillForge/issues/601)
+- [Issue #602: HyDE for Vocabulary Mismatch](https://github.com/ArieGoldkin/SkillForge/issues/602)
+- [HyDE Paper (arXiv 2022)](https://arxiv.org/abs/2212.10496) - "Precise Zero-Shot Dense Retrieval without Relevance Labels"
 - [RRF Paper (SIGIR 2009)](https://dl.acm.org/doi/10.1145/1571941.1572114)
 - [pgvector HNSW](https://github.com/pgvector/pgvector#hnsw)
 - [Database Architecture](./DATABASE.md)

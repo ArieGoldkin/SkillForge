@@ -6,6 +6,11 @@ description: Multi-perspective idea exploration with parallel agents and Socrati
 
 Deep exploration using 10-12 parallel agents for diverse perspectives.
 
+> **📋 OUTPUT POLICY**: All agents follow `.claude/policies/agent-output-policy.md`
+> - Tier 1 (Default): Return analysis inline - NO file creation
+> - Tier 3 (Patterns): Only with explicit user approval
+> - Tier 4 (Decisions): Update shared-context.json after synthesis
+
 ## Phase 1: Initial Exploration (Sequential-Thinking MCP)
 
 ### 1a. Define the Problem Space
@@ -67,12 +72,21 @@ mcp__context7__get-library-docs(context7CompatibleLibraryID="/tiangolo/fastapi",
 
 Launch TEN agents for diverse perspectives - ALL in ONE message:
 
+**CRITICAL RULES FOR ALL AGENTS:**
+- 🚫 **DO NOT write any files** - Return analysis inline only
+- 🚫 **DO NOT create MD files** - No documentation, no reports, no artifacts
+- 🚫 **DO NOT use Write tool** - Analysis goes in your response, not files
+- ✅ **Return structured text** - Use code blocks and ASCII art for visualization
+- ✅ **Keep output concise** - 500-1000 words max per agent
+
 ```python
 # PARALLEL - All ten in ONE message!
 
 Task(
   subagent_type="product-manager",
   prompt="""BUSINESS PERSPECTIVE
+
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
 
   Topic: $ARGUMENTS
 
@@ -96,6 +110,8 @@ Task(
   subagent_type="product-manager",
   prompt="""REQUIREMENTS ANALYSIS
 
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
+
   Topic: $ARGUMENTS
 
   Define requirements:
@@ -115,6 +131,8 @@ Task(
 Task(
   subagent_type="ux-researcher",
   prompt="""USER EXPERIENCE PERSPECTIVE
+
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
 
   Topic: $ARGUMENTS
 
@@ -138,6 +156,8 @@ Task(
   subagent_type="ux-researcher",
   prompt="""USABILITY ANALYSIS
 
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
+
   Topic: $ARGUMENTS
 
   Evaluate usability:
@@ -158,6 +178,8 @@ Task(
 Task(
   subagent_type="backend-system-architect",
   prompt="""TECHNICAL ARCHITECTURE PERSPECTIVE
+
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
 
   Topic: $ARGUMENTS
 
@@ -181,6 +203,8 @@ Task(
   subagent_type="backend-system-architect",
   prompt="""DATA & SECURITY PERSPECTIVE
 
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
+
   Topic: $ARGUMENTS
 
   Analyze data needs:
@@ -197,6 +221,8 @@ Task(
 Task(
   subagent_type="frontend-ui-developer",
   prompt="""FRONTEND IMPLEMENTATION PERSPECTIVE
+
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
 
   Topic: $ARGUMENTS
 
@@ -219,6 +245,8 @@ Task(
 Task(
   subagent_type="ai-ml-engineer",
   prompt="""AI/ML OPPORTUNITIES
+
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
 
   Topic: $ARGUMENTS
 
@@ -243,6 +271,8 @@ Task(
   subagent_type="sprint-prioritizer",
   prompt="""IMPLEMENTATION PLANNING
 
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
+
   Topic: $ARGUMENTS
 
   Plan implementation:
@@ -264,6 +294,8 @@ Task(
 Task(
   subagent_type="whimsy-injector",
   prompt="""CREATIVE & DELIGHTFUL IDEAS
+
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
 
   Topic: $ARGUMENTS
 
@@ -297,6 +329,8 @@ Task(
   subagent_type="studio-coach",
   prompt="""SYNTHESIS: INTEGRATE ALL PERSPECTIVES
 
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
+
   Input: [Results from all 10 agents above]
 
   Create unified analysis:
@@ -313,6 +347,8 @@ Task(
 Task(
   subagent_type="Plan",
   prompt="""SOCRATIC QUESTIONS
+
+  🚫 CRITICAL: DO NOT write any files. Return your analysis as text only.
 
   Based on all perspectives, generate:
   1. Clarifying questions (what's unclear?)
