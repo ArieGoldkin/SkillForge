@@ -45,7 +45,7 @@ from app.core.logging import get_logger
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from langchain_core.language_models import BaseChatModel, LanguageModelInput
+    from langchain_core.language_models import LanguageModelInput
     from langchain_core.messages import AIMessage, BaseMessage
     from langchain_core.runnables import Runnable
     from pydantic import BaseModel
@@ -181,7 +181,9 @@ class OllamaProvider:
         """
         return self.llm.bind_tools(tools)
 
-    def with_structured_output(self, schema: type) -> Runnable[LanguageModelInput, dict | BaseModel]:
+    def with_structured_output(
+        self, schema: type
+    ) -> Runnable[LanguageModelInput, dict | BaseModel]:
         """Configure model to output structured data.
 
         Uses Ollama's JSON mode with schema validation.
