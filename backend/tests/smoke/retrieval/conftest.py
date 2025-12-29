@@ -11,7 +11,9 @@ CI: GitHub Actions workflow runs on every PR to dev/main.
 
 from __future__ import annotations
 
+import logging
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -19,9 +21,12 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import text
 
+from app.shared.services.embeddings.cached import CachedEmbeddingService
 from app.shared.services.embeddings.deterministic import DeterministicEmbeddingService
 from tests.smoke.retrieval.fixtures import FixtureLoader
 from tests.smoke.retrieval.metrics import MetricsCalculator
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -40,10 +45,14 @@ if TYPE_CHECKING:
 pytestmark = [
     pytest.mark.smoke,
     pytest.mark.retrieval,
-    # TODO(#299): Skip retrieval smoke tests until queries.json is updated for real golden dataset
+    # TODO(#299): Skip retrieval smoke tests in CI until:
+    # 1. embeddings_cache.json is generated for golden dataset
+    # 2. queries.json is updated to match real golden dataset content
+    # Once cache exists, CachedEmbeddingService will provide real OpenAI embeddings
     pytest.mark.skipif(
-        os.getenv("CI") == "true",
-        reason="Smoke tests use synthetic fixtures; golden dataset now has real production data (issue #299)",
+        os.getenv("CI") == "true"
+        and not Path(__file__).parent.joinpath("fixtures/embeddings_cache.json").exists(),
+        reason="Smoke tests require embeddings_cache.json with real OpenAI embeddings (issue #299)",
     ),
 ]
 
@@ -132,21 +141,38 @@ def coarse_to_fine_queries(fixture_loader: FixtureLoader):
 
 @pytest_asyncio.fixture
 async def embedding_service():
-    """Create embedding service for smoke tests.
+    """Create embedding service for smoke tests with hybrid fallback strategy.
 
-    By default, uses deterministic (hash-based) embeddings for offline CI.
-    Set USE_REAL_EMBEDDINGS=true to use OpenAI embeddings for full validation.
+    Priority (in order):
+    1. CachedEmbeddingService if embeddings_cache.json exists (real OpenAI embeddings)
+    2. EmbeddingService if USE_REAL_EMBEDDINGS=true (live OpenAI API calls)
+    3. DeterministicEmbeddingService (hash-based, offline-compatible)
+
+    The cache provides real embeddings without API costs, ideal for CI/CD.
     """
-    use_real = os.environ.get("USE_REAL_EMBEDDINGS", "").lower() == "true"
+    # Check for embeddings cache file first
+    cache_path = Path(__file__).parent / "fixtures" / "embeddings_cache.json"
 
+    if cache_path.exists():
+        logger.info(
+            "Using CachedEmbeddingService with real OpenAI embeddings from %s",
+            cache_path,
+        )
+        return CachedEmbeddingService(cache_path=cache_path, expected_dimensions=1536)
+
+    # Fall back to live OpenAI API if explicitly requested
+    use_real = os.environ.get("USE_REAL_EMBEDDINGS", "").lower() == "true"
     if use_real:
         try:
             from app.shared.services.embeddings import EmbeddingService
 
+            logger.info("Using live EmbeddingService (OpenAI API) - USE_REAL_EMBEDDINGS=true")
             return EmbeddingService()
         except ValueError as e:
             pytest.skip(f"Real embeddings requested but not available: {e}")
 
+    # Default: deterministic embeddings for offline testing
+    logger.info("Using DeterministicEmbeddingService (hash-based, offline)")
     return DeterministicEmbeddingService()
 
 
@@ -156,8 +182,14 @@ def using_deterministic_embeddings(embedding_service) -> bool:
 
     This is used to skip tests that require true semantic understanding
     (synonyms, paraphrases) which hash-based embeddings cannot provide.
+
+    Returns False for:
+    - CachedEmbeddingService (uses real OpenAI embeddings from cache)
+    - EmbeddingService (live OpenAI API)
+
+    Returns True only for DeterministicEmbeddingService.
     """
-    return embedding_service.model == "deterministic-hash-v1"
+    return isinstance(embedding_service, DeterministicEmbeddingService)
 
 
 @pytest_asyncio.fixture
