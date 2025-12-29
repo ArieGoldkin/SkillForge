@@ -45,8 +45,10 @@ from app.core.logging import get_logger
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-    from langchain_core.language_models import BaseChatModel
-    from langchain_core.messages import BaseMessage
+    from langchain_core.language_models import BaseChatModel, LanguageModelInput
+    from langchain_core.messages import AIMessage, BaseMessage
+    from langchain_core.runnables import Runnable
+    from pydantic import BaseModel
 
 logger = get_logger(__name__)
 
@@ -105,8 +107,8 @@ class OllamaProvider:
             base_url=settings.OLLAMA_HOST,
             temperature=temperature,
             num_ctx=self._num_ctx,
-            timeout=self._timeout,
             keep_alive=keep_alive,
+            client_kwargs={"timeout": self._timeout},
         )
 
         logger.info(
@@ -153,7 +155,7 @@ class OllamaProvider:
         async for chunk in self.llm.astream(prompt, **kwargs):
             yield chunk
 
-    def bind_tools(self, tools: list[Any]) -> BaseChatModel:
+    def bind_tools(self, tools: list[Any]) -> Runnable[LanguageModelInput, AIMessage]:
         """Bind tools for function calling.
 
         Ollama supports tool calling for models like:
@@ -165,7 +167,7 @@ class OllamaProvider:
             tools: List of tools (Pydantic models, functions, or tool schemas)
 
         Returns:
-            ChatOllama with tools bound
+            Runnable with tools bound for function calling
 
         Example:
             >>> from pydantic import BaseModel
@@ -179,7 +181,7 @@ class OllamaProvider:
         """
         return self.llm.bind_tools(tools)
 
-    def with_structured_output(self, schema: type) -> BaseChatModel:
+    def with_structured_output(self, schema: type) -> Runnable[LanguageModelInput, dict | BaseModel]:
         """Configure model to output structured data.
 
         Uses Ollama's JSON mode with schema validation.
@@ -188,7 +190,7 @@ class OllamaProvider:
             schema: Pydantic model or JSON schema for output structure
 
         Returns:
-            ChatOllama configured for structured output
+            Runnable configured for structured JSON output
 
         Example:
             >>> from pydantic import BaseModel
@@ -313,6 +315,6 @@ def get_ollama_llm(
         base_url=settings.OLLAMA_HOST,
         temperature=0.0,
         num_ctx=settings.OLLAMA_NUM_CTX,
-        timeout=settings.OLLAMA_TIMEOUT,
         keep_alive="5m",
+        client_kwargs={"timeout": settings.OLLAMA_TIMEOUT},
     )
