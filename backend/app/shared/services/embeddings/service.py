@@ -5,28 +5,46 @@ This service provides:
 - Batch embedding generation with optional Batch API support (50% cost savings)
 - L2 normalization for cosine similarity search
 - Retry logic with exponential backoff
-- Comprehensive error handling
+- Comprehensive error handling with specific OpenAI exception types
 - Metrics collection and telemetry
 - Backpressure handling with adaptive rate limiting
+- Circuit breaker pattern for resilience (opens after 5 failures, recovers after 60s)
+- Fine-grained httpx timeout configuration (connect, read, write, pool)
 
 Architecture:
-- Uses OpenAI SDK for async requests
+- Uses OpenAI SDK for async requests with httpx.Timeout configuration
 - Generates 1536-dimensional embeddings (text-embedding-3-small)
 - Returns normalized vectors for pgvector cosine similarity
 - Records metrics via MetricsService for observability
 - Integrates error tracking and rate limiting for resilience
 - Optionally uses Batch API for 50% cost savings on non-time-sensitive operations
+- Circuit breaker prevents cascade failures and enables graceful degradation
 """
 
 import time
 from typing import cast
 
+import httpx
 import tiktoken
-from openai import APIStatusError, AsyncOpenAI
+from openai import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    AsyncOpenAI,
+    RateLimitError,
+)
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
 from app.core.config import settings
 from app.core.constants import (
+    EMBEDDING_CIRCUIT_FAILURE_THRESHOLD,
+    EMBEDDING_CIRCUIT_SUCCESS_THRESHOLD,
+    EMBEDDING_CIRCUIT_TIMEOUT_SECONDS,
+    EMBEDDING_HTTP_CONNECT_TIMEOUT,
+    EMBEDDING_HTTP_POOL_TIMEOUT,
+    EMBEDDING_HTTP_READ_TIMEOUT,
+    EMBEDDING_HTTP_WRITE_TIMEOUT,
     HTTP_RATE_LIMITED,
     HTTP_SERVER_ERROR_THRESHOLD,
     MAX_RETRY_ATTEMPTS,
@@ -74,13 +92,32 @@ class EmbeddingService:
             msg = "OPENAI_API_KEY is required for embedding generation"
             raise ValueError(msg)
 
-        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        # Configure httpx timeout following 2025 best practices
+        timeout_config = httpx.Timeout(
+            connect=EMBEDDING_HTTP_CONNECT_TIMEOUT,
+            read=EMBEDDING_HTTP_READ_TIMEOUT,
+            write=EMBEDDING_HTTP_WRITE_TIMEOUT,
+            pool=EMBEDDING_HTTP_POOL_TIMEOUT,
+        )
+
+        self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY, timeout=timeout_config)
         self.model = "text-embedding-3-small"
         self.expected_dimensions = 1536
         self.max_tokens = 8_000  # Safety margin below 8,191 token limit
         # Lazy-load encoding to avoid blocking calls in async context
         # Encoding will be initialized on first use in generate_embedding()
         self._encoding: tiktoken.Encoding | None = None
+
+        # Circuit breaker for resilience (opens after 5 failures, recovers after 60s)
+        self._circuit_breaker = CircuitBreaker(
+            name="embedding_service",
+            config=CircuitBreakerConfig(
+                failure_threshold=EMBEDDING_CIRCUIT_FAILURE_THRESHOLD,
+                success_threshold=EMBEDDING_CIRCUIT_SUCCESS_THRESHOLD,
+                timeout_seconds=EMBEDDING_CIRCUIT_TIMEOUT_SECONDS,
+                excluded_exceptions=(ValueError,),  # Don't trip on validation errors
+            ),
+        )
 
         # Telemetry components (lazy-loaded singletons)
         self._metrics = get_metrics_service()
@@ -96,6 +133,17 @@ class EmbeddingService:
             encoding="cl100k_base",  # text-embedding-3-small uses cl100k_base
             provider="openai",
             metrics_enabled=settings.METRICS_ENABLED,
+            timeout_config={
+                "connect": EMBEDDING_HTTP_CONNECT_TIMEOUT,
+                "read": EMBEDDING_HTTP_READ_TIMEOUT,
+                "write": EMBEDDING_HTTP_WRITE_TIMEOUT,
+                "pool": EMBEDDING_HTTP_POOL_TIMEOUT,
+            },
+            circuit_breaker={
+                "failure_threshold": EMBEDDING_CIRCUIT_FAILURE_THRESHOLD,
+                "success_threshold": EMBEDDING_CIRCUIT_SUCCESS_THRESHOLD,
+                "timeout_seconds": EMBEDDING_CIRCUIT_TIMEOUT_SECONDS,
+            },
         )
 
     def _handle_api_status_error(
@@ -211,6 +259,64 @@ class EmbeddingService:
 
         return text, original_token_count, truncated
 
+    async def _call_openai_api(self, text: str) -> list[float]:
+        """Call OpenAI API with circuit breaker protection.
+
+        This internal method wraps the OpenAI API call with circuit breaker
+        for resilience. It handles all OpenAI-specific exceptions.
+
+        Args:
+            text: Prepared text to embed
+
+        Returns:
+            Raw embedding vector from OpenAI
+
+        Raises:
+            APIConnectionError: Connection to OpenAI failed
+            APITimeoutError: Request timed out
+            RateLimitError: Rate limit exceeded
+            APIStatusError: API returned error status
+            EmbeddingError: Invalid response from API
+
+        """
+
+        async def _api_call() -> list[float]:
+            """Inner function for circuit breaker to wrap."""
+            response = await self.client.embeddings.create(
+                model=self.model,
+                input=text,
+            )
+
+            # Log usage metadata if available (OpenAI SDK 1.0+)
+            if hasattr(response, "usage") and response.usage:
+                logger.info(
+                    "embedding_token_usage",
+                    total_tokens=response.usage.total_tokens,
+                    prompt_tokens=getattr(response.usage, "prompt_tokens", 0),
+                )
+
+            # Extract embedding from response
+            embedding = cast("list[float]", response.data[0].embedding)
+
+            if not embedding:
+                error_msg = "No embedding in API response"
+                logger.error("embedding_missing_field")
+                raise EmbeddingError(error_msg)
+
+            if len(embedding) != self.expected_dimensions:
+                error_msg = f"Expected {self.expected_dimensions} dimensions, got {len(embedding)}"
+                logger.error(
+                    "embedding_dimension_mismatch",
+                    expected=self.expected_dimensions,
+                    actual=len(embedding),
+                )
+                raise EmbeddingError(error_msg)
+
+            return embedding
+
+        # Call through circuit breaker
+        return await self._circuit_breaker.call(_api_call)
+
     @retry(
         stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
         wait=wait_exponential(
@@ -220,7 +326,7 @@ class EmbeddingService:
         ),
         reraise=True,
     )
-    async def generate_embedding(self, text: str, normalize: bool = True) -> EmbeddingVector:
+    async def generate_embedding(self, text: str, normalize: bool = True) -> EmbeddingVector:  # noqa: PLR0915
         """Generate embedding vector for text using OpenAI.
 
         Args:
@@ -250,37 +356,8 @@ class EmbeddingService:
         start_time = time.perf_counter()
 
         try:
-            # Call OpenAI embeddings API
-            response = await self.client.embeddings.create(
-                model=self.model,
-                input=text,
-            )
-
-            # Log usage metadata if available (OpenAI SDK 1.0+)
-            if hasattr(response, "usage") and response.usage:
-                logger.info(
-                    "embedding_token_usage",
-                    total_tokens=response.usage.total_tokens,
-                    prompt_tokens=getattr(response.usage, "prompt_tokens", 0),
-                )
-
-            # Extract embedding from response
-            # Type cast needed because OpenAI SDK types embedding as Any
-            embedding = cast("EmbeddingVector", response.data[0].embedding)
-
-            if not embedding:
-                error_msg = "No embedding in API response"
-                logger.error("embedding_missing_field")
-                raise EmbeddingError(error_msg)
-
-            if len(embedding) != self.expected_dimensions:
-                error_msg = f"Expected {self.expected_dimensions} dimensions, got {len(embedding)}"
-                logger.error(
-                    "embedding_dimension_mismatch",
-                    expected=self.expected_dimensions,
-                    actual=len(embedding),
-                )
-                raise EmbeddingError(error_msg)
+            # Call OpenAI API through circuit breaker
+            embedding = await self._call_openai_api(text)
 
             # Normalize if requested (L2 norm for cosine similarity)
             if normalize:
@@ -304,6 +381,7 @@ class EmbeddingService:
                 embedding_dimensions=len(embedding),
                 normalized=normalize,
                 latency_ms=latency_ms,
+                circuit_state=self._circuit_breaker.state.value,
             )
 
             return embedding
@@ -319,15 +397,85 @@ class EmbeddingService:
             )
             raise
 
+        except APIConnectionError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_error(ErrorType.OTHER)
+            self._metrics.record_embedding_request(
+                status="connection_error",
+                latency_ms=latency_ms,
+                token_count=original_token_count,
+                truncated=truncated,
+            )
+            self._metrics.record_api_error(provider="openai", status="connection_error")
+            logger.exception(
+                "embedding_connection_failed",
+                error=str(e),
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = "Failed to connect to OpenAI API"
+            raise EmbeddingError(error_msg) from e
+
+        except APITimeoutError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_error(ErrorType.OTHER)
+            self._metrics.record_embedding_request(
+                status="timeout",
+                latency_ms=latency_ms,
+                token_count=original_token_count,
+                truncated=truncated,
+            )
+            self._metrics.record_api_error(provider="openai", status="timeout")
+            logger.exception(
+                "embedding_timeout",
+                error=str(e),
+                timeout_config={
+                    "connect": EMBEDDING_HTTP_CONNECT_TIMEOUT,
+                    "read": EMBEDDING_HTTP_READ_TIMEOUT,
+                },
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = "Request to OpenAI API timed out"
+            raise EmbeddingError(error_msg) from e
+
+        except RateLimitError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_rate_limit()
+            self._batch_sizer.decrease_for_rate_limit()
+            self._metrics.record_embedding_request(
+                status="rate_limited",
+                latency_ms=latency_ms,
+                token_count=original_token_count,
+                truncated=truncated,
+            )
+            self._metrics.record_api_error(provider="openai", status=HTTP_RATE_LIMITED)
+            logger.exception(
+                "embedding_rate_limited",
+                error=str(e),
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = "OpenAI API rate limit exceeded"
+            raise EmbeddingError(error_msg) from e
+
         except APIStatusError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self._handle_api_status_error(e, latency_ms, original_token_count, truncated)
-            error_msg = f"Embedding generation failed: {e!s}"
+            logger.exception(
+                "embedding_api_error",
+                status_code=e.status_code,
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = f"OpenAI API error: {e!s}"
             raise EmbeddingError(error_msg) from e
 
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self._handle_generic_error(e, latency_ms, original_token_count, truncated)
+            logger.exception(
+                "embedding_unexpected_error",
+                error=str(e),
+                error_type=type(e).__name__,
+                circuit_state=self._circuit_breaker.state.value,
+            )
             error_msg = f"Embedding generation failed: {e!s}"
             raise EmbeddingError(error_msg) from e
 
@@ -490,7 +638,59 @@ class EmbeddingService:
                 texts, normalize=normalize, use_batch_api=False
             )
 
-    async def _embed_batch(
+    async def _call_openai_batch_api(self, texts: list[str]) -> list[list[float]]:
+        """Call OpenAI batch API with circuit breaker protection.
+
+        Args:
+            texts: List of prepared texts to embed
+
+        Returns:
+            List of raw embedding vectors from OpenAI
+
+        Raises:
+            APIConnectionError: Connection to OpenAI failed
+            APITimeoutError: Request timed out
+            RateLimitError: Rate limit exceeded
+            APIStatusError: API returned error status
+            EmbeddingError: Invalid response from API
+
+        """
+
+        async def _api_call() -> list[list[float]]:
+            """Inner function for circuit breaker to wrap."""
+            response = await self.client.embeddings.create(
+                model=self.model,
+                input=texts,
+            )
+
+            # Log usage metadata if available (OpenAI SDK 1.0+)
+            if hasattr(response, "usage") and response.usage:
+                logger.info(
+                    "batch_embedding_token_usage",
+                    total_tokens=response.usage.total_tokens,
+                    prompt_tokens=getattr(response.usage, "prompt_tokens", 0),
+                    batch_size=len(texts),
+                )
+
+            # Extract embeddings and maintain order
+            embeddings: list[list[float]] = []
+            for data in response.data:
+                embedding = cast("list[float]", data.embedding)
+
+                if len(embedding) != self.expected_dimensions:
+                    error_msg = (
+                        f"Expected {self.expected_dimensions} dimensions, got {len(embedding)}"
+                    )
+                    raise EmbeddingError(error_msg)
+
+                embeddings.append(embedding)
+
+            return embeddings
+
+        # Call through circuit breaker
+        return await self._circuit_breaker.call(_api_call)
+
+    async def _embed_batch(  # noqa: PLR0915
         self,
         texts: list[str],
         normalize: bool,
@@ -525,39 +725,17 @@ class EmbeddingService:
         start_time = time.perf_counter()
 
         try:
-            # Call OpenAI embeddings API with batch input
-            response = await self.client.embeddings.create(
-                model=self.model,
-                input=prepared_texts,
-            )
+            # Call OpenAI batch API through circuit breaker
+            embeddings = await self._call_openai_batch_api(prepared_texts)
 
             latency_ms = (time.perf_counter() - start_time) * 1000
             per_text_latency = latency_ms / len(prepared_texts)
 
-            # Log usage metadata if available (OpenAI SDK 1.0+)
-            if hasattr(response, "usage") and response.usage:
-                logger.info(
-                    "batch_embedding_token_usage",
-                    total_tokens=response.usage.total_tokens,
-                    prompt_tokens=getattr(response.usage, "prompt_tokens", 0),
-                    batch_size=len(prepared_texts),
-                )
-
-            # Extract embeddings and maintain order
+            # Normalize if requested and create results
             results: list[tuple[EmbeddingVector, float]] = []
-            for data in response.data:
-                embedding = cast("EmbeddingVector", data.embedding)
-
-                if len(embedding) != self.expected_dimensions:
-                    error_msg = (
-                        f"Expected {self.expected_dimensions} dimensions, got {len(embedding)}"
-                    )
-                    raise EmbeddingError(error_msg)
-
-                if normalize:
-                    embedding = normalize_vector(embedding)
-
-                results.append((embedding, per_text_latency))
+            for emb in embeddings:
+                normalized_emb = normalize_vector(emb) if normalize else emb
+                results.append((normalized_emb, per_text_latency))
 
             # Record success and metrics
             self._error_tracker.record_success()
@@ -572,16 +750,105 @@ class EmbeddingService:
             # Allow batch sizer to potentially increase after success
             self._batch_sizer.try_increase(self._error_tracker)
 
+            logger.info(
+                "batch_embedding_success",
+                batch_size=len(prepared_texts),
+                latency_ms=latency_ms,
+                circuit_state=self._circuit_breaker.state.value,
+            )
+
             return results
+
+        except EmbeddingError:
+            # Re-raise EmbeddingError without modification
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._metrics.record_embedding_request(
+                status="error",
+                latency_ms=latency_ms,
+                token_count=0,
+                truncated=False,
+            )
+            raise
+
+        except APIConnectionError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_error(ErrorType.OTHER)
+            self._metrics.record_embedding_request(
+                status="connection_error",
+                latency_ms=latency_ms,
+                token_count=0,
+                truncated=False,
+            )
+            self._metrics.record_api_error(provider="openai", status="connection_error")
+            logger.exception(
+                "batch_embedding_connection_failed",
+                error=str(e),
+                batch_size=len(prepared_texts),
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = "Failed to connect to OpenAI API for batch embedding"
+            raise EmbeddingError(error_msg) from e
+
+        except APITimeoutError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_error(ErrorType.OTHER)
+            self._metrics.record_embedding_request(
+                status="timeout",
+                latency_ms=latency_ms,
+                token_count=0,
+                truncated=False,
+            )
+            self._metrics.record_api_error(provider="openai", status="timeout")
+            logger.exception(
+                "batch_embedding_timeout",
+                error=str(e),
+                batch_size=len(prepared_texts),
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = "Batch embedding request timed out"
+            raise EmbeddingError(error_msg) from e
+
+        except RateLimitError as e:
+            latency_ms = (time.perf_counter() - start_time) * 1000
+            self._error_tracker.record_rate_limit()
+            self._batch_sizer.decrease_for_rate_limit()
+            self._metrics.record_embedding_request(
+                status="rate_limited",
+                latency_ms=latency_ms,
+                token_count=0,
+                truncated=False,
+            )
+            self._metrics.record_api_error(provider="openai", status=HTTP_RATE_LIMITED)
+            logger.exception(
+                "batch_embedding_rate_limited",
+                error=str(e),
+                batch_size=len(prepared_texts),
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = "OpenAI API rate limit exceeded for batch embedding"
+            raise EmbeddingError(error_msg) from e
 
         except APIStatusError as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self._handle_api_status_error(e, latency_ms, token_count=0, truncated=False)
-            error_msg = f"Batch embedding generation failed: {e!s}"
+            logger.exception(
+                "batch_embedding_api_error",
+                status_code=e.status_code,
+                batch_size=len(prepared_texts),
+                circuit_state=self._circuit_breaker.state.value,
+            )
+            error_msg = f"Batch embedding API error: {e!s}"
             raise EmbeddingError(error_msg) from e
 
         except Exception as e:
             latency_ms = (time.perf_counter() - start_time) * 1000
             self._handle_generic_error(e, latency_ms, token_count=0, truncated=False)
+            logger.exception(
+                "batch_embedding_unexpected_error",
+                error=str(e),
+                error_type=type(e).__name__,
+                batch_size=len(prepared_texts),
+                circuit_state=self._circuit_breaker.state.value,
+            )
             error_msg = f"Batch embedding generation failed: {e!s}"
             raise EmbeddingError(error_msg) from e

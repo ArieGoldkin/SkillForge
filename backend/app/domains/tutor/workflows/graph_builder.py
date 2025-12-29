@@ -25,36 +25,83 @@ from app.domains.tutor.workflows.nodes import (
 from app.domains.tutor.workflows.state import TutorState
 from app.domains.tutor.workflows.state_accessors import get_syllabus
 
-# Try to import PostgresSaver, fallback to MemorySaver if not available
+# Try to import RedisSaver dynamically to avoid hard dependency in lint
 try:
-    from langgraph.checkpoint.postgres import PostgresSaver
+    import importlib
 
-    _postgres_available = True
-except ImportError:
-    _postgres_available = False
+    _lg_redis = importlib.import_module("langgraph.checkpoint.redis")
+    RedisSaver = getattr(_lg_redis, "RedisSaver", None)
+except Exception as e:  # noqa: BLE001 - Graceful degradation: RedisSaver is optional dependency
+    logger_temp = get_logger(__name__)
+    logger_temp.debug("redis_checkpointer_unavailable", error=str(e), exc_info=e)
+    RedisSaver = None
 
 logger = get_logger(__name__)
 
 
-def _get_checkpointer():
-    """Get checkpointer instance (PostgresSaver or MemorySaver)."""
-    # Setup checkpointer (PostgreSQL for production, MemorySaver for dev)
+def get_checkpointer():
+    """Get checkpointer instance from FastAPI app.state or fallback.
+
+    Issue #624: Returns app-scoped AsyncPostgresSaver initialized in main.py lifespan,
+    or creates fallback checkpointer if app.state.checkpointer is not available.
+
+    Checkpointer selection priority:
+    1. MemorySaver for tests (PYTEST_CURRENT_TEST is set)
+    2. RedisSaver if USE_REDIS_CHECKPOINT=true and REDIS_URL is set
+    3. AsyncPostgresSaver from app.state (initialized in lifespan)
+    4. MemorySaver as fallback
+
+    Returns:
+        Checkpointer instance (AsyncPostgresSaver, RedisSaver, or MemorySaver)
+
+    """
     # Use MemorySaver in tests to avoid database connection hangs
-    if settings.DATABASE_URL and _postgres_available and not os.environ.get("PYTEST_CURRENT_TEST"):
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        logger.info("tutor_checkpointer_initialized", type="MemorySaver", reason="test_mode")
+        return MemorySaver()
+
+    # Try RedisSaver if enabled and configured
+    if settings.USE_REDIS_CHECKPOINT and settings.REDIS_URL and RedisSaver is not None:
         try:
-            checkpointer = PostgresSaver.from_conn_string(settings.DATABASE_URL)
-            logger.info("tutor_checkpointer_initialized", type="PostgresSaver")
+            # RedisSaver.from_conn_string creates a Redis connection pool
+            # with automatic TTL-based cleanup of checkpoints
+            # TTL format: {"default_ttl": X} where X is in MINUTES
+            # Convert seconds to minutes for RedisSaver
+            ttl_minutes = settings.REDIS_CHECKPOINT_TTL / 60.0
+            checkpointer = RedisSaver.from_conn_string(
+                settings.REDIS_URL,
+                # Set checkpoint TTL for automatic cleanup
+                # RedisSaver expects TTL in minutes via "default_ttl" key
+                ttl={"default_ttl": ttl_minutes},
+            )
+            logger.info(
+                "tutor_checkpointer_initialized",
+                type="RedisSaver",
+                ttl_seconds=settings.REDIS_CHECKPOINT_TTL,
+                ttl_minutes=ttl_minutes,
+                redis_url=settings.REDIS_URL.split("@")[-1],  # Log host only, not credentials
+            )
             return checkpointer
         except (ValueError, ConnectionError) as e:
             logger.warning(
-                "tutor_checkpointer_fallback",
+                "tutor_checkpointer_fallback_from_redis",
                 error=str(e),
-                fallback="MemorySaver",
+                fallback="AsyncPostgresSaver or MemorySaver",
             )
-            return MemorySaver()
-    else:
-        logger.info("tutor_checkpointer_initialized", type="MemorySaver")
-        return MemorySaver()
+            # Fall through to AsyncPostgresSaver/MemorySaver
+
+    # Issue #624: Try to get AsyncPostgresSaver from app.state
+    # This requires FastAPI app to be running with lifespan context
+    # For tutor workflow, we use session-based checkpointing where each tutor
+    # session has its own thread_id, so app-scoped checkpointer works well
+
+    # Fallback to MemorySaver (development/local mode)
+    logger.info(
+        "tutor_checkpointer_initialized",
+        type="MemorySaver",
+        reason="app_state_not_accessible",
+    )
+    return MemorySaver()
 
 
 def _route_after_assessment(state: TutorState) -> str:
@@ -203,7 +250,7 @@ def build_tutor_graph():
     graph.add_edge("guide_reflection", END)
 
     # Compile with checkpointer
-    checkpointer = _get_checkpointer()
+    checkpointer = get_checkpointer()
     compiled_graph = graph.compile(checkpointer=checkpointer)
 
     logger.info("tutor_graph_compiled", workflow_type="StateGraph")

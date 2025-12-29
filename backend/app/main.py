@@ -105,7 +105,7 @@ def _background_task_exception_handler(_loop: asyncio.AbstractEventLoop, context
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI):  # noqa: PLR0912, PLR0915 - Lifespan needs many branches/statements for initialization
     """Lifespan context manager for startup and shutdown events."""
     # Startup
     # Initialize app.state for background task tracking
@@ -173,9 +173,70 @@ async def lifespan(app: FastAPI):
     # and whether the selected LLM_MODEL has its required API key
     log_api_key_configuration()
 
+    # Issue #624: Initialize AsyncPostgresSaver for LangGraph checkpointing
+    # Uses 2025 best practice AsyncConnectionPool pattern with lifespan integration
+    app.state.checkpointer = None
+    if settings.DATABASE_URL and not os.environ.get("PYTEST_CURRENT_TEST"):
+        try:
+            from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+            from psycopg_pool import AsyncConnectionPool
+
+            from app.core.constants import DB_MAX_OVERFLOW, DB_POOL_SIZE
+
+            # Convert DATABASE_URL from postgresql+asyncpg:// to postgresql:// for psycopg
+            db_uri = settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+            # Create connection pool with 2025 best practices
+            # - autocommit=True: Required for AsyncPostgresSaver
+            # - prepare_threshold=0: Disables prepared statements (recommended for checkpointing)
+            # - open=False: Prevents auto-open in constructor (we open explicitly with await pool.open())
+            pool = AsyncConnectionPool(
+                conninfo=db_uri,
+                max_size=DB_POOL_SIZE,
+                kwargs={"autocommit": True, "prepare_threshold": 0},
+                open=False,  # Open explicitly with await pool.open() to avoid deprecation warning
+            )
+
+            # AsyncPostgresSaver requires pool to be opened before setup
+            # Use explicit await pool.open() instead of auto-open in constructor
+            await pool.open()
+
+            saver = AsyncPostgresSaver(pool)
+            await saver.setup()
+            app.state.checkpointer = saver
+
+            logger.info(
+                "langgraph_checkpointer_initialized",
+                type="AsyncPostgresSaver",
+                pool_size=DB_POOL_SIZE,
+                max_overflow=DB_MAX_OVERFLOW,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "langgraph_checkpointer_fallback",
+                error=str(e),
+                fallback="MemorySaver",
+                message="Failed to initialize AsyncPostgresSaver, workflows will use MemorySaver",
+            )
+            app.state.checkpointer = None
+
     yield
     # Shutdown
     logger.info("application_shutdown")
+
+    # Close AsyncPostgresSaver connection pool
+    if app.state.checkpointer is not None:
+        try:
+            # AsyncPostgresSaver has a connection pool that needs to be closed
+            if hasattr(app.state.checkpointer, "conn"):
+                await app.state.checkpointer.conn.close()
+                logger.info("langgraph_checkpointer_pool_closed")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(
+                "langgraph_checkpointer_close_error",
+                error=str(e),
+                message="Error closing AsyncPostgresSaver pool",
+            )
 
     # Flush and shutdown Langfuse with timeout protection
     try:
