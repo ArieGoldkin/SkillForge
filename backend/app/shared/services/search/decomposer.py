@@ -36,8 +36,9 @@ import time
 from enum import Enum
 from typing import TYPE_CHECKING, Literal, cast
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
+from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.shared.services.llm.factory import get_llm_provider
 from app.shared.services.search.hybrid_fusion import reciprocal_rank_fusion
@@ -117,6 +118,26 @@ class DecompositionResult(BaseModel):
     source: DecompositionSource = Field(..., description="How the decomposition was determined")
     latency_ms: float = Field(..., description="Time taken for decomposition in ms")
 
+    @model_validator(mode="after")
+    def validate_concepts_match_multi_concept_flag(self) -> DecompositionResult:
+        """Ensure is_multi_concept is consistent with concepts count.
+
+        Rules:
+        - If is_multi_concept=True, must have 2+ concepts
+        - If is_multi_concept=False, must have 0-1 concepts
+        """
+        concept_count = len(self.concepts)
+
+        if self.is_multi_concept and concept_count < MULTI_CONCEPT_MIN_COUNT:
+            msg = f"is_multi_concept=True requires {MULTI_CONCEPT_MIN_COUNT}+ concepts, got {concept_count}"
+            raise ValueError(msg)
+
+        if not self.is_multi_concept and concept_count > SINGLE_CONCEPT_MAX_COUNT:
+            msg = f"is_multi_concept=False allows max {SINGLE_CONCEPT_MAX_COUNT} concept, got {concept_count}"
+            raise ValueError(msg)
+
+        return self
+
 
 class FusedSearchResult(BaseModel):
     """Result from fused multi-concept search."""
@@ -147,6 +168,12 @@ MIN_WORDS_FOR_DECOMPOSITION = 6
 
 # Minimum technical domains to trigger decomposition
 MIN_TECHNICAL_DOMAINS = 2
+
+# Multi-concept threshold (2+ concepts = multi-concept)
+MULTI_CONCEPT_MIN_COUNT = 2
+
+# Single-concept maximum (0-1 concepts allowed when is_multi_concept=False)
+SINGLE_CONCEPT_MAX_COUNT = 1
 
 # Word count threshold for long question queries
 LONG_QUERY_WORD_THRESHOLD = 10
@@ -383,13 +410,28 @@ Return a JSON object with:
 - concepts: list of extracted concept strings
 - reasoning: brief explanation (optional)
 """
+        settings = get_settings()
+        timeout_seconds = settings.QUERY_DECOMPOSITION_LLM_TIMEOUT
 
         try:
             # Use structured output if available
             llm_with_structure = self.llm.with_structured_output(ConceptExtraction)
-            raw_result = await llm_with_structure.ainvoke(prompt)
+
+            # Wrap LLM call with timeout to prevent indefinite hangs
+            async with asyncio.timeout(timeout_seconds):
+                raw_result = await llm_with_structure.ainvoke(prompt)
+
             result = cast("ConceptExtraction", raw_result)
             return result.concepts
+
+        except TimeoutError:
+            logger.warning(
+                "llm_decomposition_timeout",
+                timeout_seconds=timeout_seconds,
+                query=query[:100],
+            )
+            # Fallback: return original query as single concept
+            return [query]
 
         except LLM_ERRORS as e:
             logger.warning(

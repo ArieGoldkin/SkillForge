@@ -5,13 +5,13 @@ Issue #601: Query Decomposition for Multi-Concept Retrieval
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from app.shared.services.search.decomposer import (
     LONG_QUERY_WORD_THRESHOLD,
-    MIN_TECHNICAL_DOMAINS,
     MIN_WORDS_FOR_DECOMPOSITION,
     ConceptExtraction,
     DecompositionCache,
@@ -263,15 +263,82 @@ class TestQueryDecomposer:
 
         decomposer = QueryDecomposer(llm=mock_llm)
 
-        result = await decomposer.decompose(
-            "How do chunking strategies affect reranking in RAG"
-        )
+        result = await decomposer.decompose("How do chunking strategies affect reranking in RAG")
 
         # Should fall back to original query
-        assert result.concepts == [
-            "How do chunking strategies affect reranking in RAG"
-        ]
+        assert result.concepts == ["How do chunking strategies affect reranking in RAG"]
         assert result.source == DecompositionSource.LLM
+
+    # -------------------------------------------------------------------------
+    # Lazy-loading property tests (Issue #601)
+    # -------------------------------------------------------------------------
+
+    def test_llm_property_lazy_loading(self):
+        """Test that LLM is not instantiated until accessed."""
+        decomposer = QueryDecomposer()
+
+        # Private attribute should be None before access
+        assert decomposer._llm is None
+
+        # Accessing the property should trigger lazy loading
+        llm = decomposer.llm
+
+        # Should now be set
+        assert llm is not None
+        assert decomposer._llm is not None
+
+    def test_llm_property_returns_same_instance(self):
+        """Test that LLM property returns the same instance on subsequent access."""
+        decomposer = QueryDecomposer()
+
+        llm1 = decomposer.llm
+        llm2 = decomposer.llm
+
+        # Should be the exact same instance
+        assert llm1 is llm2
+
+    def test_llm_property_respects_constructor_override(self):
+        """Test that constructor-provided LLM is used instead of lazy loading."""
+        mock_llm = MagicMock()
+        decomposer = QueryDecomposer(llm=mock_llm)
+
+        # Should use the provided LLM
+        assert decomposer.llm is mock_llm
+        assert decomposer._llm is mock_llm
+
+    def test_cache_property_lazy_loading(self):
+        """Test that cache is not instantiated until accessed."""
+        decomposer = QueryDecomposer()
+
+        # Private attribute should be None before access
+        assert decomposer._cache is None
+
+        # Accessing the property should trigger lazy loading
+        cache = decomposer.cache
+
+        # Should now be set
+        assert cache is not None
+        assert decomposer._cache is not None
+        assert isinstance(cache, DecompositionCache)
+
+    def test_cache_property_returns_same_instance(self):
+        """Test that cache property returns the same instance on subsequent access."""
+        decomposer = QueryDecomposer()
+
+        cache1 = decomposer.cache
+        cache2 = decomposer.cache
+
+        # Should be the exact same instance
+        assert cache1 is cache2
+
+    def test_cache_property_respects_constructor_override(self):
+        """Test that constructor-provided cache is used instead of lazy loading."""
+        mock_cache = DecompositionCache()
+        decomposer = QueryDecomposer(cache=mock_cache)
+
+        # Should use the provided cache
+        assert decomposer.cache is mock_cache
+        assert decomposer._cache is mock_cache
 
 
 @pytest.mark.unit
@@ -287,7 +354,7 @@ class TestParallelRetrieve:
         async def mock_search(query: str, top_k: int) -> list[tuple[str, float]]:
             if "chunking" in query:
                 return [("chunk1", 0.9), ("shared", 0.8)]
-            elif "reranking" in query:
+            if "reranking" in query:
                 return [("rerank1", 0.9), ("shared", 0.85)]
             return []
 
@@ -392,6 +459,57 @@ class TestDecompositionResult:
         assert result.is_multi_concept is False
         assert len(result.concepts) == 1
 
+    # -------------------------------------------------------------------------
+    # Cross-field validation tests (Issue #601)
+    # -------------------------------------------------------------------------
+
+    def test_multi_concept_true_requires_two_or_more_concepts(self):
+        """Test that is_multi_concept=True requires 2+ concepts."""
+        with pytest.raises(ValueError, match="requires 2\\+ concepts"):
+            DecompositionResult(
+                original_query="test",
+                is_multi_concept=True,
+                concepts=["only one"],  # Invalid: need 2+ for multi-concept
+                source=DecompositionSource.LLM,
+                latency_ms=10.0,
+            )
+
+    def test_multi_concept_false_allows_zero_concepts(self):
+        """Test that is_multi_concept=False allows empty concepts."""
+        result = DecompositionResult(
+            original_query="simple query",
+            is_multi_concept=False,
+            concepts=[],  # Valid for single-concept
+            source=DecompositionSource.SINGLE_CONCEPT,
+            latency_ms=0.5,
+        )
+
+        assert len(result.concepts) == 0
+
+    def test_multi_concept_false_disallows_multiple_concepts(self):
+        """Test that is_multi_concept=False cannot have 2+ concepts."""
+        with pytest.raises(ValueError, match="allows max 1 concept"):
+            DecompositionResult(
+                original_query="test",
+                is_multi_concept=False,
+                concepts=["concept1", "concept2"],  # Invalid for single-concept
+                source=DecompositionSource.SINGLE_CONCEPT,
+                latency_ms=10.0,
+            )
+
+    def test_multi_concept_true_with_two_concepts_valid(self):
+        """Test that is_multi_concept=True with exactly 2 concepts is valid."""
+        result = DecompositionResult(
+            original_query="A vs B",
+            is_multi_concept=True,
+            concepts=["concept A", "concept B"],
+            source=DecompositionSource.LLM,
+            latency_ms=100.0,
+        )
+
+        assert result.is_multi_concept is True
+        assert len(result.concepts) == 2
+
 
 @pytest.mark.unit
 class TestConceptExtraction:
@@ -415,12 +533,12 @@ class TestConceptExtraction:
 
     def test_max_concepts_limit(self):
         """Test that more than 5 concepts raises validation error."""
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValidationError):
             ConceptExtraction(
                 concepts=["c1", "c2", "c3", "c4", "c5", "c6"]  # 6 concepts
             )
 
     def test_empty_concepts_raises_error(self):
         """Test that empty concepts list raises validation error."""
-        with pytest.raises(Exception):  # Pydantic ValidationError
+        with pytest.raises(ValidationError):
             ConceptExtraction(concepts=[])
