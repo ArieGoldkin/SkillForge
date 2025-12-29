@@ -12,13 +12,12 @@ import hashlib
 import json
 import math
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-from app.shared.services.embeddings.cached import CachedEmbeddingService
 
 
 def create_test_cache(texts: list[str], dimensions: int = 1536) -> dict:
@@ -67,13 +66,30 @@ class TestCachedEmbeddingService:
 
     @pytest.fixture
     def service(self, cache_file: Path):
-        """Create cached embedding service with test cache."""
-        return CachedEmbeddingService(cache_path=cache_file)
+        """Create cached embedding service with test cache (Ollama disabled).
+
+        Best Practice: Unit tests should NOT depend on external services.
+        This ensures deterministic Tier 3 (hash-based) fallback behavior.
+        Integration tests can test real Ollama separately.
+        """
+        mock_settings = MagicMock()
+        mock_settings.OLLAMA_ENABLED = False
+
+        with patch("app.shared.services.embeddings.cached.settings", mock_settings):
+            from app.shared.services.embeddings.cached import CachedEmbeddingService
+
+            return CachedEmbeddingService(cache_path=cache_file)
 
     @pytest.fixture
     def service_empty(self, empty_cache_file: Path):
-        """Create cached embedding service with empty cache."""
-        return CachedEmbeddingService(cache_path=empty_cache_file)
+        """Create cached embedding service with empty cache (Ollama disabled)."""
+        mock_settings = MagicMock()
+        mock_settings.OLLAMA_ENABLED = False
+
+        with patch("app.shared.services.embeddings.cached.settings", mock_settings):
+            from app.shared.services.embeddings.cached import CachedEmbeddingService
+
+            return CachedEmbeddingService(cache_path=empty_cache_file)
 
     def test_model_name(self, service):
         """Test model identifier matches OpenAI model."""
@@ -106,24 +122,24 @@ class TestCachedEmbeddingService:
 
     @pytest.mark.asyncio
     async def test_cache_miss_fallback(self, service):
-        """Test fallback on cache miss (Ollama or deterministic)."""
+        """Test fallback on cache miss uses deterministic (Ollama disabled in unit tests)."""
         # "unknown text" is not in our test cache
         embedding = await service.generate_embedding("unknown text not in cache")
-        # Should return valid embedding from fallback (768 from Ollama or 1536 from deterministic)
-        assert len(embedding) in (768, 1536)
+        # With Ollama disabled, always uses Tier 3 deterministic (1536 dims)
+        assert len(embedding) == 1536
         norm = math.sqrt(sum(v * v for v in embedding))
         assert abs(norm - 1.0) < 0.0001
 
     @pytest.mark.asyncio
     async def test_empty_cache_uses_fallback(self, service_empty):
-        """Test empty cache falls back for all requests."""
+        """Test empty cache falls back to deterministic (Ollama disabled in unit tests)."""
         embedding = await service_empty.generate_embedding("any text")
-        # May be 768 from Ollama or 1536 from deterministic
-        assert len(embedding) in (768, 1536)
+        # With Ollama disabled, always uses Tier 3 deterministic (1536 dims)
+        assert len(embedding) == 1536
 
     @pytest.mark.asyncio
     async def test_cache_stats(self, service):
-        """Test cache statistics tracking."""
+        """Test cache statistics tracking (Ollama disabled, uses Tier 3)."""
         # Initial stats
         stats = service.get_stats()
         assert stats["tier1_cache_hits"] == 0
@@ -133,12 +149,13 @@ class TestCachedEmbeddingService:
         stats = service.get_stats()
         assert stats["tier1_cache_hits"] == 1
 
-        # Cache miss - falls back to Tier 2 (Ollama) or Tier 3 (deterministic)
+        # Cache miss - falls back to Tier 3 (deterministic) since Ollama is disabled
         await service.generate_embedding("not in cache")
         stats = service.get_stats()
         assert stats["tier1_cache_hits"] == 1  # No new cache hit
-        # Either Ollama or deterministic should have been used
-        assert stats["tier2_ollama_hits"] >= 1 or stats["tier3_deterministic_fallbacks"] >= 1
+        # With Ollama disabled, deterministic fallback is used
+        assert stats["tier3_deterministic_fallbacks"] == 1
+        assert stats["tier2_ollama_hits"] == 0
 
     def test_get_cache_coverage(self, service):
         """Test cache coverage calculation."""
@@ -151,19 +168,32 @@ class TestCachedEmbeddingService:
 
     def test_missing_cache_file_fallback(self, tmp_path: Path):
         """Test missing cache file falls back gracefully (no error)."""
-        # The 3-tier hybrid service should not raise - it falls back to Ollama/deterministic
-        service = CachedEmbeddingService(cache_path=tmp_path / "nonexistent.json")
-        # Cache should be empty, fallback services should be available
-        assert service._cache == {}
+        mock_settings = MagicMock()
+        mock_settings.OLLAMA_ENABLED = False
+
+        with patch("app.shared.services.embeddings.cached.settings", mock_settings):
+            from app.shared.services.embeddings.cached import CachedEmbeddingService
+
+            # The 3-tier hybrid service should not raise - it falls back to deterministic
+            service = CachedEmbeddingService(cache_path=tmp_path / "nonexistent.json")
+            # Cache should be empty, fallback services should be available
+            assert service._cache == {}
 
     def test_invalid_cache_file_fallback(self, tmp_path: Path):
         """Test invalid JSON falls back gracefully (no error)."""
         bad_cache = tmp_path / "bad_cache.json"
         bad_cache.write_text("not valid json")
-        # The 3-tier hybrid service should not raise - it logs error and falls back
-        service = CachedEmbeddingService(cache_path=bad_cache)
-        # Cache should be empty after failed parse
-        assert service._cache == {}
+
+        mock_settings = MagicMock()
+        mock_settings.OLLAMA_ENABLED = False
+
+        with patch("app.shared.services.embeddings.cached.settings", mock_settings):
+            from app.shared.services.embeddings.cached import CachedEmbeddingService
+
+            # The 3-tier hybrid service should not raise - it logs error and falls back
+            service = CachedEmbeddingService(cache_path=bad_cache)
+            # Cache should be empty after failed parse
+            assert service._cache == {}
 
     @pytest.mark.asyncio
     async def test_normalize_parameter_respected(self, service):
@@ -186,20 +216,21 @@ class TestCachedEmbeddingService:
 
     @pytest.mark.asyncio
     async def test_hybrid_fallback_chain(self, service):
-        """Test the 3-tier fallback chain: Cache -> Ollama -> Deterministic."""
+        """Test the fallback chain: Cache -> Deterministic (Ollama disabled in unit tests)."""
         # Tier 1: Cache hit
         embedding = await service.generate_embedding("hello world")
         stats = service.get_stats()
         assert stats["tier1_cache_hits"] == 1
         assert len(embedding) == 1536
 
-        # Tier 2/3: Fallback on cache miss (may use Ollama if available, else deterministic)
+        # Tier 3: Falls back to deterministic since Ollama is disabled
         embedding = await service.generate_embedding("totally new uncached text xyz123")
         stats = service.get_stats()
-        # Either Ollama or deterministic was used
-        assert stats["tier2_ollama_hits"] >= 1 or stats["tier3_deterministic_fallbacks"] >= 1
-        # Embedding returned should still be valid (may be 768 dims from Ollama or 1536 from deterministic)
-        assert len(embedding) in (768, 1536)
+        # With Ollama disabled, deterministic is used
+        assert stats["tier3_deterministic_fallbacks"] == 1
+        assert stats["tier2_ollama_hits"] == 0
+        # Deterministic always returns expected dimensions
+        assert len(embedding) == 1536
 
     @pytest.mark.asyncio
     async def test_get_stats_returns_all_counters(self, service):
