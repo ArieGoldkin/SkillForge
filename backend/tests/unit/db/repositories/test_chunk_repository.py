@@ -510,3 +510,83 @@ class TestChunkRepository:
 
         # Should have at most 3 results
         assert len(results) <= 3
+
+    # -------------------------------------------------------------------------
+    # get_by_ids tests (Issue #601)
+    # -------------------------------------------------------------------------
+
+    @pytest.mark.asyncio
+    async def test_get_by_ids_returns_matching_chunks(self, repository, mock_session):
+        """Test get_by_ids returns chunks matching the provided IDs."""
+        chunk_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+        chunks = [
+            create_test_chunk(id=uuid.UUID(chunk_ids[0]), snippet="First chunk"),
+            create_test_chunk(id=uuid.UUID(chunk_ids[1]), snippet="Second chunk"),
+        ]
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = chunks
+        mock_session.execute.return_value = mock_result
+
+        results = await repository.get_by_ids(chunk_ids)
+
+        assert len(results) == 2
+        assert all(isinstance(c, AnalysisChunk) for c in results)
+        mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_by_ids_empty_list(self, repository, mock_session):
+        """Test get_by_ids returns empty list for empty input."""
+        results = await repository.get_by_ids([])
+
+        # Should return empty list without hitting database
+        assert results == []
+        mock_session.execute.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_by_ids_single_id(self, repository, mock_session):
+        """Test get_by_ids with single chunk ID."""
+        chunk_id = str(uuid.uuid4())
+        chunk = create_test_chunk(id=uuid.UUID(chunk_id), snippet="Single chunk")
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [chunk]
+        mock_session.execute.return_value = mock_result
+
+        results = await repository.get_by_ids([chunk_id])
+
+        assert len(results) == 1
+        mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_by_ids_partial_match(self, repository, mock_session):
+        """Test get_by_ids silently ignores missing IDs."""
+        existing_id = str(uuid.uuid4())
+        missing_id = str(uuid.uuid4())
+        chunk = create_test_chunk(id=uuid.UUID(existing_id), snippet="Existing chunk")
+
+        mock_result = MagicMock()
+        # Only return the chunk that exists
+        mock_result.scalars.return_value.all.return_value = [chunk]
+        mock_session.execute.return_value = mock_result
+
+        results = await repository.get_by_ids([existing_id, missing_id])
+
+        # Should return only the chunk that exists
+        assert len(results) == 1
+        assert str(results[0].id) == existing_id
+        mock_session.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_by_ids_no_matches(self, repository, mock_session):
+        """Test get_by_ids returns empty list when no IDs match."""
+        chunk_ids = [str(uuid.uuid4()), str(uuid.uuid4())]
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        mock_session.execute.return_value = mock_result
+
+        results = await repository.get_by_ids(chunk_ids)
+
+        assert results == []
+        mock_session.execute.assert_called_once()
