@@ -112,11 +112,48 @@ echo "PR #$PR_NUMBER created: $PR_URL"
 gh pr view --web
 ```
 
+## Phase 6 (Optional): Create Issue Documentation
+
+For significant features, create a summary in `docs/issues/`:
+
+```bash
+# Only for major features/changes
+ISSUE_DOC="docs/issues/${ISSUE}-$(echo $BRANCH | sed 's/issue\/[0-9]*-//' | sed 's/feature\///' ).md"
+
+cat > "$ISSUE_DOC" << EOF
+# Issue #$ISSUE: [Title]
+
+**Status:** In Progress
+**PR:** [#$PR_NUMBER]($PR_URL)
+**Branch:** \`$BRANCH\`
+
+## Summary
+[What this issue addresses]
+
+## Changes
+### New Files
+- \`path/to/file.py\` - Description
+
+### Modified Files
+- \`path/to/file.py\` - What changed
+
+## Testing
+\`\`\`bash
+# How to test
+\`\`\`
+
+## Notes
+[Any decisions, lessons learned]
+EOF
+
+# Update docs/issues/README.md index
+```
+
 ---
 
 ## Rules
 
-1. **NO file creation** - Do not create MD files, txt files, or any documentation in the repo
+1. **NO junk files** - Don't create files in repo root
 2. **NO parallel agents for PR description** - Use git log/diff directly
 3. **Run validation locally** - Don't spawn agents just to run lint/test
 4. **All content goes to GitHub** - PR body via `gh pr create --body`
