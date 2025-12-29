@@ -95,6 +95,26 @@ def _validate_redis_url(url: str) -> dict[str, str | None]:
         raise ConfigurationError(msg) from e
 
 
+def _sanitize_url_components_for_logging(
+    url_components: dict[str, str | None],
+) -> dict[str, str | None]:
+    """Create a sanitized copy of URL components for logging.
+
+    Removes sensitive information (password) from the components dictionary.
+
+    Args:
+        url_components: Dictionary with parsed URL components including password
+
+    Returns:
+        Sanitized dictionary suitable for logging, with password removed
+
+    """
+    sanitized = url_components.copy()
+    # Remove the password field to prevent credential leakage in logs
+    sanitized.pop("password", None)
+    return sanitized
+
+
 def create_redis_client(
     redis_url: str | None = None,
     **kwargs,
@@ -169,9 +189,12 @@ def create_redis_client(
     # Platform-specific constants for socket.setsockopt()
     socket_keepalive_options = _get_socket_keepalive_options()
 
+    # Sanitize URL components for logging (removes password)
+    sanitized_components = _sanitize_url_components_for_logging(url_components)
+
     logger.info(
         "redis_connection_factory_creating",
-        redis_url_components=url_components,
+        redis_url_components=sanitized_components,
         socket_keepalive=socket_keepalive,
         socket_keepalive_options=socket_keepalive_options,
         socket_timeout=socket_timeout,
