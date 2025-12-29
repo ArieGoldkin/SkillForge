@@ -114,13 +114,15 @@ gh pr view --web
 
 ## Phase 6 (Optional): Create Issue Documentation
 
-For significant features, create a summary in `docs/issues/`:
+For significant features, create a folder in `docs/issues/`:
 
 ```bash
-# Only for major features/changes
-ISSUE_DOC="docs/issues/${ISSUE}-$(echo $BRANCH | sed 's/issue\/[0-9]*-//' | sed 's/feature\///' ).md"
+# Create issue folder
+ISSUE_DIR="docs/issues/${ISSUE}-$(echo $BRANCH | sed 's/issue\/[0-9]*-//' | sed 's/feature\///')"
+mkdir -p "$ISSUE_DIR"
 
-cat > "$ISSUE_DOC" << EOF
+# Create README.md in the folder
+cat > "$ISSUE_DIR/README.md" << EOF
 # Issue #$ISSUE: [Title]
 
 **Status:** In Progress
@@ -146,7 +148,7 @@ cat > "$ISSUE_DOC" << EOF
 [Any decisions, lessons learned]
 EOF
 
-# Update docs/issues/README.md index
+# Update docs/issues/README.md index with link to folder
 ```
 
 ---
