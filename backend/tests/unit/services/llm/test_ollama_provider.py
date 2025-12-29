@@ -37,8 +37,8 @@ class TestOllamaProviderInit:
             base_url="http://localhost:11434",
             temperature=0.0,
             num_ctx=32768,
-            timeout=300.0,
             keep_alive="5m",
+            client_kwargs={"timeout": 300.0},
         )
 
     @patch("app.shared.services.llm.ollama_provider.settings")

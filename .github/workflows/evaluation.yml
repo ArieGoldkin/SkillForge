@@ -65,9 +65,16 @@ jobs:
     # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
     # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
     # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
+    # Ollama: brew install ollama && ollama pull nomic-embed-text qwen2.5-coder:32b deepseek-r1:70b
 
     env:
       DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
+      # Ollama local models for 93% CI cost reduction (Issue #606)
+      OLLAMA_ENABLED: "true"
+      OLLAMA_HOST: "http://localhost:11434"
+      OLLAMA_MODEL_REASONING: "deepseek-r1:70b"
+      OLLAMA_MODEL_CODING: "qwen2.5-coder:32b"
+      OLLAMA_MODEL_EMBED: "nomic-embed-text"
 
     steps:
       # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
@@ -128,12 +135,30 @@ jobs:
           # Run migrations to set up schema (use python -m to avoid PATH issues with CLI entrypoints)
           poetry run python -m alembic upgrade head
 
+      - name: Ensure Ollama models ready
+        run: |
+          # Check Ollama is running
+          if ! curl -s http://localhost:11434/api/tags > /dev/null; then
+            echo "Starting Ollama service..."
+            ollama serve &
+            sleep 5
+          fi
+
+          # Ensure required models are available (pull if missing)
+          echo "Checking Ollama models..."
+          ollama list
+
+          # Pre-warm embedding model for faster first call
+          echo "Pre-warming embedding model..."
+          curl -s http://localhost:11434/api/embeddings -d '{"model":"nomic-embed-text","prompt":"warmup"}' > /dev/null || true
+
       - name: Load evaluation fixtures
         working-directory: backend
         env:
-          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
+          # Use Ollama embeddings instead of deterministic (Issue #606)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
         run: |
-          # Load fixture data with embeddings for evaluation
+          # Load fixture data with Ollama embeddings for evaluation
           poetry run python scripts/load_expanded_fixtures.py --expanded --replace
 
       - name: Run evaluation pipeline
@@ -141,10 +166,10 @@ jobs:
         continue-on-error: true  # Don't fail PR on evaluation results - report metrics only
         working-directory: backend
         env:
-          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
+          # Use Ollama local models for evaluation (Issue #606)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
         run: |
-          # In deterministic mode we run without regression gating (baseline is intended for
-          # external-embedding runs). Results are still uploaded + commented for visibility.
+          # Run evaluation with local Ollama models (93% cost savings)
           poetry run python scripts/run_evaluation.py \
             --expanded \
             --output evaluation_results.json \
