@@ -13,11 +13,18 @@
 - [ ] 🔧 Refactoring (no functional changes)
 - [ ] 🧪 Test improvements
 
-## Related Issues
-<!-- Link to related issues -->
+## Related Issue
+<!--
+IMPORTANT: Use GitHub auto-close syntax to link issues:
+- "Fixes #123" - Auto-closes issue when PR merges to default branch
+- "Closes #123" - Same as Fixes
+- "Resolves #123" - Same as Fixes
+Multiple issues: "Fixes #123, Fixes #456"
 
-Closes #
-Related to #
+DO NOT write just "#123" or "Related to #123" - the issue won't auto-close!
+-->
+
+Fixes #
 
 ## Changes Made
 <!-- List the main changes in bullet points -->
@@ -45,15 +52,24 @@ Related to #
 
 
 ## Checklist
-<!-- Mark completed items with an 'x' -->
+<!-- Mark completed items with an 'x' - ALL must be checked before requesting review -->
 
+### Code Quality
+- [ ] I have used the correct auto-close syntax (`Fixes #123`) in the Related Issue section above
 - [ ] My code follows the project's style guidelines
 - [ ] I have performed a self-review of my own code
 - [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings or errors
+
+### Testing (MUST run locally before PR)
+- [ ] Backend: `cd backend && poetry run pytest tests/unit/ -v --tb=short` passes
+- [ ] Backend: `cd backend && poetry run ruff format --check app/ && poetry run ruff check app/` passes
+- [ ] Backend: `cd backend && poetry run ty check app/ --exclude "app/evaluation/*"` passes
+- [ ] Frontend: `cd frontend && npm run format:check && npm run lint && npm run typecheck` passes
 - [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
+
+### Documentation
+- [ ] I have made corresponding changes to the documentation
 - [ ] Any dependent changes have been merged and published
 
 ## Additional Notes

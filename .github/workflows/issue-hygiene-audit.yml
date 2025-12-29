@@ -1,0 +1,209 @@
+name: Issue Hygiene Audit
+
+on:
+  schedule:
+    # Run on the 1st of every month at 9 AM UTC
+    - cron: '0 9 1 * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  audit:
+    runs-on: self-hosted
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Fetch full history for git log analysis
+
+      - name: Run Issue Hygiene Audit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          #!/bin/bash
+          set -e
+
+          echo "═══════════════════════════════════════════════════"
+          echo "  Issue Hygiene Audit - $(date +%Y-%m-%d)"
+          echo "═══════════════════════════════════════════════════"
+          echo ""
+
+          # Create output file
+          REPORT_FILE="issue_hygiene_report.md"
+
+          cat << EOF > $REPORT_FILE
+          # 🧹 Issue Hygiene Audit Report
+
+          **Generated:** $(date +%Y-%m-%d)
+          **Repository:** $REPO
+
+          ## Summary
+
+          This report identifies GitHub issues that may be completed but remain open, based on commit references.
+
+          EOF
+
+          # Extract all issue references from git history (last 6 months)
+          echo "📋 Analyzing git commit history..."
+          SIX_MONTHS_AGO=$(date -d '6 months ago' +%Y-%m-%d 2>/dev/null || date -v-6m +%Y-%m-%d)
+
+          # Find all commit messages with issue references
+          # Matches: #123, Issue #123, issue #123, Fixes #123, Closes #123, etc.
+          ISSUE_REFS=$(git log --since="$SIX_MONTHS_AGO" --all --oneline --grep='#[0-9]\+' | \
+            grep -oE '#[0-9]+' | sed 's/#//' | sort -u)
+
+          if [ -z "$ISSUE_REFS" ]; then
+            echo "No issue references found in commit history."
+            cat << EOF >> $REPORT_FILE
+
+          **No issue references found in recent commits (last 6 months).**
+
+          This could indicate:
+          - Issues are not being referenced in commits
+          - All referenced issues have been closed
+
+          EOF
+            exit 0
+          fi
+
+          TOTAL_REFS=$(echo "$ISSUE_REFS" | wc -l | tr -d ' ')
+          echo "Found $TOTAL_REFS unique issue references in commits"
+
+          # Check each issue's state
+          echo "🔍 Cross-referencing with GitHub API..."
+
+          OPEN_ISSUES=""
+          CLOSED_ISSUES=0
+          NOT_FOUND=0
+
+          while IFS= read -r ISSUE_NUM; do
+            # Check if issue exists and get its state
+            ISSUE_DATA=$(gh api repos/$REPO/issues/$ISSUE_NUM 2>/dev/null || echo "")
+
+            if [ -z "$ISSUE_DATA" ]; then
+              ((NOT_FOUND++))
+              continue
+            fi
+
+            STATE=$(echo "$ISSUE_DATA" | jq -r '.state')
+
+            if [ "$STATE" = "open" ]; then
+              TITLE=$(echo "$ISSUE_DATA" | jq -r '.title')
+              UPDATED=$(echo "$ISSUE_DATA" | jq -r '.updated_at' | cut -d'T' -f1)
+              LABELS=$(echo "$ISSUE_DATA" | jq -r '.labels | map(.name) | join(", ")')
+              ASSIGNEE=$(echo "$ISSUE_DATA" | jq -r '.assignee.login // "unassigned"')
+
+              # Count commits referencing this issue
+              COMMIT_COUNT=$(git log --since="$SIX_MONTHS_AGO" --all --oneline --grep="#$ISSUE_NUM" | wc -l | tr -d ' ')
+
+              # Get most recent commit message
+              RECENT_COMMIT=$(git log --since="$SIX_MONTHS_AGO" --all --oneline --grep="#$ISSUE_NUM" | head -1 | cut -c1-80)
+
+              OPEN_ISSUES="${OPEN_ISSUES}| #$ISSUE_NUM | $TITLE | $COMMIT_COUNT | $UPDATED | @$ASSIGNEE | $LABELS |
+"
+            else
+              ((CLOSED_ISSUES++))
+            fi
+          done <<< "$ISSUE_REFS"
+
+          OPEN_COUNT=$(echo "$OPEN_ISSUES" | grep -c '|' || echo 0)
+
+          # Write summary stats
+          cat << EOF >> $REPORT_FILE
+
+          ### Statistics
+
+          - **Total Unique Issues Referenced**: $TOTAL_REFS
+          - **Currently Open**: $OPEN_COUNT
+          - **Already Closed**: $CLOSED_ISSUES
+          - **Not Found** (deleted/invalid): $NOT_FOUND
+
+          EOF
+
+          # Write open issues table
+          if [ "$OPEN_COUNT" -gt 0 ]; then
+            cat << EOF >> $REPORT_FILE
+
+          ## 🔍 Open Issues with Recent Commits
+
+          These issues have been referenced in commits but remain open. Consider reviewing for closure:
+
+          | Issue | Title | Commits | Last Updated | Assignee | Labels |
+          |-------|-------|---------|--------------|----------|--------|
+          $OPEN_ISSUES
+
+          ### Recommended Actions
+
+          1. **Review each issue** to determine if work is complete
+          2. **Close completed issues** with appropriate comments
+          3. **Update labels** if work is still in progress
+          4. **Add missing commits** if issue references were forgotten
+
+          ### Investigation Tips
+
+          To see commits for a specific issue:
+          \`\`\`bash
+          git log --all --oneline --grep="#ISSUE_NUMBER"
+          \`\`\`
+
+          To see full commit details:
+          \`\`\`bash
+          gh issue view ISSUE_NUMBER
+          \`\`\`
+
+          EOF
+          else
+            cat << EOF >> $REPORT_FILE
+
+          ## ✅ All Clear!
+
+          All issues referenced in recent commits (last 6 months) have been properly closed.
+          Great job maintaining issue hygiene! 🎉
+
+          EOF
+          fi
+
+          # Add footer
+          cat << EOF >> $REPORT_FILE
+
+          ---
+
+          *This report was generated automatically by the [Issue Hygiene Audit workflow](.github/workflows/issue-hygiene-audit.yml).*
+          *Run manually: \`gh workflow run issue-hygiene-audit.yml\`*
+
+          EOF
+
+          echo ""
+          echo "✅ Report generated: $REPORT_FILE"
+          cat $REPORT_FILE
+
+      - name: Create Audit Report Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+
+          # Check if there's anything to report
+          if grep -q "All Clear!" issue_hygiene_report.md; then
+            echo "ℹ️  No open issues found - skipping issue creation"
+            echo "## ✅ All Clear!" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All issues referenced in recent commits have been properly closed." >> $GITHUB_STEP_SUMMARY
+          else
+            # Create issue with report
+            gh issue create \
+              --title "🧹 Issue Hygiene Audit - $TODAY" \
+              --label "type:maintenance" \
+              --label "hygiene" \
+              --body-file issue_hygiene_report.md \
+              --repo ${{ github.repository }}
+
+            echo "✅ Audit report issue created"
+          fi
+
+          # Always add to workflow summary
+          cat issue_hygiene_report.md >> $GITHUB_STEP_SUMMARY
