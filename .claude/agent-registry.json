@@ -1,8 +1,8 @@
 {
   "$schema": "./schemas/agent-registry.schema.json",
-  "version": "2.0.0",
-  "description": "Dynamic agent and skill registry enabling semantic discovery, progressive loading, and workflow composition",
-  "last_updated": "2025-12-25",
+  "version": "3.0.0",
+  "description": "Dynamic agent and skill registry with implementation-focused agents (2025 best practices). Removed low-value orchestration/planning agents, added database-engineer, security-auditor, test-generator, debug-investigator",
+  "last_updated": "2025-12-29",
 
   "discovery": {
     "protocol": "semantic",
@@ -106,7 +106,7 @@
         "allowed": ["frontend/**", "components/**", "styles/**", "hooks/**"],
         "forbidden": ["backend/**", "api/**", "database/**"]
       },
-      "handoff_to": ["code-quality-reviewer", "whimsy-injector"],
+      "handoff_to": ["code-quality-reviewer", "test-generator"],
       "mcp_tools": {
         "documentation": ["context7"],
         "testing": ["playwright"],
@@ -214,46 +214,162 @@
       }
     },
 
-    "studio-coach": {
-      "display_name": "Studio Coach",
-      "color": "blue",
+    "database-engineer": {
+      "display_name": "Database Engineer",
+      "color": "emerald",
       "model_preference": {
-        "orchestration": "opus",
-        "simple_coordination": "sonnet"
+        "schema_design": "sonnet",
+        "query_optimization": "sonnet",
+        "simple_migrations": "haiku"
       },
       "capabilities": [
-        "orchestration",
-        "task-decomposition",
-        "agent-coordination",
-        "workflow-composition",
-        "conflict-resolution",
-        "progress-tracking"
+        "schema-design",
+        "migrations",
+        "query-optimization",
+        "indexing",
+        "pgvector",
+        "full-text-search",
+        "constraints",
+        "normalization"
       ],
       "can_solve_examples": [
-        "Build a complete authentication system",
-        "Create a full-stack feature from scratch",
-        "Coordinate backend and frontend for new feature",
-        "Plan and execute a multi-sprint project",
-        "Resolve conflicts between agent outputs"
+        "Design a schema for user feedback",
+        "Optimize slow hybrid search query",
+        "Create Alembic migration for new table",
+        "Add HNSW index for vector search",
+        "Set up full-text search with tsvector",
+        "Add proper foreign key constraints"
       ],
       "skills_used": [
-        "quality-gates",
-        "evidence-verification",
-        "brainstorming",
-        "ascii-visualizer"
+        "database-schema-designer",
+        "pgvector-search",
+        "performance-optimization"
       ],
-      "tools": ["Task", "Write", "Read"],
-      "is_orchestrator": true,
-      "can_invoke_agents": [
-        "backend-system-architect",
-        "frontend-ui-developer",
-        "ai-ml-engineer",
-        "code-quality-reviewer",
-        "ux-researcher",
-        "rapid-ui-designer"
-      ],
+      "tools": ["Bash", "Read", "Write", "Edit", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["backend/alembic/**", "backend/app/models/**", "docs/database/**"],
+        "forbidden": ["frontend/**", "direct_production_access"]
+      },
+      "handoff_to": ["code-quality-reviewer", "backend-system-architect"],
       "mcp_tools": {
-        "planning": ["sequential-thinking"],
+        "expertise": ["pg-aiguide"],
+        "execution": ["postgres-mcp"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "security-auditor": {
+      "display_name": "Security Auditor",
+      "color": "red",
+      "model_preference": {
+        "vulnerability_scan": "haiku",
+        "deep_analysis": "sonnet"
+      },
+      "capabilities": [
+        "vulnerability-scanning",
+        "dependency-audit",
+        "owasp-compliance",
+        "secret-detection",
+        "code-security-review",
+        "cve-tracking"
+      ],
+      "can_solve_examples": [
+        "Scan codebase for security vulnerabilities",
+        "Audit npm/pip dependencies for CVEs",
+        "Check for hardcoded secrets",
+        "Verify OWASP Top 10 compliance",
+        "Review authentication implementation",
+        "Find SQL injection vulnerabilities"
+      ],
+      "skills_used": [
+        "security-checklist"
+      ],
+      "tools": ["Bash", "Read", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["**/*"],
+        "forbidden_actions": ["write", "modify", "execute_fixes"]
+      },
+      "handoff_to": ["backend-system-architect", "frontend-ui-developer"],
+      "mcp_tools": {
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "test-generator": {
+      "display_name": "Test Generator",
+      "color": "green",
+      "model_preference": {
+        "test_design": "sonnet",
+        "simple_tests": "haiku"
+      },
+      "capabilities": [
+        "unit-testing",
+        "integration-testing",
+        "coverage-analysis",
+        "test-fixtures",
+        "msw-mocking",
+        "vcr-recording",
+        "edge-cases"
+      ],
+      "can_solve_examples": [
+        "Generate unit tests for new service",
+        "Increase test coverage to 80%",
+        "Create MSW handlers for API mocking",
+        "Set up VCR cassettes for external APIs",
+        "Add edge case tests for validation",
+        "Create test factories for models"
+      ],
+      "skills_used": [
+        "testing-strategy-builder",
+        "webapp-testing"
+      ],
+      "tools": ["Bash", "Read", "Write", "Edit", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["tests/**", "backend/tests/**", "frontend/src/**/*.test.*"],
+        "forbidden": ["production_code_changes"]
+      },
+      "handoff_to": ["code-quality-reviewer"],
+      "mcp_tools": {
+        "browser_testing": ["playwright"],
+        "documentation": ["context7"],
+        "discovery": ["mcp-find"]
+      }
+    },
+
+    "debug-investigator": {
+      "display_name": "Debug Investigator",
+      "color": "orange",
+      "model_preference": {
+        "root_cause_analysis": "sonnet",
+        "complex_debugging": "opus"
+      },
+      "capabilities": [
+        "root-cause-analysis",
+        "bug-investigation",
+        "log-analysis",
+        "stack-trace-parsing",
+        "reproduction-steps",
+        "hypothesis-testing"
+      ],
+      "can_solve_examples": [
+        "Investigate why SSE events are not received",
+        "Find root cause of intermittent test failure",
+        "Debug authentication token expiration issue",
+        "Trace data flow to find mutation bug",
+        "Analyze race condition in async code",
+        "Find memory leak in long-running process"
+      ],
+      "skills_used": [
+        "observability-monitoring"
+      ],
+      "tools": ["Bash", "Read", "Grep", "Glob"],
+      "boundaries": {
+        "allowed": ["**/*"],
+        "forbidden_actions": ["write", "modify", "fix_bugs"]
+      },
+      "handoff_to": ["backend-system-architect", "frontend-ui-developer", "ai-ml-engineer"],
+      "mcp_tools": {
+        "reasoning": ["sequential-thinking"],
         "memory": ["memory"],
         "discovery": ["mcp-find"]
       }
@@ -322,105 +438,6 @@
       ],
       "tools": ["Write", "Read"],
       "handoff_to": ["frontend-ui-developer"],
-      "mcp_tools": {
-        "discovery": ["mcp-find"]
-      }
-    },
-
-    "sprint-prioritizer": {
-      "display_name": "Sprint Prioritizer",
-      "color": "teal",
-      "model_preference": {
-        "planning": "sonnet"
-      },
-      "capabilities": [
-        "sprint-planning",
-        "backlog-management",
-        "prioritization",
-        "estimation",
-        "dependency-mapping",
-        "velocity-tracking"
-      ],
-      "can_solve_examples": [
-        "Plan next sprint tasks",
-        "Prioritize the backlog using MoSCoW",
-        "Estimate story points for features",
-        "Identify blocking dependencies",
-        "Create a release roadmap"
-      ],
-      "skills_used": [
-        "github-cli",
-        "brainstorming"
-      ],
-      "tools": ["Write", "Read", "TodoWrite"],
-      "handoff_to": ["studio-coach"],
-      "mcp_tools": {
-        "discovery": ["mcp-find"]
-      }
-    },
-
-    "product-manager": {
-      "display_name": "Product Manager",
-      "color": "indigo",
-      "model_preference": {
-        "strategy": "opus",
-        "documentation": "sonnet"
-      },
-      "capabilities": [
-        "product-strategy",
-        "prd-creation",
-        "feature-specification",
-        "market-research",
-        "user-stories",
-        "success-metrics",
-        "competitive-analysis"
-      ],
-      "can_solve_examples": [
-        "Write a PRD for the new feature",
-        "Define success metrics for launch",
-        "Create user stories for the epic",
-        "Analyze competitor features",
-        "Define MVP scope"
-      ],
-      "skills_used": [
-        "architecture-decision-record"
-      ],
-      "tools": ["Write", "Read", "WebSearch", "WebFetch", "TodoWrite"],
-      "handoff_to": ["sprint-prioritizer", "ux-researcher"],
-      "mcp_tools": {
-        "research": ["WebSearch"],
-        "discovery": ["mcp-find"]
-      }
-    },
-
-    "whimsy-injector": {
-      "display_name": "Whimsy Injector",
-      "color": "magenta",
-      "model_preference": {
-        "creativity": "sonnet"
-      },
-      "capabilities": [
-        "micro-interactions",
-        "animations",
-        "easter-eggs",
-        "delightful-ux",
-        "loading-states",
-        "success-celebrations",
-        "empty-states"
-      ],
-      "can_solve_examples": [
-        "Add confetti on successful signup",
-        "Create a playful loading animation",
-        "Design an engaging empty state",
-        "Add hover micro-interactions",
-        "Create an easter egg for power users"
-      ],
-      "skills_used": [
-        "design-system-starter",
-        "ascii-visualizer"
-      ],
-      "tools": ["Read", "Edit", "MultiEdit"],
-      "handoff_to": ["code-quality-reviewer"],
       "mcp_tools": {
         "discovery": ["mcp-find"]
       }
@@ -1115,6 +1132,38 @@
       "primary_agent": "ai-ml-engineer",
       "validation_agent": "code-quality-reviewer",
       "estimated_tokens": 1000
+    },
+    "frontend-2025-compliance": {
+      "description": "Verify and implement frontend code following 2025 best practices (React 19, Zod, exhaustive types, MSW, bundle optimization)",
+      "composes_skills": [
+        "react-server-components-framework/SKILL.md#react-19-patterns",
+        "type-safety-validation/SKILL.md#exhaustive-type-checking",
+        "type-safety-validation/SKILL.md#zod-schemas",
+        "testing-strategy-builder/SKILL.md#msw-mock-service-worker",
+        "performance-optimization/SKILL.md#frontend-bundle-analysis",
+        "api-design-framework/SKILL.md#frontend-api-integration"
+      ],
+      "primary_agent": "frontend-ui-developer",
+      "validation_agent": "code-quality-reviewer",
+      "estimated_tokens": 1500,
+      "triggers": ["2025 patterns", "modern frontend", "best practices", "frontend compliance"],
+      "checklist": [
+        "React 19 APIs: useOptimistic, useFormStatus, use(), startTransition",
+        "Zod runtime validation on ALL API responses",
+        "Exhaustive switch statements with assertNever default",
+        "MSW for API mocking (NOT jest.mock or vi.mock)",
+        "Bundle analysis with size budgets (<200KB gzip)",
+        "Skeleton loading states (NOT spinners for content)",
+        "Prefetching on hover/focus for navigation links",
+        "VCR.py for Python HTTP recording in tests"
+      ],
+      "anti_patterns": [
+        "jest.spyOn(global, 'fetch') - Use MSW instead",
+        "switch without assertNever default - Missing cases cause runtime bugs",
+        "await response.json() without Zod - Type safety is false",
+        "<Spinner /> for content - Use skeleton components",
+        "<Link> without preload='intent' - Missing prefetch opportunity"
+      ]
     }
   },
 

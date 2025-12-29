@@ -1,8 +1,8 @@
 {
   "$schema": "../../schemas/skill-capabilities.schema.json",
   "name": "type-safety-validation",
-  "version": "1.0.0",
-  "description": "End-to-end type safety with Zod, tRPC, Prisma, and TypeScript 5.7+ features",
+  "version": "1.1.0",
+  "description": "End-to-end type safety with Zod, tRPC, Prisma, exhaustive type checking, branded types, and TypeScript 5.7+ features (2025 patterns)",
 
   "capabilities": {
     "zod-schemas": {
@@ -17,6 +17,32 @@
       "reference_file": "references/zod-patterns.md",
       "template_file": "templates/zod-schema.ts",
       "token_cost": 350
+    },
+    "exhaustive-types": {
+      "keywords": ["exhaustive", "assertNever", "never assertion", "switch exhaustive", "compile-time exhaustiveness", "exhaustive check", "missing cases", "union exhaustive"],
+      "solves": [
+        "How do I make switch statements exhaustive?",
+        "Compile-time check for missing union cases",
+        "assertNever pattern for TypeScript",
+        "Catch missing cases at compile time",
+        "Exhaustive handler objects pattern",
+        "Why does my switch have a default that never runs?"
+      ],
+      "reference_file": "SKILL.md#exhaustive-type-checking",
+      "token_cost": 280
+    },
+    "branded-types": {
+      "keywords": ["branded type", "type branding", "nominal type", "opaque type", "NewType", "brand", "distinct types", "id types"],
+      "solves": [
+        "How do I prevent mixing different ID types?",
+        "Branded types with Zod",
+        "Python NewType for type safety",
+        "Prevent UserId where AnalysisId expected",
+        "Nominal typing in TypeScript",
+        "Type-safe IDs across the codebase"
+      ],
+      "reference_file": "SKILL.md#branded-types-for-ids",
+      "token_cost": 250
     },
     "trpc": {
       "keywords": ["trpc", "type-safe api", "procedure", "router", "mutation", "query", "context", "middleware"],
@@ -95,8 +121,8 @@
   },
 
   "triggers": {
-    "high_confidence": ["zod.*schema", "trpc.*setup", "type.*safe", "validate.*input", "ty.*check", "ty.*error"],
-    "medium_confidence": ["typescript.*types", "prisma.*types", "api.*contract", "isinstance.*check"]
+    "high_confidence": ["zod.*schema", "trpc.*setup", "type.*safe", "validate.*input", "ty.*check", "ty.*error", "assertNever", "exhaustive.*switch", "branded.*type"],
+    "medium_confidence": ["typescript.*types", "prisma.*types", "api.*contract", "isinstance.*check", "missing.*case", "union.*type", "NewType"]
   },
 
   "integrates_with": ["api-design-framework", "database-schema-designer"],
