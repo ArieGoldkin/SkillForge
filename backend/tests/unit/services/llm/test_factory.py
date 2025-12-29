@@ -13,8 +13,10 @@ class TestGetLLMProvider:
     """Tests for get_llm_provider factory function."""
 
     @patch("app.shared.services.llm.factory.settings")
+    @patch("app.shared.services.llm.ollama_provider.OllamaProvider")
     def test_returns_ollama_when_enabled(
         self,
+        mock_provider_class: MagicMock,
         mock_settings: MagicMock,
     ) -> None:
         """Test returns OllamaProvider when OLLAMA_ENABLED=true."""
@@ -25,21 +27,22 @@ class TestGetLLMProvider:
         mock_settings.OLLAMA_NUM_CTX = 32768
         mock_settings.OLLAMA_TIMEOUT = 300.0
 
-        with patch("app.shared.services.llm.factory.OllamaProvider") as mock_provider:
-            mock_instance = MagicMock()
-            mock_instance.model = "deepseek-r1:70b"
-            mock_provider.for_reasoning.return_value = mock_instance
+        mock_instance = MagicMock()
+        mock_instance.model = "deepseek-r1:70b"
+        mock_provider_class.for_reasoning.return_value = mock_instance
 
-            from app.shared.services.llm.factory import get_llm_provider
+        from app.shared.services.llm.factory import get_llm_provider
 
-            result = get_llm_provider(task_type="reasoning")
+        result = get_llm_provider(task_type="reasoning")
 
-            mock_provider.for_reasoning.assert_called_once()
-            assert result.model == "deepseek-r1:70b"
+        mock_provider_class.for_reasoning.assert_called_once()
+        assert result.model == "deepseek-r1:70b"
 
     @patch("app.shared.services.llm.factory.settings")
+    @patch("app.shared.services.llm.ollama_provider.OllamaProvider")
     def test_returns_coding_model(
         self,
+        mock_provider_class: MagicMock,
         mock_settings: MagicMock,
     ) -> None:
         """Test returns coding model for coding task type."""
@@ -49,20 +52,19 @@ class TestGetLLMProvider:
         mock_settings.OLLAMA_NUM_CTX = 32768
         mock_settings.OLLAMA_TIMEOUT = 300.0
 
-        with patch("app.shared.services.llm.factory.OllamaProvider") as mock_provider:
-            mock_instance = MagicMock()
-            mock_instance.model = "qwen2.5-coder:32b"
-            mock_provider.for_coding.return_value = mock_instance
+        mock_instance = MagicMock()
+        mock_instance.model = "qwen2.5-coder:32b"
+        mock_provider_class.for_coding.return_value = mock_instance
 
-            from app.shared.services.llm.factory import get_llm_provider
+        from app.shared.services.llm.factory import get_llm_provider
 
-            result = get_llm_provider(task_type="coding")
+        result = get_llm_provider(task_type="coding")
 
-            mock_provider.for_coding.assert_called_once()
-            assert result.model == "qwen2.5-coder:32b"
+        mock_provider_class.for_coding.assert_called_once()
+        assert result.model == "qwen2.5-coder:32b"
 
     @patch("app.shared.services.llm.factory.settings")
-    @patch("app.shared.services.llm.factory.init_chat_model")
+    @patch("langchain.chat_models.init_chat_model")
     def test_returns_cloud_when_disabled(
         self,
         mock_init_chat_model: MagicMock,
@@ -92,8 +94,10 @@ class TestGetEmbeddingProvider:
     """Tests for get_embedding_provider factory function."""
 
     @patch("app.shared.services.llm.factory.settings")
+    @patch("app.shared.services.embeddings.ollama_service.OllamaEmbeddingService")
     def test_returns_ollama_when_enabled(
         self,
+        mock_service_class: MagicMock,
         mock_settings: MagicMock,
     ) -> None:
         """Test returns OllamaEmbeddingService when OLLAMA_ENABLED=true."""
@@ -102,39 +106,39 @@ class TestGetEmbeddingProvider:
         mock_settings.OLLAMA_HOST = "http://localhost:11434"
         mock_settings.OLLAMA_EMBEDDING_DIMENSIONS = 768
 
-        with patch("app.shared.services.llm.factory.OllamaEmbeddingService") as mock_service:
-            mock_instance = MagicMock()
-            mock_instance.model = "nomic-embed-text"
-            mock_instance.expected_dimensions = 768
-            mock_service.return_value = mock_instance
+        mock_instance = MagicMock()
+        mock_instance.model = "nomic-embed-text"
+        mock_instance.expected_dimensions = 768
+        mock_service_class.return_value = mock_instance
 
-            from app.shared.services.llm.factory import get_embedding_provider
+        from app.shared.services.llm.factory import get_embedding_provider
 
-            result = get_embedding_provider()
+        result = get_embedding_provider()
 
-            mock_service.assert_called_once()
-            assert result.model == "nomic-embed-text"
+        mock_service_class.assert_called_once()
+        assert result.model == "nomic-embed-text"
 
     @patch("app.shared.services.llm.factory.settings")
+    @patch("app.shared.services.embeddings.service.EmbeddingService")
     def test_returns_openai_when_disabled(
         self,
+        mock_service_class: MagicMock,
         mock_settings: MagicMock,
     ) -> None:
         """Test returns EmbeddingService when OLLAMA_ENABLED=false."""
         mock_settings.OLLAMA_ENABLED = False
 
-        with patch("app.shared.services.llm.factory.EmbeddingService") as mock_service:
-            mock_instance = MagicMock()
-            mock_instance.model = "text-embedding-3-small"
-            mock_instance.expected_dimensions = 1536
-            mock_service.return_value = mock_instance
+        mock_instance = MagicMock()
+        mock_instance.model = "text-embedding-3-small"
+        mock_instance.expected_dimensions = 1536
+        mock_service_class.return_value = mock_instance
 
-            from app.shared.services.llm.factory import get_embedding_provider
+        from app.shared.services.llm.factory import get_embedding_provider
 
-            result = get_embedding_provider()
+        result = get_embedding_provider()
 
-            mock_service.assert_called_once()
-            assert result.model == "text-embedding-3-small"
+        mock_service_class.assert_called_once()
+        assert result.model == "text-embedding-3-small"
 
 
 class TestIsOllamaAvailable:

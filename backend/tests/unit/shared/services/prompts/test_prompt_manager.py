@@ -492,9 +492,9 @@ class TestModuleExports:
     def test_all_public_api_items_importable(self):
         """Test that all public API items can be imported individually."""
         from app.shared.services.prompts.prompt_manager import (
+            TEMPLATE_MAPPING,
             LRUCache,
             PromptManager,
-            TEMPLATE_MAPPING,
             get_prompt_manager,
         )
 

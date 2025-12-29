@@ -307,7 +307,8 @@ class TestCheckpointerSelection:
         """Test MemorySaver when no database is configured (development mode)."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
-        with patch("app.core.config.settings") as mock_settings:
+        # Must patch settings in the graph_builder module where it's already imported
+        with patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings:
             mock_settings.USE_REDIS_CHECKPOINT = False
             mock_settings.REDIS_URL = None
             mock_settings.DATABASE_URL = None  # No database

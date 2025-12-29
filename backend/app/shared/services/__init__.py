@@ -14,4 +14,9 @@ This package contains services shared across multiple domains:
 - metrics/ - Metrics collection
 - pii/ - PII detection
 - utils/ - Utility functions
+- llm/ - LLM provider abstraction (cloud/local)
 """
+
+from app.shared.services import llm
+
+__all__ = ["llm"]
