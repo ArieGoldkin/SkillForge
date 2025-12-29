@@ -4,7 +4,7 @@ description: Create PR with parallel validation and auto-generated description
 
 # Create Pull Request
 
-Comprehensive PR creation with 3-4 parallel agents for validation and description generation.
+Comprehensive PR creation with parallel validation agents. **NO file creation** - all output goes directly to GitHub PR.
 
 ## Phase 1: Pre-Flight Checks
 
@@ -12,257 +12,121 @@ Comprehensive PR creation with 3-4 parallel agents for validation and descriptio
 # Verify branch
 BRANCH=$(git branch --show-current)
 if [[ "$BRANCH" == "dev" || "$BRANCH" == "main" ]]; then
-  echo "❌ Cannot create PR from dev/main. Create a feature branch first."
+  echo "Cannot create PR from dev/main. Create a feature branch first."
   exit 1
 fi
 
 # Check for uncommitted changes
-git status --porcelain
 if [[ -n $(git status --porcelain) ]]; then
-  echo "⚠️ Uncommitted changes detected. Commit or stash first."
+  echo "Uncommitted changes detected. Commit or stash first."
+  exit 1
 fi
 
 # Check if branch is pushed
 git fetch origin
 if ! git rev-parse --verify origin/$BRANCH &>/dev/null; then
-  echo "📤 Branch not pushed. Pushing now..."
+  echo "Pushing branch..."
   git push -u origin $BRANCH
 fi
 ```
 
-## Phase 2: Gather PR Context
+## Phase 2: Run Local Validation FIRST
+
+**CRITICAL: Run ALL checks locally before launching agents.**
 
 ```bash
-# Get all commits in this branch
-git log --oneline dev..HEAD
+# Backend validation
+cd backend
+poetry run ruff format --check app/
+poetry run ruff check app/
+poetry run ty check app/ --exclude "app/evaluation/*"
+poetry run pytest tests/unit/ -v --tb=short -x
 
-# Get full diff from dev
-git diff dev...HEAD --stat
-
-# Get changed files
-git diff --name-only dev...HEAD
+# Frontend validation (if applicable)
+cd ../frontend
+npm run format:check
+npm run lint
+npm run typecheck
 ```
 
-## Phase 3: Parallel Validation & Analysis (4 Agents)
+**If any check fails, fix it before proceeding.**
 
-Launch FOUR agents - ALL in ONE message:
-
-```python
-# PARALLEL - All four in ONE message!
-
-Task(
-  subagent_type="code-quality-reviewer",
-  prompt="""PRE-PR VALIDATION
-
-  Run all validation checks:
-
-  Backend:
-  - cd backend && poetry run ruff format --check app/
-  - cd backend && poetry run ruff check app/
-  - cd backend && poetry run ty check app/ --exclude "app/evaluation/*"
-  - cd backend && poetry run pytest tests/unit/ -v --tb=short
-
-  Frontend:
-  - cd frontend && npm run format:check
-  - cd frontend && npm run lint
-  - cd frontend && npm run typecheck
-  - cd frontend && npm run test
-
-  Report: Pass/fail status for each check.""",
-  run_in_background=true
-)
-
-Task(
-  subagent_type="Explore",
-  prompt="""CHANGE ANALYSIS
-
-  Analyze all changes in this branch:
-  - git diff dev...HEAD
-
-  Identify:
-  1. What features/fixes are included?
-  2. Which components are affected?
-  3. Any breaking changes?
-  4. Database migrations?
-  5. New dependencies?
-
-  Output: Structured change summary.""",
-  run_in_background=true
-)
-
-Task(
-  subagent_type="product-manager",
-  prompt="""PR DESCRIPTION GENERATION
-
-  Based on commits and changes, generate:
-
-  1. **Summary**: 1-2 sentences explaining what this PR does
-  2. **Changes**: Bullet list of specific changes
-  3. **Type**: feat/fix/refactor/docs/test/chore
-  4. **Breaking Changes**: Any? If so, what?
-  5. **Related Issues**: Extract from commit messages
-
-  Format for GitHub PR body.""",
-  run_in_background=true
-)
-
-Task(
-  subagent_type="code-quality-reviewer",
-  prompt="""TEST PLAN GENERATION
-
-  Based on the changes, create test plan:
-
-  1. What manual testing should reviewers do?
-  2. What automated tests cover these changes?
-  3. Edge cases to verify
-  4. Regression concerns
-
-  Format as checklist for PR body.""",
-  run_in_background=true
-)
-```
-
-**Wait for all 4 to complete.**
-
-## Phase 4: Extract Issue Reference
+## Phase 3: Gather Context (No Agents Needed)
 
 ```bash
-# Try to extract issue number from branch name
+# Get branch info
+BRANCH=$(git branch --show-current)
 ISSUE=$(echo $BRANCH | grep -oE '[0-9]+' | head -1)
 
-# Or from commit messages
-if [[ -z "$ISSUE" ]]; then
-  ISSUE=$(git log --oneline dev..HEAD | grep -oE '#[0-9]+' | head -1 | tr -d '#')
-fi
+# Get commits and changes
+git log --oneline dev..HEAD
+git diff dev...HEAD --stat
 ```
 
-## Phase 5: Create PR
+## Phase 4: Create PR Directly
+
+Use `gh pr create` with inline content. **Do NOT spawn agents to generate files.**
 
 ```bash
-# Determine PR type from changes
-TYPE="feat"  # or fix, refactor, docs, test, chore
+# Extract type from branch/commits
+TYPE="feat"  # Determine from changes: feat/fix/refactor/docs/test/chore
 
-# Create PR with generated description
-gh pr create --base dev --title "$TYPE(#$ISSUE): [Brief description from analysis]" --body "$(cat <<'EOF'
+gh pr create --base dev \
+  --title "$TYPE(#$ISSUE): Brief description" \
+  --body "$(cat <<'EOF'
 ## Summary
-[Generated summary from product-manager agent]
+[1-2 sentence description of what this PR does]
 
 ## Changes
 - [Change 1]
 - [Change 2]
-- [Change 3]
 
 ## Type
-- [x] Feature (new functionality)
-- [ ] Bug fix (fixes an issue)
-- [ ] Refactor (code improvement, no functional change)
-- [ ] Documentation
-- [ ] Test (adding or updating tests)
-- [ ] Chore (build, CI, dependencies)
+- [ ] Feature | [ ] Bug fix | [ ] Refactor | [ ] Docs | [ ] Test | [ ] Chore
 
 ## Breaking Changes
-- [ ] No breaking changes
-- [ ] Breaking changes (describe below)
-
-[If breaking, explain migration steps]
+- [ ] None
+- [ ] Yes: [describe migration steps]
 
 ## Related Issues
-- Closes #$ISSUE
+- Closes #ISSUE
 
 ## Test Plan
-### Automated Tests
 - [x] Unit tests pass
 - [x] Lint/type checks pass
-- [x] Coverage maintained
-
-### Manual Testing
-- [ ] [Test scenario 1]
-- [ ] [Test scenario 2]
-- [ ] [Edge case to verify]
-
-## Screenshots (if UI changes)
-[Add screenshots if applicable]
-
-## Checklist
-- [x] Code follows project style guidelines
-- [x] Self-reviewed the code
-- [x] Added/updated tests
-- [x] Documentation updated (if needed)
-- [x] No console.log/print statements left
+- [ ] Manual testing: [describe]
 
 ---
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
+```
 
-# Open PR in browser
+## Phase 5: Verify and Report
+
+```bash
+PR_NUMBER=$(gh pr view --json number -q .number)
+PR_URL=$(gh pr view --json url -q .url)
+
+echo "PR #$PR_NUMBER created: $PR_URL"
 gh pr view --web
 ```
 
-## Phase 6: Post-PR Actions
-
-```bash
-# Get PR number
-PR_NUMBER=$(gh pr view --json number -q .number)
-
-echo "✅ PR #$PR_NUMBER created successfully!"
-echo "🔗 URL: $(gh pr view --json url -q .url)"
-
-# Optional: Add labels
-gh pr edit $PR_NUMBER --add-label "needs-review"
-
-# Optional: Request reviewers
-# gh pr edit $PR_NUMBER --add-reviewer @username
-```
-
-## Phase 7: Save Context
-
-```python
-mcp__memory__create_entities(entities=[{
-  "name": "pr-[branch]-[date]",
-  "entityType": "pull-request",
-  "observations": [
-    "Branch: [branch]",
-    "PR: #[number]",
-    "Changes: [summary]",
-    "Status: open"
-  ]
-}])
-```
-
 ---
 
-## Summary
+## Rules
 
-**Total Parallel Agents: 4**
-- 2 code-quality-reviewer (validation, test plan)
-- 1 Explore (change analysis)
-- 1 product-manager (PR description)
+1. **NO file creation** - Do not create MD files, txt files, or any documentation in the repo
+2. **NO parallel agents for PR description** - Use git log/diff directly
+3. **Run validation locally** - Don't spawn agents just to run lint/test
+4. **All content goes to GitHub** - PR body via `gh pr create --body`
+5. **Keep it simple** - One command to create PR, no elaborate pipelines
 
-**MCPs Used:**
-- 💾 memory (save PR context)
+## When to Use Agents
 
-**PR Template Sections:**
-- Summary (auto-generated)
-- Changes list (auto-generated)
-- Type classification
-- Breaking changes indicator
-- Related issues (auto-extracted)
-- Test plan (auto-generated)
-- Manual testing checklist
-- Standard checklist
+Only use Task agents for:
+- Complex code analysis that requires reading multiple files
+- Security review of sensitive changes
+- Architecture review for large refactors
 
-**Branch Naming Convention:**
-- `issue/<number>-<description>` - GitHub issues
-- `feature/<description>` - New features
-- `fix/<description>` - Bug fixes
-
-**Commit Message Format:**
-```
-<type>(#<issue>): <description>
-
-[body]
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
+For standard PRs, direct `gh pr create` is sufficient.
