@@ -10,13 +10,13 @@ jobs:
   generate-digest:
     runs-on: self-hosted
     permissions:
-  pull-requests: read
+      pull-requests: read
       issues: write
       contents: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Generate Weekly Digest
         env:

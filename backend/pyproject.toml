@@ -47,6 +47,11 @@ slowapi = "^0.1.9"
 langgraph-checkpoint-redis = {version = ">=0.3.1", python = ">=3.13,<3.14"}
 # Rich console output for structlog traceback formatting (Issue #535)
 rich = "^13.9.4"
+langgraph-checkpoint-postgres = "^3.0.2"
+psycopg-binary = "^3.3.2"
+# Ollama local models for CI cost reduction (Issue #606)
+# v1.0.1 includes OllamaEmbeddings, ChatOllama with tool calling, streaming
+langchain-ollama = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

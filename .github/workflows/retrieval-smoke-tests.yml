@@ -21,9 +21,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  pull-requests: read
-  contents: read
   pull-requests: write
+  contents: read
 
 concurrency:
   group: retrieval-smoke-tests-${{ github.ref }}
@@ -34,33 +33,30 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 10
 
-    services:
-      postgres:
-        image: pgvector/pgvector:pg17
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: skillforge_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
+    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
 
     env:
-      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
+      # Local PostgreSQL uses current user (no password) on macOS
+      DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
       PYTHONUNBUFFERED: "1"
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -69,27 +65,40 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Configure Poetry Python
+        working-directory: backend
+        run: |
+          # Ensure Poetry uses python3 (Homebrew doesn't provide 'python' symlink)
+          poetry env use python3 || true
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
         with:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
-
-      - name: Install pgvector extension
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Force fresh venv if cache is corrupted (check alembic, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run python -m alembic --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted (alembic not found), removing..."
+            rm -rf .venv 2>/dev/null || true
+          fi
+          poetry install --no-interaction --no-root
+
+      - name: Ensure pgvector extension
+        run: |
+          # Local PostgreSQL 17 with pgvector pre-installed on self-hosted runner
+          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
 
       - name: Run Alembic migrations
         working-directory: ./backend
-        run: poetry run alembic upgrade head
+        run: poetry run python -m alembic upgrade head
 
       # ========================================================================
       # Run ALL smoke tests in ONE pytest command (optimized from 4 separate runs)

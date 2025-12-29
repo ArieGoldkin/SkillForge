@@ -20,13 +20,20 @@ jobs:
   verify-reversible:
     runs-on: self-hosted
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -35,19 +42,31 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Configure Poetry Python
+        working-directory: backend
+        run: |
+          # Ensure Poetry uses python3 (Homebrew doesn't provide 'python' symlink)
+          poetry env use python3 || true
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
         with:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted
+          if [ -d ".venv" ] && ! poetry run python -c "import alembic" >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted, removing..."
+            rm -rf .venv 2>/dev/null || true
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Check for irreversible migrations
         working-directory: ./backend
@@ -73,29 +92,29 @@ jobs:
 
   test-migrations:
     runs-on: self-hosted
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+
+    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
+    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -104,68 +123,68 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Configure Poetry Python
+        working-directory: backend
+        run: |
+          # Ensure Poetry uses python3 (Homebrew doesn't provide 'python' symlink)
+          poetry env use python3 || true
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
         with:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check alembic, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run python -m alembic --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted (alembic not found), removing..."
+            rm -rf .venv 2>/dev/null || true
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Setup database connection
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: |
-          # Enable pgvector extension
-          PGPASSWORD=testpass psql -h localhost -U testuser -d testdb -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Local PostgreSQL 17 with pgvector on self-hosted runner
+          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
 
       - name: Run migrations up
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
-        run: poetry run alembic upgrade head
+        run: poetry run python -m alembic upgrade head
 
       - name: Verify schema
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: |
           # Verify migrations were applied
-          poetry run alembic current
-          poetry run alembic history
+          poetry run python -m alembic current
+          poetry run python -m alembic history
 
       - name: Run migrations down (one step)
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
         run: |
           # Get current revision
-          CURRENT=$(poetry run alembic current | grep -oP '(?<=\()\w+(?=\))' | head -1 || echo "")
+          CURRENT=$(poetry run python -m alembic current | grep -oP '(?<=\()\w+(?=\))' | head -1 || echo "")
           if [ -n "$CURRENT" ]; then
             # Get previous revision
-            PREV=$(poetry run alembic history | grep -A 1 "$CURRENT" | tail -1 | grep -oP '(?<=\()\w+(?=\))' | head -1 || echo "")
+            PREV=$(poetry run python -m alembic history | grep -A 1 "$CURRENT" | tail -1 | grep -oP '(?<=\()\w+(?=\))' | head -1 || echo "")
             if [ -n "$PREV" ] && [ "$PREV" != "$CURRENT" ]; then
               echo "Downgrading from $CURRENT to $PREV"
-              poetry run alembic downgrade "$PREV"
+              poetry run python -m alembic downgrade "$PREV"
             fi
           fi
 
       - name: Run migrations up again
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
-        run: poetry run alembic upgrade head
+        run: poetry run python -m alembic upgrade head
 
       - name: Cleanup
         if: always()
         working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://testuser:testpass@localhost:5432/testdb
-        run: poetry run alembic downgrade base || true
+        run: poetry run python -m alembic downgrade base || true

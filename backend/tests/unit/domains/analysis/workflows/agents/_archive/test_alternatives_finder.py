@@ -4,13 +4,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from app.domains.analysis.workflows.agents.alternatives_finder import run_alternatives_finder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.schemas.agents.alternatives_finder import (
     Alternative,
     AlternativesFinderOutput,
 )
-from app.domains.analysis.workflows.agents.alternatives_finder import run_alternatives_finder
 from app.domains.analysis.workflows.state import AnalysisState
 
 

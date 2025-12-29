@@ -5,13 +5,11 @@ Note: This service ALWAYS performs hard deletes - soft delete is not implemented
 """
 
 import uuid
-from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.shared.services.cleanup.orphan_cleanup import OrphanCleaner
 

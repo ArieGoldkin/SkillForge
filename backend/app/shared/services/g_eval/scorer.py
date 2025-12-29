@@ -18,7 +18,10 @@ import asyncio
 import json
 import re
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from app.shared.services.g_eval.self_consistency import SelfConsistencyResult
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
@@ -638,7 +641,10 @@ async def g_eval_score(  # noqa: PLR0913, PLR0915, PLR0912 - Complex batch proce
                     agent_type=agent_type,
                 )
                 # Filter out exceptions, keep successful results
-                sc_results = [r for r in sc_results if not isinstance(r, Exception)]
+                sc_results = cast(
+                    "list[SelfConsistencyResult]",
+                    [r for r in sc_results if not isinstance(r, BaseException)],
+                )
                 # If all failed, return error result
                 if not sc_results:
                     logger.exception("g_eval_self_consistency_all_failed", error=str(error_group))
@@ -654,6 +660,9 @@ async def g_eval_score(  # noqa: PLR0913, PLR0915, PLR0912 - Complex batch proce
                 agent_type=agent_type,
                 error=str(e),
             )
+
+        # Type narrow: at this point sc_results contains only SelfConsistencyResult
+        sc_results = cast("list[SelfConsistencyResult]", sc_results)
 
         # Extract final scores and voting distributions
         criteria_scores = {r.final_score.criterion: r.final_score for r in sc_results}

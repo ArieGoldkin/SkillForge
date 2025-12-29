@@ -1,9 +1,9 @@
 ---
 name: ai-native-development
-description: Build AI-first applications with RAG pipelines, embeddings, vector databases, agentic workflows, and LLM integration. Master prompt engineering, function calling, streaming responses, and cost optimization for 2025+ AI development.
-version: 1.0.0
+description: Build AI-first applications with RAG pipelines, embeddings, vector databases, agentic workflows, and LLM integration. Master prompt engineering, function calling, streaming responses, and cost optimization for 2025+ AI development. Includes local LLM inference with Ollama for 93% CI cost reduction.
+version: 1.2.0
 author: AI Agent Hub
-tags: [ai, llm, rag, embeddings, vector-database, agents, langchain, 2025]
+tags: [ai, llm, rag, embeddings, vector-database, agents, langchain, ollama, local-inference, 2025]
 ---
 
 # AI-Native Development
@@ -16,10 +16,11 @@ AI-Native Development focuses on building applications where AI is a first-class
 - Building chatbots, Q&A systems, or conversational interfaces
 - Implementing semantic search or recommendation engines
 - Creating AI agents that can use tools and take actions
-- Integrating LLMs (OpenAI, Anthropic, open-source models) into applications
+- Integrating LLMs (OpenAI, Anthropic, Ollama local models) into applications
 - Building RAG systems for knowledge retrieval
-- Optimizing AI costs and latency
+- Optimizing AI costs and latency (93% savings with local models)
 - Implementing AI observability and monitoring
+- Setting up local LLM inference for CI/CD pipelines
 
 ---
 
@@ -479,11 +480,13 @@ async def quality_gate(state: dict) -> dict:
 ### 9. Cost Optimization
 
 **Strategies:**
-- Use smaller models for simple tasks (GPT-3.5 vs GPT-4)
-- Implement prompt caching (Anthropic's ephemeral cache)
+- **Use local models for CI/dev**: Ollama with DeepSeek R1 70B, Qwen 2.5 Coder 32B (93% savings)
+- Use smaller models for simple tasks (GPT-3.5 vs GPT-4, Haiku vs Sonnet)
+- Implement prompt caching (Anthropic's ephemeral cache, Claude native cache)
 - Batch requests when possible
 - Set max_tokens to prevent runaway generation
 - Monitor usage with alerts
+- Use provider factory for automatic cloud/local switching
 
 **Token Counting:**
 ```typescript
@@ -501,6 +504,149 @@ function countTokens(text: string, model = 'gpt-4'): number {
 - Cost estimation and budget tracking
 - Model selection strategies
 - Prompt caching patterns
+
+### 10. Local LLM Inference with Ollama (v1.2.0)
+
+Run LLMs locally for cost reduction, privacy, and offline development.
+
+**When to Use Local Models:**
+- CI/CD pipelines (93% cost reduction)
+- Development and testing (no API costs)
+- Privacy-sensitive data (no data leaves your machine)
+- Offline development environments
+- High-volume batch processing
+
+**Recommended Models (Apple Silicon M4 Max 256GB):**
+| Task | Model | Size | Notes |
+|------|-------|------|-------|
+| Reasoning | `deepseek-r1:70b` | ~42GB | GPT-4 level reasoning |
+| Coding | `qwen2.5-coder:32b` | ~35GB | 73.7% Aider benchmark |
+| Embeddings | `nomic-embed-text` | ~0.5GB | 768 dims, fast |
+
+**LangChain Ollama Provider (v1.0.1):**
+```python
+from langchain_ollama import ChatOllama, OllamaEmbeddings
+
+# Chat completion with keep_alive for CI performance
+llm = ChatOllama(
+    model="deepseek-r1:70b",
+    base_url="http://localhost:11434",
+    temperature=0.0,
+    num_ctx=32768,          # Context window (Apple Silicon can handle large)
+    keep_alive="5m",        # CRITICAL: Keep model loaded between calls
+)
+
+# Embeddings
+embeddings = OllamaEmbeddings(
+    model="nomic-embed-text",
+    base_url="http://localhost:11434",
+)
+
+# Generate embedding
+vector = await embeddings.aembed_query("Hello world")  # Single text
+vectors = await embeddings.aembed_documents(["text1", "text2"])  # Batch
+```
+
+**Tool Calling with Ollama:**
+```python
+from langchain_core.tools import tool
+from pydantic import BaseModel, Field
+
+@tool
+def search_documents(query: str) -> str:
+    """Search the document database."""
+    return f"Found 5 documents for: {query}"
+
+# Bind tools to model
+llm_with_tools = llm.bind_tools([search_documents])
+
+# Or with structured output
+class CodeAnalysis(BaseModel):
+    language: str = Field(description="Programming language")
+    complexity: int = Field(ge=1, le=10, description="Complexity score")
+    issues: list[str] = Field(description="Identified issues")
+
+structured_llm = llm.with_structured_output(CodeAnalysis)
+result = await structured_llm.ainvoke("Analyze this Python code...")
+```
+
+**Streaming Responses:**
+```python
+async def stream_response(prompt: str):
+    """Stream tokens as they're generated."""
+    async for chunk in llm.astream(prompt):
+        if hasattr(chunk, "content"):
+            yield chunk.content
+```
+
+**Provider Factory Pattern:**
+```python
+from app.shared.services.llm import get_llm_provider, get_embedding_provider
+
+# Automatically uses Ollama if OLLAMA_ENABLED=true, else cloud API
+llm = get_llm_provider(task_type="reasoning")  # deepseek-r1:70b or Gemini
+llm = get_llm_provider(task_type="coding")     # qwen2.5-coder:32b or Claude
+embedder = get_embedding_provider()             # nomic-embed-text or OpenAI
+
+# Check availability
+from app.shared.services.llm import is_ollama_available, get_available_ollama_models
+if is_ollama_available():
+    models = get_available_ollama_models()
+```
+
+**Environment Configuration:**
+```bash
+# Enable Ollama for local inference
+export OLLAMA_ENABLED=true
+export OLLAMA_HOST=http://localhost:11434
+export OLLAMA_MODEL_REASONING=deepseek-r1:70b
+export OLLAMA_MODEL_CODING=qwen2.5-coder:32b
+export OLLAMA_MODEL_EMBED=nomic-embed-text
+
+# Performance tuning for M4 Max
+export OLLAMA_MAX_LOADED_MODELS=3    # Keep 3 models in memory
+export OLLAMA_KEEP_ALIVE=5m          # 5 minute keep-alive
+```
+
+**CI Integration (GitHub Actions):**
+```yaml
+# .github/workflows/evaluation.yml
+jobs:
+  evaluate:
+    runs-on: self-hosted  # M4 Max 256GB runner
+    env:
+      OLLAMA_ENABLED: "true"
+      OLLAMA_HOST: "http://localhost:11434"
+      OLLAMA_MODEL_REASONING: "deepseek-r1:70b"
+      OLLAMA_MODEL_CODING: "qwen2.5-coder:32b"
+      OLLAMA_MODEL_EMBED: "nomic-embed-text"
+    steps:
+      - name: Ensure Ollama models ready
+        run: |
+          # Pre-warm embedding model for faster first call
+          curl -s http://localhost:11434/api/embeddings \
+            -d '{"model":"nomic-embed-text","prompt":"warmup"}' > /dev/null
+```
+
+**Cost Comparison:**
+| Provider | Monthly Cost | Latency | Privacy |
+|----------|-------------|---------|---------|
+| Cloud APIs | ~₪675/month | 200-500ms | ❌ |
+| Ollama Local | ~₪50/month (electricity) | 50-200ms | ✅ |
+| **Savings** | **93%** | **2-3x faster** | **Full control** |
+
+**Best Practices:**
+- ✅ Use `keep_alive="5m"` in CI to avoid cold starts
+- ✅ Pre-warm models before first call in CI
+- ✅ Set `num_ctx=32768` on Apple Silicon (plenty of memory)
+- ✅ Use factory pattern for cloud/local switching
+- ✅ Run 3 models simultaneously on M4 Max 256GB
+- ❌ Don't use `keep_alive=-1` (keeps model forever, wastes memory)
+- ❌ Don't skip pre-warming in CI (cold start adds 30-60s)
+
+**Detailed Implementation:** See SkillForge's `backend/app/shared/services/llm/` for production patterns.
+
+---
 
 ### 8. Observability & Monitoring
 
@@ -717,6 +863,9 @@ const prompt = `${problem}\n\nLet's think step by step:`
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [Anthropic Claude API](https://docs.anthropic.com)
 - [LangChain Documentation](https://python.langchain.com/docs/)
+- [LangChain-Ollama](https://python.langchain.com/docs/integrations/chat/ollama/) - ChatOllama, OllamaEmbeddings
+- [Ollama Documentation](https://ollama.ai/docs) - Local LLM inference
+- [Ollama Model Library](https://ollama.ai/library) - Available models
 - [Pinecone Documentation](https://docs.pinecone.io/)
 - [Chroma Documentation](https://docs.trychroma.com/)
 - [Langfuse Observability](https://langfuse.com/docs)

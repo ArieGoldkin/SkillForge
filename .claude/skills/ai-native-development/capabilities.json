@@ -1,8 +1,8 @@
 {
   "$schema": "../../schemas/skill-capabilities.schema.json",
   "name": "ai-native-development",
-  "version": "1.0.0",
-  "description": "RAG pipelines, embeddings, vector databases, agentic workflows, LLM integration, and cost optimization",
+  "version": "1.2.0",
+  "description": "RAG pipelines, embeddings, vector databases, agentic workflows, LLM integration, local inference with Ollama, and cost optimization",
 
   "capabilities": {
     "embeddings": {
@@ -74,15 +74,26 @@
       ],
       "reference_file": "references/observability.md",
       "token_cost": 180
+    },
+    "local-inference": {
+      "keywords": ["ollama", "local llm", "self-hosted", "deepseek", "qwen", "llama", "local model", "ci cost"],
+      "solves": [
+        "How do I run LLMs locally?",
+        "Reduce CI/CD costs with local models",
+        "Set up Ollama for development",
+        "Use DeepSeek or Qwen locally"
+      ],
+      "reference_file": "references/ollama-local-inference.md",
+      "token_cost": 250
     }
   },
 
   "triggers": {
-    "high_confidence": ["rag.*pipeline", "llm.*integration", "ai.*agent", "embedding.*search"],
-    "medium_confidence": ["chatbot", "ai.*feature", "openai.*api"]
+    "high_confidence": ["rag.*pipeline", "llm.*integration", "ai.*agent", "embedding.*search", "ollama", "local.*model", "deepseek", "qwen"],
+    "medium_confidence": ["chatbot", "ai.*feature", "openai.*api", "ci.*cost", "self.*hosted"]
   },
 
-  "integrates_with": ["streaming-api-patterns", "observability-monitoring", "type-safety-validation"],
+  "integrates_with": ["streaming-api-patterns", "observability-monitoring", "type-safety-validation", "llm-caching-patterns"],
 
   "progressive_loading": {
     "tier_1_discovery": {
@@ -101,16 +112,16 @@
       "use_when": "Need specific implementation guidance (RAG, embeddings, agents)"
     },
     "tier_4_generate": {
-      "files": "templates/*.ts",
+      "files": ["templates/*.ts", "templates/*.py"],
       "tokens": "200-400 each",
-      "use_when": "Ready to generate RAG pipeline or agentic workflow code"
+      "use_when": "Ready to generate RAG pipeline, agentic workflow, or Ollama provider code"
     }
   },
 
   "mcp_tools": {
     "documentation_lookup": {
       "tool": "context7",
-      "library_ids": ["/langchain-ai/langgraph", "/anthropics/anthropic-sdk-python", "/openai/openai-python"],
+      "library_ids": ["/langchain-ai/langgraph", "/anthropics/anthropic-sdk-python", "/openai/openai-python", "/langchain-ai/langchain"],
       "use_when": "Need current LLM framework patterns and APIs"
     },
     "observability": {

@@ -29,30 +29,28 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 45
 
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: skillforge_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
+    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: "pip"
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -61,38 +59,40 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Configure Poetry Python
+        working-directory: backend
+        run: |
+          # Ensure Poetry uses python3 (Homebrew doesn't provide 'python' symlink)
+          poetry env use python3 || true
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
         with:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
 
       - name: Install dependencies
         working-directory: backend
-        run: poetry install --no-interaction --no-root
+        run: |
+          # Force fresh venv if cache is corrupted (check alembic, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run python -m alembic --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted (alembic not found), removing..."
+            rm -rf .venv 2>/dev/null || true
+          fi
+          poetry install --no-interaction --no-root
 
       - name: Setup database
         working-directory: backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
         run: |
-          # Install PostgreSQL client (cross-platform)
-          if ! command -v psql &> /dev/null; then
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-              brew install postgresql@16
-            else
-              sudo apt-get update && sudo apt-get install -y postgresql-client
-            fi
-          fi
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          poetry run alembic upgrade head
+          # Local PostgreSQL 17 with pgvector on self-hosted runner
+          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
+          poetry run python -m alembic upgrade head
 
       - name: Load fixtures with real embeddings
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-unit-tests' }}
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: ${{ inputs.use_real_embeddings == false && 'true' || 'false' }}
         run: |
@@ -103,7 +103,6 @@ jobs:
         id: evaluation
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'sk-test-key-for-unit-tests' }}
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: ${{ inputs.use_real_embeddings == false && 'true' || 'false' }}
         run: |

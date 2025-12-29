@@ -28,10 +28,9 @@ on:
         type: boolean
 
 permissions:
-  pull-requests: read
+  pull-requests: write
   contents: read
   actions: read
-  pull-requests: write
 
 concurrency:
   group: evaluation-${{ github.ref }}
@@ -43,7 +42,7 @@ jobs:
     outputs:
       evaluation: ${{ steps.filter.outputs.evaluation }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -63,33 +62,37 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 30
 
-    # Service container for PostgreSQL with pgvector
-    services:
-      postgres:
-        image: pgvector/pgvector:pg16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: skillforge_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
+    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
+    # Ollama: brew install ollama && ollama pull nomic-embed-text qwen2.5-coder:32b deepseek-r1:70b
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
+      # Ollama local models for 93% CI cost reduction (Issue #606)
+      OLLAMA_ENABLED: "true"
+      OLLAMA_HOST: "http://localhost:11434"
+      OLLAMA_MODEL_REASONING: "deepseek-r1:70b"
+      OLLAMA_MODEL_CODING: "qwen2.5-coder:32b"
+      OLLAMA_MODEL_EMBED: "nomic-embed-text"
 
     steps:
+      # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
+      - name: Clean stale virtualenv
+        run: rm -rf backend/.venv 2>/dev/null || true
+
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Fetch all history for baseline comparison
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: "pip"
+      - name: Configure PATH for Homebrew
+        run: |
+          echo "/opt/homebrew/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Verify Python version
+        run: python3 --version
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -98,48 +101,64 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Configure Poetry Python
+        working-directory: backend
+        run: |
+          # Ensure Poetry uses python3 (Homebrew doesn't provide 'python' symlink)
+          poetry env use python3 || true
+
       - name: Cache Poetry dependencies
         uses: actions/cache@v5
         with:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.os }}-py3.13-
+            poetry-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: backend
         run: |
-          poetry install --no-interaction --no-root
-
-      - name: Install PostgreSQL client
-        run: |
-          if command -v psql &> /dev/null; then
-            echo "PostgreSQL client already installed"
-          elif [[ "$OSTYPE" == "darwin"* ]]; then
-            brew install postgresql@16
-          else
-            sudo apt-get update && sudo apt-get install -y postgresql-client
+          # Force fresh venv if cache is corrupted (check alembic, since that's what this job uses)
+          if [ -d ".venv" ] && ! poetry run python -m alembic --version >/dev/null 2>&1; then
+            echo "⚠️ Cached venv appears corrupted (alembic not found), removing..."
+            rm -rf .venv 2>/dev/null || true
           fi
+          poetry install --no-interaction --no-root
 
       - name: Setup database
         working-directory: backend
-        env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
         run: |
-          # Ensure pgvector is available
-          PGPASSWORD=postgres psql -h localhost -U postgres -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          # Run migrations to set up schema
-          poetry run alembic upgrade head
+          # Local PostgreSQL 17 with pgvector on self-hosted runner
+          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
+          # Run migrations to set up schema (use python -m to avoid PATH issues with CLI entrypoints)
+          poetry run python -m alembic upgrade head
+
+      - name: Ensure Ollama models ready
+        run: |
+          # Check Ollama is running
+          if ! curl -s http://localhost:11434/api/tags > /dev/null; then
+            echo "Starting Ollama service..."
+            ollama serve &
+            sleep 5
+          fi
+
+          # Ensure required models are available (pull if missing)
+          echo "Checking Ollama models..."
+          ollama list
+
+          # Pre-warm embedding model for faster first call
+          echo "Pre-warming embedding model..."
+          curl -s http://localhost:11434/api/embeddings -d '{"model":"nomic-embed-text","prompt":"warmup"}' > /dev/null || true
 
       - name: Load evaluation fixtures
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
-          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
+          # Use Ollama embeddings instead of deterministic (Issue #606)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
         run: |
-          # Load fixture data with embeddings for evaluation
+          # Load fixture data with Ollama embeddings for evaluation
           poetry run python scripts/load_expanded_fixtures.py --expanded --replace
 
       - name: Run evaluation pipeline
@@ -147,11 +166,10 @@ jobs:
         continue-on-error: true  # Don't fail PR on evaluation results - report metrics only
         working-directory: backend
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/skillforge_test
-          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
+          # Use Ollama local models for evaluation (Issue #606)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
         run: |
-          # In deterministic mode we run without regression gating (baseline is intended for
-          # external-embedding runs). Results are still uploaded + commented for visibility.
+          # Run evaluation with local Ollama models (93% cost savings)
           poetry run python scripts/run_evaluation.py \
             --expanded \
             --output evaluation_results.json \

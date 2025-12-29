@@ -881,6 +881,55 @@ Access Redis cache visualization at `http://localhost:8001`:
 - Analyze quality score distributions
 - Identify hot keys
 
+## Local Model Considerations (Ollama)
+
+When using local models via Ollama, the caching calculus changes:
+
+**Cost Impact:**
+| Provider | Caching Value | Reason |
+|----------|--------------|--------|
+| Cloud APIs | **Critical** | $3-15 per MTok |
+| Ollama Local | **Optional** | FREE per token |
+
+**When to still cache with Ollama:**
+- **Latency reduction**: Cache provides ~1-10ms vs ~50-200ms for local inference
+- **Memory pressure**: Avoid loading multiple models for repeated queries
+- **Batch CI runs**: Same queries across test runs benefit from L1 cache
+
+**Simplified Cache Strategy for Local:**
+```python
+# With Ollama, L1 (LRU) cache is usually sufficient
+# Skip L2 (Redis semantic) unless latency-critical
+
+async def get_local_llm_response(query: str) -> str:
+    # L1: Exact match only (sufficient for local)
+    cache_key = hash_content(query)
+    if cache_key in lru_cache:
+        return lru_cache[cache_key]  # ~1ms
+
+    # Direct local inference (FREE, fast enough)
+    response = await ollama_provider.ainvoke(query)  # ~50-200ms
+
+    # Store in L1 only
+    lru_cache[cache_key] = response.content
+    return response.content
+```
+
+**Best Practice:** Use factory pattern to apply full caching hierarchy only for cloud APIs:
+
+```python
+if settings.OLLAMA_ENABLED:
+    # Minimal caching for local models
+    return LocalCacheStrategy(l1_only=True)
+else:
+    # Full L1/L2/L3 caching for cloud APIs
+    return CloudCacheStrategy(l1=True, l2=True, l3=True)
+```
+
+See **ai-native-development** skill section "10. Local LLM Inference with Ollama" for provider setup.
+
+---
+
 ## References
 
 - **Redis Blog**: [Prompt Caching vs Semantic Caching](https://redis.io/blog/prompt-caching-vs-semantic-caching/) (Dec 2025)
@@ -901,11 +950,18 @@ See:
 
 ---
 
-**Skill Version**: 1.2.0
-**Last Updated**: 2025-12-27
+**Skill Version**: 1.3.0
+**Last Updated**: 2025-12-28
 **Maintained by**: SkillForge AI Agent Hub
 
 ## Changelog
+
+### v1.3.0 (2025-12-28)
+- Added "Local Model Considerations (Ollama)" section
+- Added cost comparison table for cloud vs local caching value
+- Added simplified caching strategy for local models
+- Added factory pattern example for adaptive caching
+- Cross-referenced ai-native-development skill for Ollama setup
 
 ### v1.2.0 (2025-12-27)
 - Added hierarchical trace pattern for multi-agent cost rollup

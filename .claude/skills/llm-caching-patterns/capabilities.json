@@ -1,8 +1,8 @@
 {
   "$schema": "../../schemas/skill-capabilities.schema.json",
   "name": "llm-caching-patterns",
-  "version": "1.0.0",
-  "description": "Multi-level caching strategies for LLM applications - semantic caching (Redis), prompt caching (Claude native), cache hierarchies, and cost optimization for 70-95% cost reduction",
+  "version": "1.3.0",
+  "description": "Multi-level caching strategies for LLM applications - semantic caching (Redis), prompt caching (Claude native), cache hierarchies, local model considerations (Ollama), and cost optimization for 70-95% cost reduction",
 
   "capabilities": {
     "cache-hierarchy": {
@@ -125,6 +125,17 @@
       ],
       "reference_file": "SKILL.md#monitoring-observability",
       "token_cost": 100
+    },
+    "local-model-caching": {
+      "keywords": ["ollama", "local model", "ci caching", "free inference", "simplified cache"],
+      "solves": [
+        "Do I need caching with local models?",
+        "Simplified caching for Ollama",
+        "Cache strategy when LLM is free",
+        "L1-only cache for local inference"
+      ],
+      "reference_file": "SKILL.md#local-model-considerations-ollama",
+      "token_cost": 80
     }
   },
 
@@ -140,7 +151,9 @@
       "reduce.*cost",
       "cache.*llm",
       "prompt.*cache",
-      "similar.*query"
+      "similar.*query",
+      "ollama.*cache",
+      "local.*model.*cache"
     ]
   },
 

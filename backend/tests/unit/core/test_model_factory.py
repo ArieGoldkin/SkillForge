@@ -25,6 +25,7 @@ def _disable_cached_chat_model():
     with patch("app.core.model_factory._get_cached_chat_model_class", return_value=None):
         yield
 
+
 # =============================================================================
 # Tests for _resolve_model_from_registry
 # =============================================================================

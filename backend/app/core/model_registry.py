@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Final, Literal
 
 LatencyTier = Literal["fast", "medium", "slow"]
-Provider = Literal["openai", "anthropic", "google_genai", "xai", "deepseek"]
+Provider = Literal["openai", "anthropic", "google_genai", "xai", "deepseek", "ollama"]
 
 
 @dataclass(frozen=True)
@@ -314,6 +314,57 @@ MODEL_REGISTRY: Final[dict[str, ModelInfo]] = {
         api_key_field="DEEPSEEK_API_KEY",
         notes="Thinking/reasoning mode for complex tasks",
     ),
+    # =========================================================================
+    # OLLAMA LOCAL MODELS - Zero Cost (Issue #606)
+    # =========================================================================
+    "ollama-deepseek-r1-70b": ModelInfo(
+        provider="ollama",
+        model_id="deepseek-r1:70b",
+        display_name="DeepSeek R1 70B (Local)",
+        input_cost_per_1m=0.0,  # FREE - local inference
+        output_cost_per_1m=0.0,
+        context_window=64_000,
+        latency_tier="medium",
+        capabilities=("reasoning", "coding", "thinking", "agents"),
+        api_key_field="",  # No API key needed
+        notes="MIT license, matches GPT-4/o1 level, ~42GB Q4 quantized",
+    ),
+    "ollama-qwen25-coder-32b": ModelInfo(
+        provider="ollama",
+        model_id="qwen2.5-coder:32b",
+        display_name="Qwen 2.5 Coder 32B (Local)",
+        input_cost_per_1m=0.0,
+        output_cost_per_1m=0.0,
+        context_window=32_768,
+        latency_tier="fast",
+        capabilities=("coding", "agents", "classification", "synthesis"),
+        api_key_field="",
+        notes="73.7% Aider benchmark (≈ GPT-4o), ~35GB Q8 quantized",
+    ),
+    "ollama-llama33-70b": ModelInfo(
+        provider="ollama",
+        model_id="llama3.3:70b",
+        display_name="Llama 3.3 70B (Local)",
+        input_cost_per_1m=0.0,
+        output_cost_per_1m=0.0,
+        context_window=128_000,
+        latency_tier="medium",
+        capabilities=("reasoning", "coding", "agents", "multimodal"),
+        api_key_field="",
+        notes="Meta's latest, ~40GB Q4 quantized, good general purpose",
+    ),
+    "ollama-nomic-embed": ModelInfo(
+        provider="ollama",
+        model_id="nomic-embed-text",
+        display_name="Nomic Embed v1.5 (Local)",
+        input_cost_per_1m=0.0,
+        output_cost_per_1m=0.0,
+        context_window=8_192,
+        latency_tier="fast",
+        capabilities=("embeddings", "fast"),
+        api_key_field="",
+        notes="768 dimensions, ~0.5GB, good for CI evaluation",
+    ),
 }
 
 
@@ -418,3 +469,23 @@ def get_hypothesized_models_for_task(task_type: str) -> list[str]:
     Use the evaluation framework to find the actual best models.
     """
     return TASK_MODEL_HYPOTHESES.get(task_type, list(MODEL_REGISTRY.keys())[:4])
+
+
+def list_ollama_models() -> list[str]:
+    """List all Ollama local models."""
+    return [name for name, info in MODEL_REGISTRY.items() if info.provider == "ollama"]
+
+
+# =============================================================================
+# LOCAL CI MODEL RECOMMENDATIONS (Issue #606)
+# =============================================================================
+
+LOCAL_CI_MODEL_MAPPING: Final[dict[str, str]] = {
+    # Maps cloud task types to recommended local Ollama models
+    "supervisor": "ollama-qwen25-coder-32b",  # Fast classification
+    "g_eval": "ollama-deepseek-r1-70b",  # Reasoning for quality eval
+    "agent_analysis": "ollama-qwen25-coder-32b",  # Code/domain analysis
+    "synthesis": "ollama-deepseek-r1-70b",  # Complex summarization
+    "reranker": "ollama-qwen25-coder-32b",  # Fast scoring
+    "embeddings": "ollama-nomic-embed",  # Local embeddings
+}

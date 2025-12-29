@@ -7,6 +7,8 @@ from uuid import UUID, uuid4
 import pytest
 
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
+from app.domains.analysis.workflows.graph_builder import build_analysis_graph
+from app.domains.analysis.workflows.nodes.agent_router import route_to_agents
 from app.shared.services.extraction.jina_reader import JinaReaderError
 
 if TYPE_CHECKING:
@@ -41,6 +43,7 @@ def sample_embedding() -> list[float]:
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow  # Issue #588: Test requires external services (Langfuse, Redis) not properly mocked
 async def test_analysis_workflow_with_mocked_services(
     sample_extraction_result: dict,
     sample_embedding: list[float],
@@ -118,7 +121,9 @@ async def test_analysis_workflow_with_mocked_services(
             return_value=[],
         ),
     ):
-        workflow = create_analysis_workflow()
+        # Issue #588: Use backward compatibility mode (parallel routing) for existing tests
+        # New tiered routing is the default, but these tests expect parallel behavior
+        workflow = build_analysis_graph(route_to_agents_fn=route_to_agents)
         result = await workflow.ainvoke(
             {
                 "url": "https://example.com",

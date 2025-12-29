@@ -20,6 +20,7 @@ from app.domains.analysis.workflows.state_types import (
     QualityScores,
     SupervisorDecision,
 )
+from app.domains.analysis.workflows.tier_types import TierSummary
 from app.shared.types import AgentFinding, WorkflowMetrics
 
 
@@ -73,6 +74,9 @@ class AnalysisState(TypedDict, total=False):
         extraction_error_code: Error code if extraction failed (Issue #441)
         workflow_status: Final workflow status - running/completed/failed (Issue #441)
         final_error: Final error message if workflow failed (Issue #441)
+        tier1_summary: Compressed findings from Tier 1 agents (Issue #588)
+        tier2_summary: Compressed findings from Tier 2 agents (Issue #588)
+        tier3_summary: Compressed findings from Tier 3 agents (Issue #588)
 
     Note:
         agent_findings uses operator.add reducer to allow parallel agent nodes
@@ -135,3 +139,7 @@ class AnalysisState(TypedDict, total=False):
     expected_agent_count: int  # Number of agents actually dispatched by router
     dispatched_agents: list[str]  # List of agent names actually dispatched
     completed_agent_count: int  # Incremented by each agent on completion (for validation)
+    # Issue #588: Sequential Tier Learning - compressed findings passed between tiers
+    tier1_summary: TierSummary  # Compressed findings from Tier 1 foundational agents
+    tier2_summary: TierSummary  # Compressed findings from Tier 2 technical agents
+    tier3_summary: TierSummary  # Compressed findings from Tier 3 strategic agents

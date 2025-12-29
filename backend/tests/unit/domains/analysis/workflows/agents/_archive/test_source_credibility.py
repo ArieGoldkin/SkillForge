@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from app.domains.analysis.workflows.agents.source_credibility import run_source_credibility
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.analysis.schemas.agents.source_credibility import (
     CredibilitySignal,
     SourceCredibilityOutput,
 )
-from app.domains.analysis.workflows.agents.source_credibility import run_source_credibility
 
 if TYPE_CHECKING:
     from app.core.types import AnalysisID

@@ -13,6 +13,10 @@ Run: pytest tests/unit/workflows/agents/test_schema_alignment.py -v
 
 import pytest
 
+# Import Tier 1 Universal agent schemas
+from app.domains.analysis.schemas.agents.actionable import Action, ActionableOutput, Resource
+from app.domains.analysis.schemas.agents.audience_fit import Audience, AudienceFitOutput
+
 # Import Content Analysis agent schemas (Tier 0)
 from app.domains.analysis.schemas.agents.code_quality_critic import CodeIssue, CodeQualityReview
 from app.domains.analysis.schemas.agents.dependency_mapper import Dependency, DependencyMapping
@@ -24,19 +28,15 @@ from app.domains.analysis.schemas.agents.integration_feasibility import (
     CompatibilityScore,
     IntegrationFeasibility,
 )
+from app.domains.analysis.schemas.agents.key_insights import KeyInsight, KeyInsightsOutput
 from app.domains.analysis.schemas.agents.performance_analyst import (
     PerformanceAnalysis,
     PerformanceMetric,
 )
+from app.domains.analysis.schemas.agents.pros_cons import ProsConsOutput
 from app.domains.analysis.schemas.agents.security_auditor import SecurityAudit, SecurityRisk
 from app.domains.analysis.schemas.agents.tech_comparator import TechComparison, TechComparisonEntry
 from app.domains.analysis.schemas.agents.trend_validator import TrendAssessment, TrendValidation
-
-# Import Tier 1 Universal agent schemas
-from app.domains.analysis.schemas.agents.actionable import Action, ActionableOutput, Resource
-from app.domains.analysis.schemas.agents.audience_fit import Audience, AudienceFitOutput
-from app.domains.analysis.schemas.agents.key_insights import KeyInsight, KeyInsightsOutput
-from app.domains.analysis.schemas.agents.pros_cons import ProsConsOutput
 
 # Import result processing functions
 from app.domains.analysis.workflows.agents.result_processing import (

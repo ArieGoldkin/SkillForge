@@ -1,6 +1,6 @@
 {
-  "version": "1.0.7",
-  "timestamp": "2025-12-25T12:00:00.000000+00:00",
+  "version": "1.0.8",
+  "timestamp": "2025-12-29T00:30:00.000000+00:00",
   "session_id": "sprint-8-completion-20251210",
   "mode": "single_agent",
   "current_sprint": {
@@ -12,70 +12,64 @@
     "milestone_closed": "2025-12-10T17:38:33Z"
   },
   "agent_decisions": {
-    "frontend-ui-developer": {
-      "decision": "IMPLEMENTED",
-      "timestamp": "2025-12-04T10:30:00.000Z",
-      "rationale": "Implemented frontend integration for Issue #75 full-text search API. Created TypeScript types, React Query hook, and updated Library component with search mode toggle (hybrid/fulltext/semantic), pagination, and snippet handling. All code quality checks pass (ESLint, TypeScript, Biome).",
-      "quality_score": 9.0,
-      "blocking_issues": 0,
-      "files_modified": [
-        "frontend/src/types/api.ts",
-        "frontend/src/services/api.service.ts",
-        "frontend/src/features/library/Library.tsx",
-        "frontend/src/features/library/hooks/index.ts"
-      ],
-      "files_created": [
-        "frontend/src/features/library/hooks/useLibrarySearch.ts"
-      ]
-    },
     "ai-ml-engineer": {
       "decision": "RESEARCH_COMPLETE",
-      "timestamp": "2025-12-10T00:00:00.000Z",
-      "rationale": "Completed comprehensive PII detection research for Issue #220. Evaluated 4 approaches (regex, Presidio, spaCy NER, hybrid) with performance benchmarks, accuracy metrics, and production-ready code examples. Recommended hybrid approach (regex + Presidio) for optimal balance of speed (< 100ms p95) and accuracy (94% F1 score).",
-      "quality_score": 9.5,
-      "blocking_issues": 0,
-      "research_deliverables": {
-        "approaches_evaluated": 4,
-        "code_examples_provided": 4,
-        "performance_benchmarks": "Complete",
-        "recommendation": "Hybrid (Regex + Presidio)"
+      "timestamp": "2025-12-28T23:45:00Z",
+      "rationale": "Comprehensive research on Ollama Python integration best practices for December 2025. Documented langchain-ollama 1.0.1 features, OllamaEmbeddings usage, ChatOllama advanced capabilities (tool calling, streaming, structured output), Apple Silicon M4 Max optimization strategies, and CI/CD integration patterns. Provides actionable implementation plan for SkillForge backend integration.",
+      "research_quality": 9.5,
+      "sources_reviewed": 12,
+      "documentation_file": ".claude/context/role-comm-aiml.md",
+      "key_findings": [
+        "langchain-ollama 1.0.1 (latest, Dec 12, 2025) requires Python 3.10+",
+        "OllamaEmbeddings supports async with aembed_documents() for batch processing",
+        "Tool calling supported on Llama 3.1, Mistral Nemo, Firefunction v2, Command-R+",
+        "Structured output via JSON schemas with Pydantic integration",
+        "Native macOS support with Metal acceleration - NO Docker on Mac",
+        "Recommended models: nomic-embed-text (embeddings), llama3.1:8b (chat)"
+      ],
+      "implementation_recommendations": {
+        "development": "Use Ollama locally (free, fast iteration, privacy)",
+        "production_embeddings": "Ollama (cost-effective, high volume)",
+        "production_llm": "OpenAI GPT-4 (quality critical for artifacts)",
+        "ci_cd": "Self-hosted macOS runner with native Ollama installation"
       }
     },
-    "code-quality-reviewer": {
-      "decision": "APPROVED_WITH_MINOR_TEST_FIX",
-      "timestamp": "2025-12-14T20:06:49.713367+00:00",
-      "rationale": "Artifact Quality Initiative fixes are production-ready. All 4 fixes solve their intended problems correctly. Backend: 47/47 tests pass, all CI checks pass. Frontend: 21/23 tests pass (2 test assertions need updating to match implementation, code is correct). No security issues, no performance regressions, excellent edge case handling.",
+    "backend-system-architect": {
+      "decision": "APPROVED_WITH_RECOMMENDATIONS",
+      "timestamp": "2025-12-28T14:30:00Z",
+      "rationale": "Sequential Tier Learning architecture (Issue #588, PR #598) demonstrates excellent engineering with clean LangGraph patterns, solid state management, and comprehensive testing. Implementation successfully reduces token overhead by 15-30% through compressed tier summaries. Approved for merge with post-merge improvements recommended for error handling and observability.",
       "quality_score": 9.5,
+      "production_readiness": "95%",
       "blocking_issues": 0,
-      "issues_found": {
+      "review_report": ".claude/context/architecture-review-tier-learning-588.md",
+      "recommendations": {
         "critical": 0,
-        "high": 0,
-        "medium": 0,
-        "low": 1
-      }
-    },
-    "ux-researcher": {
-      "decision": "REMOVE_INLINE_ARTIFACT_PREVIEW",
-      "timestamp": "2025-12-25T12:00:00.000Z",
-      "rationale": "Comprehensive research of analytics dashboards (Datadog, Grafana, Mixpanel) and CI/CD platforms (GitHub Actions, CircleCI, Jenkins) reveals our inline artifact preview violates industry standards. Long-form markdown content (2000-10000 tokens) should be on separate page, not inline preview. Current implementation scores 5.5/10 with critical spatial balance issue (3/10) - markdown occupies only 31% of 2560px screen width, leaving 53% empty space. Industry consensus: summary dashboards separate from detail pages.",
-      "confidence": "very_high",
-      "research_backed": true,
-      "alternatives_evaluated": 3,
-      "ux_score": "5.5/10",
-      "score_breakdown": {
-        "visual_hierarchy": "4/10",
-        "content_prioritization": "5/10",
-        "spatial_balance": "3/10 - CRITICAL ISSUE",
-        "information_architecture": "6/10",
-        "user_flow": "7/10",
-        "responsive_design": "8/10",
-        "accessibility": "8/10"
+        "high_priority": 3,
+        "medium_priority": 3,
+        "low_priority": 3
       },
-      "recommendation": "Option A - Remove inline artifact preview (immediate fix, high impact)",
-      "alternative_options": {
-        "option_b": "50/50 split with truncated preview (moderate fix)",
-        "option_c": "Tabbed interface with smart defaults (advanced fix, best UX)"
-      }
+      "assessment_areas": {
+        "langgraph_workflow": "10/10 - Excellent",
+        "state_management": "10/10 - Excellent",
+        "error_handling": "7/10 - Needs improvement",
+        "token_management": "9/10 - Good",
+        "testing": "9/10 - Good",
+        "documentation": "8/10 - Good"
+      },
+      "key_strengths": [
+        "Clean separation of concerns with dedicated aggregation nodes",
+        "Pure Python compression (no LLM calls) for fast, deterministic summarization",
+        "Comprehensive test coverage (53 tests for tier_summary_builder alone)",
+        "Graceful degradation when tiers have no agents selected",
+        "Backward compatibility mode preserves existing tests"
+      ],
+      "improvement_areas": [
+        "Add error handling to tier aggregate nodes (wrap build_tier_summary in try/except)",
+        "Add token budget validation after compression",
+        "Add E2E test for full tiered workflow",
+        "Add observability metrics (timing, compression ratios)",
+        "Switch to tiktoken for accurate token counting"
+      ]
     }
   },
   "quality_evidence": {
@@ -145,6 +139,58 @@
     }
   },
   "tasks_completed": [
+    {
+      "task": "Issue #606 - Ollama Local Models Implementation",
+      "agent": "ai-ml-engineer",
+      "timestamp": "2025-12-29T00:30:00Z",
+      "status": "implementation_complete",
+      "approval": "VERIFIED",
+      "files_created": 9,
+      "files_modified": 5,
+      "tests_created": 23,
+      "evidence_collected": true,
+      "key_deliverables": {
+        "ollama_provider": "backend/app/shared/services/llm/ollama_provider.py",
+        "embedding_service": "backend/app/shared/services/embeddings/ollama_service.py",
+        "factory": "backend/app/shared/services/llm/factory.py",
+        "setup_script": "backend/scripts/setup_ollama.sh",
+        "unit_tests": "backend/tests/unit/services/llm/",
+        "skill_reference": ".claude/skills/ai-native-development/references/ollama-local-inference.md",
+        "skill_template": ".claude/skills/ai-native-development/templates/ollama-provider-template.py"
+      },
+      "quality_checks": {
+        "ruff_format": "PASS",
+        "ruff_lint": "PASS",
+        "mypy": "PASS"
+      },
+      "cost_reduction": "93% ($400/mo → $28/mo)"
+    },
+    {
+      "task": "Ollama Python Integration Research (December 2025)",
+      "agent": "ai-ml-engineer",
+      "timestamp": "2025-12-28T23:45:00Z",
+      "status": "research_complete",
+      "approval": "COMPLETE",
+      "sources_reviewed": 12,
+      "documentation_created": true,
+      "key_deliverables": {
+        "communication_log": ".claude/context/role-comm-aiml.md",
+        "package_version": "langchain-ollama 1.0.1 (Dec 12, 2025)",
+        "implementation_plan": "4-phase plan (setup, integration, testing, optimization)",
+        "recommended_models": {
+          "embeddings": "nomic-embed-text",
+          "chat": "llama3.1:8b"
+        }
+      },
+      "topics_covered": [
+        "langchain-ollama latest features and API",
+        "OllamaEmbeddings class usage with async support",
+        "ChatOllama advanced features (tool calling, streaming, structured output)",
+        "Apple Silicon M4 Max performance optimization",
+        "CI/CD integration patterns for self-hosted macOS runners",
+        "Ollama vs OpenAI comparison for SkillForge use cases"
+      ]
+    },
     {
       "task": "React 19 API Improvements - useOptimistic, useActionState, useFormStatus",
       "agent": "frontend-ui-developer",
@@ -655,6 +701,54 @@
       ]
     },
     {
+      "decision": "Issue #606 - Ollama Local Models for CI Cost Reduction",
+      "rationale": "Implemented local LLM and embedding services using Ollama to reduce CI costs by 93%. Architecture uses langchain-ollama v1.0.1 with ChatOllama (LLM) and OllamaEmbeddings (embeddings). Provider factory pattern enables seamless switching between cloud (OpenAI/Gemini) and local (Ollama) based on OLLAMA_ENABLED setting. Self-hosted macOS M4 Max 256GB runner provides native Metal acceleration without Docker overhead.",
+      "date": "2025-12-29",
+      "status": "implemented",
+      "technical_decisions": {
+        "llm_provider": "OllamaProvider wrapping ChatOllama with factory methods for_reasoning() and for_coding()",
+        "embedding_provider": "OllamaEmbeddingService wrapping OllamaEmbeddings with async support",
+        "factory_pattern": "get_llm_provider() and get_embedding_provider() auto-switch based on OLLAMA_ENABLED",
+        "keep_alive": "5m default (10m for reasoning) - keeps models loaded between CI runs",
+        "model_recommendations": "deepseek-r1:70b (reasoning), qwen2.5-coder:32b (coding), nomic-embed-text (embeddings)",
+        "ci_workflow": "Pre-build model pulling with ollama pull, health checks before test runs"
+      },
+      "files_created": [
+        "backend/app/shared/services/llm/ollama_provider.py",
+        "backend/app/shared/services/embeddings/ollama_service.py",
+        "backend/app/shared/services/llm/factory.py",
+        "backend/scripts/setup_ollama.sh",
+        "backend/tests/unit/services/llm/test_ollama_provider.py",
+        "backend/tests/unit/services/llm/test_ollama_embedding_service.py",
+        "backend/tests/unit/services/llm/test_factory.py",
+        ".claude/skills/ai-native-development/references/ollama-local-inference.md",
+        ".claude/skills/ai-native-development/templates/ollama-provider-template.py"
+      ],
+      "files_modified": [
+        "backend/app/core/config.py",
+        "backend/pyproject.toml",
+        ".github/workflows/ci.yml",
+        ".claude/skills/ai-native-development/capabilities.json",
+        ".claude/skills/llm-caching-patterns/capabilities.json"
+      ],
+      "configuration_settings": {
+        "OLLAMA_ENABLED": "Master on/off switch for local models",
+        "OLLAMA_HOST": "http://localhost:11434 (default)",
+        "OLLAMA_MODEL_REASONING": "deepseek-r1:70b",
+        "OLLAMA_MODEL_CODING": "qwen2.5-coder:32b",
+        "OLLAMA_MODEL_EMBED": "nomic-embed-text",
+        "OLLAMA_EMBEDDING_DIMENSIONS": 768,
+        "OLLAMA_NUM_CTX": 32768,
+        "OLLAMA_TIMEOUT": 300.0
+      },
+      "cost_reduction": {
+        "before": "$400/month (OpenAI API calls in CI)",
+        "after": "$28/month (self-hosted runner electricity)",
+        "savings": "93%"
+      },
+      "skill_updated": "ai-native-development v1.2.0, llm-caching-patterns v1.3.0"
+    },
+    {
       "decision": "Issue #507 - Agent Self-Correction with Output Validation Loops",
       "rationale": "Implemented per-agent output validation with self-correction retry loops. Pattern: (1) Agent produces output, (2) Validator checks quality (minimum insights, specific titles, no placeholders), (3) If validation fails, retry with correction prompt appended to conversation, (4) Max 2 retries before accepting degraded output. Refactored execution.py to reduce PLR0915 (72 statements to ~35) by extracting: self_correction.py (loop logic), execution_helpers.py (validation helpers), _execute_agent_retry_loop() (main loop), _invoke_agent_with_timeout() (timeout handling).",
       "date": "2025-12-27",
@@ -810,7 +904,7 @@
     }
   },
   "metadata": {
-    "last_active": "2025-12-28T14:04:32Z"
+    "last_active": "2025-12-29T00:35:00Z"
   },
-  "last_session": "2025-12-28T18:10:27+02:00"
+  "last_session": "2025-12-29T00:08:47+02:00"
 }
