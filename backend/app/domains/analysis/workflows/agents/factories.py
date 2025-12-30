@@ -51,6 +51,27 @@ from app.shared.services.embeddings.service import EmbeddingService
 logger = get_logger(__name__)
 
 
+def _get_structured_output_kwargs(provider: str) -> dict:
+    """Get provider-specific kwargs for with_structured_output().
+
+    Args:
+        provider: LLM provider name (e.g., 'openai', 'anthropic', 'google_genai')
+
+    Returns:
+        Dict of kwargs for with_structured_output()
+
+    Note:
+        - strict=True is OpenAI-specific (JSON mode with guaranteed schema compliance)
+        - Gemini and Anthropic ignore this parameter silently
+        - Providing strict=True to non-OpenAI providers can cause unexpected behavior
+
+    """
+    if provider == "openai":
+        return {"strict": True}
+    # Gemini and Anthropic don't support strict mode
+    return {}
+
+
 def create_agent_with_lcel_fallback(  # noqa: PLR0913 - Factory needs all params
     agent_type: str,
     response_schema: type[BaseModel],
@@ -86,22 +107,27 @@ def create_agent_with_lcel_fallback(  # noqa: PLR0913 - Factory needs all params
     # Use settings defaults if not specified
     primary_model = primary_model or settings.LLM_MODEL
     fallback_model = fallback_model or settings.LLM_FALLBACK_MODEL
+    provider = settings.resolved_llm_provider()
 
     logger.info(
         "creating_lcel_agent_with_fallback",
         agent_type=agent_type,
         primary_model=primary_model,
         fallback_model=fallback_model,
+        provider=provider,
         has_tools=tools is not None,
     )
 
+    # Get provider-specific kwargs (strict=True only for OpenAI)
+    structured_kwargs = _get_structured_output_kwargs(provider)
+
     # Create primary model
     primary = get_chat_model(config={"configurable": {"model": primary_model}})
-    primary_with_structure = primary.with_structured_output(response_schema, strict=True)
+    primary_with_structure = primary.with_structured_output(response_schema, **structured_kwargs)
 
     # Create fallback model
     fallback = get_chat_model(config={"configurable": {"model": fallback_model}})
-    fallback_with_structure = fallback.with_structured_output(response_schema, strict=True)
+    fallback_with_structure = fallback.with_structured_output(response_schema, **structured_kwargs)
 
     # Bind tools if provided
     # Note: Type checker doesn't see bind_tools on Runnable, but it exists at runtime

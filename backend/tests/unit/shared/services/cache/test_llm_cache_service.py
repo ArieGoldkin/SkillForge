@@ -221,23 +221,24 @@ class TestL1CacheBehavior:
         content = "content"
         prompt = "prompt"
 
-        # Set cache
-        await cache.set(agent_type, content, prompt, "response")
+        # Mock L2 cache to return None (unavailable) - we're testing L1 TTL only
+        with patch.object(cache, "_get_l2_cache", return_value=None):
+            # Set cache (L1 only since L2 is mocked out)
+            await cache.set(agent_type, content, prompt, "response")
 
-        # Immediate get - should hit
-        result = await cache.get(agent_type, content, prompt)
-        assert result is not None
-        assert result.cache_level == "l1"
+            # Immediate get - should hit L1
+            result = await cache.get(agent_type, content, prompt)
+            assert result is not None
+            assert result.cache_level == "l1"
 
-        # Wait for TTL expiration
-        import asyncio
+            # Wait for TTL expiration
+            import asyncio
 
-        await asyncio.sleep(1.5)  # Wait 1.5 seconds
+            await asyncio.sleep(1.5)  # Wait 1.5 seconds
 
-        # Get again - should miss (TTL expired)
-        result = await cache.get(agent_type, content, prompt)
-        # L1 miss, will try L2 (which will also miss in this test)
-        assert result is None
+            # Get again - should miss (L1 TTL expired, L2 unavailable)
+            result = await cache.get(agent_type, content, prompt)
+            assert result is None
 
         stats = cache.get_stats()
         assert stats["l1_hits"] == 1

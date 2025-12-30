@@ -96,5 +96,6 @@
   "context-engineering": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
   "scaling-agent-systems": "https://arxiv.org/abs/2512.08296",
   "deepcode-open-agentic-coding": "https://arxiv.org/abs/2512.07921",
-  "raft-time-series-forecasting": "https://arxiv.org/abs/2505.04163"
+  "raft-time-series-forecasting": "https://arxiv.org/abs/2505.04163",
+  "context-engineering-manus": "https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus"
 }

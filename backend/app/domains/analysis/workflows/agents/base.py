@@ -102,13 +102,160 @@ class ToolCallConfig:
     parallel_tool_calls: bool = True
 
 
+def _create_gemini_structured_chain(
+    model: "BaseChatModel",
+    system_prompt: str,
+    response_schema: type[BaseModel],
+) -> Runnable:
+    """Create structured output chain for Gemini provider.
+
+    Gemini 2.5+ returns Pydantic models directly via with_structured_output().
+    The ToolStrategy pattern used for Anthropic/OpenAI doesn't properly extract
+    structured responses from Gemini, resulting in empty findings {}.
+
+    This function creates an LCEL chain that:
+    1. Formats input messages with system prompt
+    2. Uses with_structured_output() directly (proven to work with Gemini)
+    3. Wraps output to match ToolStrategy format for compatibility
+
+    Args:
+        model: Base chat model (Gemini)
+        system_prompt: System prompt for the agent
+        response_schema: Pydantic model defining expected output structure
+
+    Returns:
+        LCEL chain that produces {"structured_response": PydanticModel, "messages": []}
+
+    """
+    from langchain_core.messages import HumanMessage
+    from langchain_core.runnables import RunnableLambda
+
+    system_message = _create_system_message_with_cache_control(system_prompt)
+
+    def format_messages(x: dict | list) -> list:
+        """Convert agent input to message list with system prompt."""
+        if isinstance(x, dict) and "messages" in x:
+            user_msgs = x["messages"]
+            formatted = [system_message]
+            for msg in user_msgs:
+                if isinstance(msg, dict) and msg.get("role") == "user":
+                    formatted.append(HumanMessage(content=msg["content"]))
+                elif hasattr(msg, "content"):
+                    # Already a LangChain message object
+                    formatted.append(msg)
+            return formatted
+        if isinstance(x, list):
+            return [system_message, *x]
+        return [system_message]
+
+    def wrap_output(pydantic_output: BaseModel) -> dict:
+        """Wrap Pydantic output to match ToolStrategy format for compatibility."""
+        return {"structured_response": pydantic_output, "messages": []}
+
+    # Build LCEL chain: format → model with structured output → wrap
+    chain = (
+        RunnableLambda(format_messages)
+        | model.with_structured_output(response_schema)  # No strict=True for Gemini
+        | RunnableLambda(wrap_output)
+    )
+
+    logger.info(
+        "gemini_structured_chain_created",
+        schema=response_schema.__name__,
+    )
+
+    return chain
+
+
+def _create_gemini_tool_chain(
+    model: "BaseChatModel",
+    system_prompt: str,
+    response_schema: type[BaseModel],
+    tools: Sequence[BaseTool],
+    parallel_tool_calls: bool = True,
+) -> Runnable:
+    """Create tool-enabled structured output chain for Gemini provider.
+
+    Similar to _create_gemini_structured_chain but supports tool calling.
+    Gemini handles tool calls differently from Anthropic/OpenAI, so we need
+    a separate chain that properly binds tools and extracts structured output.
+
+    Args:
+        model: Base chat model (Gemini)
+        system_prompt: Enhanced system prompt with tool guidelines
+        response_schema: Pydantic model defining expected output structure
+        tools: List of MCP tools to bind
+        parallel_tool_calls: Whether to allow parallel tool execution
+
+    Returns:
+        LCEL chain that handles tool calls and produces structured output
+
+    Note:
+        For Gemini, we bind tools first, then use with_structured_output().
+        The chain handles tool call/response cycles before final structured output.
+
+    """
+    from langchain_core.messages import HumanMessage
+    from langchain_core.runnables import RunnableLambda
+
+    system_message = _create_system_message_with_cache_control(system_prompt)
+
+    # Bind tools to model first
+    # Note: Gemini supports parallel_tool_calls but not strict mode
+    # Cast needed: bind_tools returns Runnable, but at runtime it's still a BaseChatModel
+    bound_model = cast(
+        "BaseChatModel",
+        model.bind_tools(
+            list(tools),
+            parallel_tool_calls=parallel_tool_calls,
+            tool_choice="auto",
+        ),
+    )
+
+    def format_messages(x: dict | list) -> list:
+        """Convert agent input to message list with system prompt."""
+        if isinstance(x, dict) and "messages" in x:
+            user_msgs = x["messages"]
+            formatted = [system_message]
+            for msg in user_msgs:
+                if isinstance(msg, dict) and msg.get("role") == "user":
+                    formatted.append(HumanMessage(content=msg["content"]))
+                elif hasattr(msg, "content"):
+                    formatted.append(msg)
+            return formatted
+        if isinstance(x, list):
+            return [system_message, *x]
+        return [system_message]
+
+    def wrap_output(pydantic_output: BaseModel) -> dict:
+        """Wrap Pydantic output to match ToolStrategy format for compatibility."""
+        return {"structured_response": pydantic_output, "messages": []}
+
+    # For tool-enabled agents, we still use with_structured_output
+    # but after binding tools. The LLM will call tools and then produce
+    # structured output as final response.
+    chain = (
+        RunnableLambda(format_messages)
+        | bound_model.with_structured_output(response_schema)  # No strict=True for Gemini
+        | RunnableLambda(wrap_output)
+    )
+
+    logger.info(
+        "gemini_tool_chain_created",
+        schema=response_schema.__name__,
+        tool_count=len(tools),
+    )
+
+    return chain
+
+
 def create_structured_agent(
     system_prompt: str,
     response_schema: type[BaseModel],
     tools: Sequence[BaseTool] | None = None,
     task_type: str | None = None,
 ) -> Runnable:
-    """Create an agent with structured output using ToolStrategy.
+    """Create an agent with structured output using provider-aware strategy.
 
     Args:
         system_prompt: System prompt for the agent
@@ -122,12 +269,37 @@ def create_structured_agent(
         Configured agent instance with structured output support
 
     Note:
-        ToolStrategy automatically validates output against response_schema.
-        Validation errors are automatically traced by Langfuse when they occur.
-        For Anthropic models, system prompts are automatically cached for cost savings.
+        - For Gemini: Uses with_structured_output() directly (ToolStrategy incompatible)
+        - For Anthropic/OpenAI: Uses ToolStrategy pattern
+        - Validation errors are automatically traced by Langfuse when they occur.
+        - For Anthropic models, system prompts are automatically cached for cost savings.
 
     """
     model = get_chat_model(task_type=task_type)
+    provider = settings.resolved_llm_provider()
+
+    # Gemini requires different agent creation pattern
+    # ToolStrategy doesn't properly extract structured responses from Gemini
+    if provider == "google_genai":
+        logger.debug(
+            "creating_gemini_structured_agent",
+            provider=provider,
+            schema=response_schema.__name__,
+            has_tools=bool(tools),
+        )
+        # Route to tool-enabled chain when tools are provided
+        # Without this, agents cannot use MCP tools (retrieval, web search, etc.)
+        if tools:
+            return _create_gemini_tool_chain(
+                model=model,
+                system_prompt=system_prompt,
+                response_schema=response_schema,
+                tools=tools,
+                parallel_tool_calls=False,  # Sequential for deterministic execution
+            )
+        return _create_gemini_structured_chain(model, system_prompt, response_schema)
+
+    # Original path for Anthropic/OpenAI - ToolStrategy works correctly
     # Prevent multiple parallel tool calls; we expect exactly one structured response
     # LangChain 1.2.x: Added tool_choice for explicit provider control
     bound_model: Runnable = model.bind_tools(
@@ -139,6 +311,13 @@ def create_structured_agent(
     # Create system message with prompt caching support
     system_message = _create_system_message_with_cache_control(system_prompt)
 
+    logger.debug(
+        "creating_toolstrategy_agent",
+        provider=provider,
+        schema=response_schema.__name__,
+        has_tools=bool(tools),
+    )
+
     # Note: ToolStrategy handles schema validation internally
     # LangChain 1.2.x strict mode is applied via with_structured_output() in other paths
     return create_agent(
@@ -147,11 +326,6 @@ def create_structured_agent(
         system_prompt=system_message,
         response_format=ToolStrategy(response_schema),
     )
-
-    # Note: ToolStrategy already validates output against response_schema.
-    # Validation errors are automatically captured by LangChain and traced by Langfuse.
-    # We don't need to wrap invoke here as ToolStrategy handles validation internally.
-    # The validation errors will appear in Langfuse traces automatically.
 
 
 def _build_tool_enhanced_prompt(
@@ -265,6 +439,26 @@ def create_tool_enabled_agent(
     )
 
     model = get_chat_model(task_type=task_type)
+    provider = settings.resolved_llm_provider()
+
+    # Gemini requires different agent creation pattern
+    # ToolStrategy doesn't properly extract structured responses from Gemini
+    if provider == "google_genai":
+        logger.debug(
+            "creating_gemini_tool_agent",
+            provider=provider,
+            schema=response_schema.__name__,
+            tool_count=len(tools),
+        )
+        return _create_gemini_tool_chain(
+            model=model,
+            system_prompt=enhanced_prompt,
+            response_schema=response_schema,
+            tools=tools,
+            parallel_tool_calls=config.parallel_tool_calls,
+        )
+
+    # Original path for Anthropic/OpenAI - ToolStrategy works correctly
     # Enable parallel tool calls for MCP tools (efficiency)
     # LangChain 1.2.x: Added tool_choice for explicit provider control
     bound_model: Runnable = model.bind_tools(
@@ -275,6 +469,13 @@ def create_tool_enabled_agent(
 
     # Create system message with prompt caching support
     system_message = _create_system_message_with_cache_control(enhanced_prompt)
+
+    logger.debug(
+        "creating_toolstrategy_tool_agent",
+        provider=provider,
+        schema=response_schema.__name__,
+        tool_count=len(tools),
+    )
 
     # Note: ToolStrategy handles schema validation internally
     # LangChain 1.2.x strict mode is applied via with_structured_output() in other paths

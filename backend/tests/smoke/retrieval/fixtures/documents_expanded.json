@@ -3947,6 +3947,62 @@
           "granularity": "coarse"
         }
       ]
+    },
+    {
+      "id": "context-engineering-manus",
+      "title": "Context Engineering for AI Agents: Lessons from Building Manus",
+      "source_url": "https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus",
+      "content_type": "article",
+      "bucket": "long",
+      "language": "en",
+      "tags": [
+        "ai-ml",
+        "context-engineering",
+        "kv-cache-optimization",
+        "logits-masking",
+        "token-efficiency",
+        "agent-architecture",
+        "llm-agents",
+        "state-machines"
+      ],
+      "sections": [
+        {
+          "id": "context-engineering-manus/kv-cache",
+          "title": "Design Around the KV-Cache",
+          "content": "The KV-cache is the true context of LLMs - not the text itself. Avoid patterns that invalidate cache: don't remove text, don't modify existing content, don't dynamically reorder items. Manus moves away from dynamic few-shot example selection based on query similarity because this makes prefix unstable and invalidates cache. Instead use stable prefixes and append-only context updates. Cache invalidation costs both latency and money (no prompt cache discounts). Agents require iterative steps and stability of earlier portions lets you avoid regenerating from scratch. Design context like an append-only log for optimal KV-cache utilization.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "context-engineering-manus/mask-not-remove",
+          "title": "Mask, Don't Remove: Tool Management with State Machines",
+          "content": "Instead of dynamically adding/removing tools from context, keep all tools in context and use logits masking to prevent selection of currently invalid tools. This maintains stable token positions (preserving KV-cache) while still constraining behavior. Manus uses a state machine where current state determines which tools are masked via logit bias. This is more efficient than regenerating context when tool availability changes. The approach works with function calling by masking tokens that would select invalid tools. State machine transitions control tool availability without context modification.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "context-engineering-manus/file-system-context",
+          "title": "Use the File System as Context",
+          "content": "For long tasks, Manus delegates memory to the file system rather than keeping everything in context. Agents create, read, and edit files as external memory. This works naturally because modern LLMs are trained extensively on coding tasks and understand file operations. Compressed context (summaries in files) scales better than ever-growing context windows. The file system acts as unlimited external memory while context maintains working memory. This pattern enables handling tasks that would exceed context limits while maintaining coherent state across operations.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "context-engineering-manus/attention-recitation",
+          "title": "Manipulate Attention Through Recitation",
+          "content": "When agents need to 'remember' specific information buried deep in context, have them recite it rather than rely on attention finding it. Attention patterns can miss critical details in long contexts. By having the agent explicitly output important information before using it, you ensure the relevant details are in recent context with high attention weights. This 'recitation' technique makes retrieval from context more reliable. Particularly useful when critical information was established early in a long conversation but needed much later.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "context-engineering-manus/keep-wrong-stuff",
+          "title": "Keep the Wrong Stuff: Error Preservation for Learning",
+          "content": "Manus intentionally preserves error messages, failed attempts, and corrections in context. This teaches the model what not to do and prevents repetition of mistakes. When errors are removed, the model loses signal about what approaches failed. The context becomes a learning trace showing both failures and successes. This is counterintuitive (removing failures seems cleaner) but empirically improves agent performance. Errors in context serve as negative examples during inference, helping the model avoid similar mistakes.",
+          "granularity": "coarse"
+        },
+        {
+          "id": "context-engineering-manus/avoid-few-shot",
+          "title": "Avoid Pattern Rigidity: Few-Shot Example Pitfalls",
+          "content": "Few-shot examples can cause harmful pattern-following where agents mimic example structure too rigidly. Manus found that providing examples led to agents replicating superficial patterns rather than understanding underlying principles. Zero-shot with clear instructions often produces more flexible, appropriate behavior. If examples are necessary, use diverse examples that demonstrate variation rather than a single pattern. This prevents the 'template copying' failure mode where agents follow example format even when inappropriate for the current task.",
+          "granularity": "coarse"
+        }
+      ]
     }
   ]
 }

@@ -17,6 +17,17 @@ EMBEDDING_TIMEOUT = 120.0  # Embedding service timeout (longer for large texts)
 DB_TIMEOUT = 5.0  # Database connection timeout
 DB_TEST_TIMEOUT = 10.0  # Database timeout in tests (longer for CI/CD)
 
+# OpenAI Client HTTP Timeouts (httpx.Timeout configuration)
+EMBEDDING_HTTP_CONNECT_TIMEOUT = 5.0  # Connection establishment timeout
+EMBEDDING_HTTP_READ_TIMEOUT = 120.0  # Read timeout (embeddings can be slow)
+EMBEDDING_HTTP_WRITE_TIMEOUT = 10.0  # Write timeout for request body
+EMBEDDING_HTTP_POOL_TIMEOUT = 60.0  # Pool acquisition timeout
+
+# Circuit Breaker Configuration for Embeddings
+EMBEDDING_CIRCUIT_FAILURE_THRESHOLD = 5  # Consecutive failures before opening circuit
+EMBEDDING_CIRCUIT_SUCCESS_THRESHOLD = 2  # Successes needed to close circuit
+EMBEDDING_CIRCUIT_TIMEOUT_SECONDS = 60.0  # Time before attempting recovery
+
 # Text and Message Limits
 MAX_ERROR_MESSAGE_LENGTH = 100  # Maximum length for error messages in responses
 MAX_ERROR_MESSAGE_LENGTH_LONG = 200  # Maximum length for error messages in logs

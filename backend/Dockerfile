@@ -39,10 +39,14 @@ RUN poetry install --only=main --no-root && \
 # Stage 2: Runtime
 FROM python:3.13-slim as runtime
 
-# Install runtime system dependencies
+# Install runtime system dependencies + Node.js 22 LTS (Jod) for MCP servers
+# Node.js 22.x is LTS as of Dec 2025 (Active LTS until Oct 2025, Maintenance until Apr 2027)
 RUN apt-get update && apt-get install -y \
     curl \
     postgresql-client \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user

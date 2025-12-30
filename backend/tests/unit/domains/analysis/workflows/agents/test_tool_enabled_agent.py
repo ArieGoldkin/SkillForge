@@ -168,16 +168,21 @@ class TestBuildToolEnhancedPrompt:
 class TestCreateToolEnabledAgent:
     """Test create_tool_enabled_agent factory function."""
 
+    @patch("app.domains.analysis.workflows.agents.base.settings")
     @patch("app.domains.analysis.workflows.agents.base.create_agent")
     @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_returns_runnable(
         self,
         mock_get_model,
         mock_create_agent,
+        mock_settings,
         mock_tools,
         mock_response_schema,
     ):
-        """Factory returns a Runnable instance."""
+        """Factory returns a Runnable instance (non-Gemini provider)."""
+        # Use Anthropic provider to test ToolStrategy path
+        mock_settings.resolved_llm_provider.return_value = "anthropic"
+        mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
         # Setup mocks
         mock_model = MagicMock()
         mock_bound_model = MagicMock()
@@ -280,6 +285,7 @@ class TestCreateToolEnabledAgent:
         call_kwargs = mock_model.bind_tools.call_args.kwargs
         assert call_kwargs.get("parallel_tool_calls") is False
 
+    @patch("app.domains.analysis.workflows.agents.base.settings")
     @patch("app.domains.analysis.workflows.agents.base._build_tool_enhanced_prompt")
     @patch("app.domains.analysis.workflows.agents.base.create_agent")
     @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
@@ -288,10 +294,14 @@ class TestCreateToolEnabledAgent:
         mock_get_model,
         mock_create_agent,
         mock_build_prompt,
+        mock_settings,
         mock_tools,
         mock_response_schema,
     ):
-        """System prompt is enhanced with tool information."""
+        """System prompt is enhanced with tool information (non-Gemini)."""
+        # Use Anthropic provider to test ToolStrategy path
+        mock_settings.resolved_llm_provider.return_value = "anthropic"
+        mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
         # Setup mocks
         mock_model = MagicMock()
         mock_bound_model = MagicMock()
@@ -423,16 +433,21 @@ class TestCreateToolEnabledAgent:
         call_args = mock_model.bind_tools.call_args
         assert call_args.kwargs.get("parallel_tool_calls") is False
 
+    @patch("app.domains.analysis.workflows.agents.base.settings")
     @patch("app.domains.analysis.workflows.agents.base.create_agent")
     @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_passes_tools_to_create_agent(
         self,
         mock_get_model,
         mock_create_agent,
+        mock_settings,
         mock_tools,
         mock_response_schema,
     ):
-        """Tools are passed to create_agent function."""
+        """Tools are passed to create_agent function (non-Gemini)."""
+        # Use Anthropic provider to test ToolStrategy path
+        mock_settings.resolved_llm_provider.return_value = "anthropic"
+        mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
         # Setup mocks
         mock_model = MagicMock()
         mock_bound_model = MagicMock()
@@ -498,17 +513,22 @@ class TestCreateToolEnabledAgent:
 
 
 class TestBackwardsCompatibility:
-    """Test that existing create_structured_agent function remains unchanged."""
+    """Test that existing create_structured_agent function remains unchanged (non-Gemini)."""
 
+    @patch("app.domains.analysis.workflows.agents.base.settings")
     @patch("app.domains.analysis.workflows.agents.base.create_agent")
     @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_create_structured_agent_still_works(
         self,
         mock_get_model,
         mock_create_agent,
+        mock_settings,
         mock_response_schema,
     ):
-        """Existing create_structured_agent function unchanged."""
+        """Existing create_structured_agent function unchanged (non-Gemini)."""
+        # Use Anthropic provider to test ToolStrategy path
+        mock_settings.resolved_llm_provider.return_value = "anthropic"
+        mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
         # Setup mocks
         mock_model = MagicMock()
         mock_bound_model = MagicMock()
@@ -532,15 +552,20 @@ class TestBackwardsCompatibility:
         assert call_args.args[0] == []  # Empty tools
         assert call_args.kwargs.get("parallel_tool_calls") is False
 
+    @patch("app.domains.analysis.workflows.agents.base.settings")
     @patch("app.domains.analysis.workflows.agents.base.create_agent")
     @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_create_structured_agent_no_tools(
         self,
         mock_get_model,
         mock_create_agent,
+        mock_settings,
         mock_response_schema,
     ):
-        """create_structured_agent works with tools=None."""
+        """create_structured_agent works with tools=None (non-Gemini)."""
+        # Use Anthropic provider to test ToolStrategy path
+        mock_settings.resolved_llm_provider.return_value = "anthropic"
+        mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
         # Setup mocks
         mock_model = MagicMock()
         mock_bound_model = MagicMock()
@@ -558,16 +583,21 @@ class TestBackwardsCompatibility:
         # Should work
         assert result is not None
 
+    @patch("app.domains.analysis.workflows.agents.base.settings")
     @patch("app.domains.analysis.workflows.agents.base.create_agent")
     @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
     def test_tool_enabled_vs_structured_agent_differences(
         self,
         mock_get_model,
         mock_create_agent,
+        mock_settings,
         mock_tools,
         mock_response_schema,
     ):
-        """Verify key differences between tool-enabled and structured-only agents."""
+        """Verify key differences between tool-enabled and structured-only agents (non-Gemini)."""
+        # Use Anthropic provider to test ToolStrategy path
+        mock_settings.resolved_llm_provider.return_value = "anthropic"
+        mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
         # Setup mocks
         mock_model = MagicMock()
         mock_bound_model = MagicMock()

@@ -53,6 +53,7 @@ from app.schemas.search import (
 from app.shared.services.embeddings.service import EmbeddingService
 from app.shared.services.metrics import get_metrics_service
 from app.shared.services.search.decomposer import QueryDecomposer
+from app.shared.services.search.hyde import HyDEService
 from app.shared.services.search.reranker import ReRanker
 
 if TYPE_CHECKING:
@@ -82,6 +83,7 @@ class SearchService:
         session: AsyncSession,
         embedding_service: EmbeddingService,
         reranker: ReRanker | None = None,
+        hyde_service: HyDEService | None = None,
     ) -> None:
         """Initialize SearchService with dependencies.
 
@@ -89,11 +91,13 @@ class SearchService:
             session: AsyncSession for database queries
             embedding_service: Service for generating embeddings
             reranker: Optional re-ranker for LLM-based relevance scoring
+            hyde_service: Optional HyDE service for vocabulary mismatch resolution
 
         """
         self.session = session
         self.embedding_service = embedding_service
         self.reranker = reranker or ReRanker()
+        self.hyde_service = hyde_service or HyDEService(embedding_service)
         self._metrics = get_metrics_service()
 
         # Import here to avoid circular dependency
@@ -105,6 +109,7 @@ class SearchService:
             "search_service_initialized",
             embedding_model=embedding_service.model,
             embedding_dimensions=embedding_service.expected_dimensions,
+            hyde_enabled=True,
         )
 
     async def search(
@@ -347,8 +352,9 @@ class SearchService:
     ) -> list[SearchResult]:
         """Execute semantic search using vector similarity.
 
-        Generates embedding for query and performs kNN search using
-        cosine similarity (via L2 distance on normalized vectors).
+        Uses HyDE (Hypothetical Document Embeddings) to improve retrieval
+        for queries with vocabulary mismatch. Generates a hypothetical
+        document that would answer the query, then embeds that document.
 
         Args:
             query: Search query string
@@ -361,16 +367,20 @@ class SearchService:
         """
         logger.info("semantic_search_started", query_length=len(query))
 
-        # Generate normalized query embedding
-        query_embedding = await self.embedding_service.generate_embedding(
-            text=query,
-            normalize=True,
-        )
+        # Use HyDE for improved semantic matching (Issue #602)
+        # Generates hypothetical document, embeds it instead of raw query
+        hyde_result = await self.hyde_service.generate(query)
+
+        # Get the HyDE embedding (already normalized by embedding service)
+        query_embedding = hyde_result.embedding
 
         logger.debug(
-            "query_embedding_generated",
+            "hyde_embedding_generated",
+            query=query[:50],
+            hypothetical_len=len(hyde_result.hypothetical_doc),
+            source=hyde_result.source.value,
+            latency_ms=hyde_result.latency_ms,
             embedding_dimensions=len(query_embedding),
-            first_values=query_embedding[:3],
         )
 
         # Convert SearchFilters to dict format expected by repository
@@ -449,6 +459,7 @@ class SearchService:
 
         Performs both semantic and keyword searches in parallel, then
         combines results using Reciprocal Rank Fusion (RRF).
+        Uses HyDE for the semantic component to improve vocabulary matching.
 
         RRF formula: score(item) = Σ 1/(k + rank(item))
         where k=60 is the standard constant.
@@ -464,10 +475,15 @@ class SearchService:
         """
         logger.info("hybrid_search_started", query=query[:100])
 
-        # Generate query embedding for semantic component
-        query_embedding = await self.embedding_service.generate_embedding(
-            text=query,
-            normalize=True,
+        # Use HyDE for semantic component (Issue #602)
+        hyde_result = await self.hyde_service.generate(query)
+        query_embedding = hyde_result.embedding
+
+        logger.debug(
+            "hybrid_hyde_embedding_generated",
+            query=query[:50],
+            source=hyde_result.source.value,
+            latency_ms=hyde_result.latency_ms,
         )
 
         # Convert SearchFilters to dict format expected by repository

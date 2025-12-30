@@ -1,9 +1,14 @@
 """Unit tests for Redis Checkpointing functionality (GAP 3).
 
-Tests the checkpointer selection logic in graph_builder._get_checkpointer()
+Tests the checkpointer selection logic in graph_builder.get_checkpointer()
 to ensure proper fallback chain and configuration handling.
 
 Reference: Issue #576 (GAP 3) - Redis Checkpointing
+
+Architecture (2025):
+- MemorySaver for tests (PYTEST_CURRENT_TEST is set)
+- RedisSaver if USE_REDIS_CHECKPOINT=true and REDIS_URL is set
+- MemorySaver as fallback (PostgresSaver disabled pending API migration)
 """
 
 from unittest.mock import MagicMock, patch
@@ -13,16 +18,16 @@ from langgraph.checkpoint.memory import MemorySaver
 
 
 class TestCheckpointerSelection:
-    """Test _get_checkpointer() function fallback chain."""
+    """Test get_checkpointer() function fallback chain."""
 
     def test_test_mode_returns_memory_saver(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that test mode (PYTEST_CURRENT_TEST set) returns MemorySaver."""
         # Set PYTEST_CURRENT_TEST to simulate test environment
         monkeypatch.setenv("PYTEST_CURRENT_TEST", "test_checkpointing.py::test_something")
 
-        from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+        from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-        checkpointer = _get_checkpointer()
+        checkpointer = get_checkpointer()
 
         assert isinstance(checkpointer, MemorySaver)
 
@@ -49,9 +54,9 @@ class TestCheckpointerSelection:
             mock_settings.REDIS_CHECKPOINT_TTL = 3600
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
             # Should return RedisSaver instance
             assert checkpointer == mock_redis_instance
@@ -82,37 +87,32 @@ class TestCheckpointerSelection:
             mock_settings.REDIS_CHECKPOINT_TTL = 1800  # 30 minutes in seconds
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            _get_checkpointer()
+            get_checkpointer()
 
             # Should convert 1800 seconds to 30 minutes
             call_args = mock_redis_saver_class.from_conn_string.call_args
             assert call_args[1]["ttl"]["default_ttl"] == 30.0
 
-    def test_redis_enabled_but_connection_error_fallback_to_postgres(
+    def test_redis_enabled_but_connection_error_fallback_to_memory(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test fallback to PostgreSQL when Redis connection fails."""
+        """Test fallback to MemorySaver when Redis connection fails.
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        Fallback goes directly to MemorySaver.
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
         # Mock RedisSaver to raise ConnectionError
         mock_redis_saver_class = MagicMock()
         mock_redis_saver_class.from_conn_string.side_effect = ConnectionError("Redis unavailable")
 
-        # Mock PostgresSaver
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_instance = MagicMock()
-        mock_postgres_saver_class.from_conn_string.return_value = mock_postgres_instance
-
         with (
             patch(
                 "app.domains.analysis.workflows.graph_builder.RedisSaver",
                 mock_redis_saver_class,
-            ),
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
             ),
             patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
         ):
@@ -121,37 +121,30 @@ class TestCheckpointerSelection:
             mock_settings.REDIS_CHECKPOINT_TTL = 3600
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
-            # Should fallback to PostgresSaver
-            assert checkpointer == mock_postgres_instance
-            mock_postgres_saver_class.from_conn_string.assert_called_once_with(
-                "postgresql://localhost/db"
-            )
+            # Should fallback to MemorySaver (PostgresSaver disabled)
+            assert isinstance(checkpointer, MemorySaver)
 
-    def test_redis_enabled_but_value_error_fallback_to_postgres(
+    def test_redis_enabled_but_value_error_fallback_to_memory(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test fallback to PostgreSQL when Redis raises ValueError (invalid config)."""
+        """Test fallback to MemorySaver when Redis raises ValueError (invalid config).
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        Fallback goes directly to MemorySaver.
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
         mock_redis_saver_class = MagicMock()
         mock_redis_saver_class.from_conn_string.side_effect = ValueError("Invalid Redis URL")
 
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_instance = MagicMock()
-        mock_postgres_saver_class.from_conn_string.return_value = mock_postgres_instance
-
         with (
             patch(
                 "app.domains.analysis.workflows.graph_builder.RedisSaver",
                 mock_redis_saver_class,
-            ),
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
             ),
             patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
         ):
@@ -160,151 +153,83 @@ class TestCheckpointerSelection:
             mock_settings.REDIS_CHECKPOINT_TTL = 3600
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
-            # Should fallback to PostgresSaver
-            assert checkpointer == mock_postgres_instance
+            # Should fallback to MemorySaver (PostgresSaver disabled)
+            assert isinstance(checkpointer, MemorySaver)
 
-    def test_redis_disabled_uses_postgres(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test PostgreSQL checkpointer when USE_REDIS_CHECKPOINT=false."""
+    def test_redis_disabled_uses_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test MemorySaver when USE_REDIS_CHECKPOINT=false.
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        When Redis is disabled, MemorySaver is used directly.
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_instance = MagicMock()
-        mock_postgres_saver_class.from_conn_string.return_value = mock_postgres_instance
-
-        with (
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
-            ),
-            patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
-        ):
+        with patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings:
             # Redis disabled
             mock_settings.USE_REDIS_CHECKPOINT = False
             mock_settings.REDIS_URL = "redis://localhost:6380"
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
-            # Should use PostgresSaver (skip Redis)
-            assert checkpointer == mock_postgres_instance
-            mock_postgres_saver_class.from_conn_string.assert_called_once_with(
-                "postgresql://localhost/db"
-            )
+            # Should use MemorySaver (PostgresSaver disabled)
+            assert isinstance(checkpointer, MemorySaver)
 
-    def test_redis_enabled_but_no_redis_url_uses_postgres(
+    def test_redis_enabled_but_no_redis_url_uses_memory(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Test fallback to PostgreSQL when Redis enabled but REDIS_URL not set."""
+        """Test fallback to MemorySaver when Redis enabled but REDIS_URL not set.
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_instance = MagicMock()
-        mock_postgres_saver_class.from_conn_string.return_value = mock_postgres_instance
-
-        with (
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
-            ),
-            patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
-        ):
+        with patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings:
             mock_settings.USE_REDIS_CHECKPOINT = True
             mock_settings.REDIS_URL = None  # No Redis URL
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
-            # Should skip Redis and use PostgreSQL
-            assert checkpointer == mock_postgres_instance
+            # Should skip Redis and use MemorySaver (PostgresSaver disabled)
+            assert isinstance(checkpointer, MemorySaver)
 
-    def test_redis_not_available_uses_postgres(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test fallback to PostgreSQL when RedisSaver import fails."""
+    def test_redis_not_available_uses_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test fallback to MemorySaver when RedisSaver import fails.
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_instance = MagicMock()
-        mock_postgres_saver_class.from_conn_string.return_value = mock_postgres_instance
 
         with (
             # Simulate RedisSaver import failure by setting to None
             patch("app.domains.analysis.workflows.graph_builder.RedisSaver", None),
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
-            ),
             patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
         ):
             mock_settings.USE_REDIS_CHECKPOINT = True
             mock_settings.REDIS_URL = "redis://localhost:6380"
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
-            # Should fallback to PostgreSQL
-            assert checkpointer == mock_postgres_instance
-
-    def test_postgres_connection_error_fallback_to_memory(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Test fallback to MemorySaver when PostgreSQL connection fails."""
-        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_saver_class.from_conn_string.side_effect = ConnectionError("DB unavailable")
-
-        with (
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
-            ),
-            patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
-        ):
-            mock_settings.USE_REDIS_CHECKPOINT = False
-            mock_settings.DATABASE_URL = "postgresql://localhost/db"
-
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
-
-            checkpointer = _get_checkpointer()
-
-            # Should fallback to MemorySaver
-            assert isinstance(checkpointer, MemorySaver)
-
-    def test_postgres_value_error_fallback_to_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test fallback to MemorySaver when PostgreSQL raises ValueError."""
-        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_saver_class.from_conn_string.side_effect = ValueError("Invalid DB URL")
-
-        with (
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
-            ),
-            patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
-        ):
-            mock_settings.USE_REDIS_CHECKPOINT = False
-            mock_settings.DATABASE_URL = "invalid-url"
-
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
-
-            checkpointer = _get_checkpointer()
-
-            # Should fallback to MemorySaver
+            # Should fallback to MemorySaver (PostgresSaver disabled)
             assert isinstance(checkpointer, MemorySaver)
 
     def test_no_database_configured_uses_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test MemorySaver when no database is configured (development mode)."""
+        """Test MemorySaver when no database is configured (development mode).
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
         # Must patch settings in the graph_builder module where it's already imported
@@ -313,30 +238,11 @@ class TestCheckpointerSelection:
             mock_settings.REDIS_URL = None
             mock_settings.DATABASE_URL = None  # No database
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
             # Should use MemorySaver (development fallback)
-            assert isinstance(checkpointer, MemorySaver)
-
-    def test_postgres_not_available_uses_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test fallback to MemorySaver when PostgresSaver import fails."""
-        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
-
-        with (
-            # Simulate PostgresSaver import failure
-            patch("app.domains.analysis.workflows.graph_builder.PostgresSaver", None),
-            patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
-        ):
-            mock_settings.USE_REDIS_CHECKPOINT = False
-            mock_settings.DATABASE_URL = "postgresql://localhost/db"
-
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
-
-            checkpointer = _get_checkpointer()
-
-            # Should fallback to MemorySaver
             assert isinstance(checkpointer, MemorySaver)
 
 
@@ -383,27 +289,22 @@ class TestCheckpointerConfiguration:
 class TestCheckpointerFallbackChain:
     """Test complete fallback chain scenarios."""
 
-    def test_fallback_chain_redis_to_postgres_to_memory(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Test full fallback: Redis fails -> PostgreSQL fails -> MemorySaver."""
+    def test_fallback_chain_redis_to_memory(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test fallback: Redis fails -> MemorySaver.
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        The fallback chain is now: Redis -> MemorySaver (no PostgreSQL intermediate step).
+        """
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
-        # Both Redis and PostgreSQL fail
+        # Redis fails
         mock_redis_saver_class = MagicMock()
         mock_redis_saver_class.from_conn_string.side_effect = ConnectionError("Redis down")
-
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_saver_class.from_conn_string.side_effect = ConnectionError("DB down")
 
         with (
             patch(
                 "app.domains.analysis.workflows.graph_builder.RedisSaver",
                 mock_redis_saver_class,
-            ),
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
             ),
             patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
         ):
@@ -412,21 +313,25 @@ class TestCheckpointerFallbackChain:
             mock_settings.REDIS_CHECKPOINT_TTL = 3600
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+            from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
 
-            # Should fallback all the way to MemorySaver
+            # Should fallback to MemorySaver (PostgresSaver disabled)
             assert isinstance(checkpointer, MemorySaver)
 
     def test_fallback_chain_priority_order(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that checkpointer selection follows priority: Test > Redis > PostgreSQL > Memory."""
+        """Test that checkpointer selection follows priority: Test > Redis > Memory.
+
+        Note: PostgresSaver is disabled in 2025 architecture pending API migration.
+        Priority order is now: Test mode > Redis > MemorySaver.
+        """
         # Test 1: Test mode has highest priority
         monkeypatch.setenv("PYTEST_CURRENT_TEST", "test.py::test")
 
-        from app.domains.analysis.workflows.graph_builder import _get_checkpointer
+        from app.domains.analysis.workflows.graph_builder import get_checkpointer
 
-        checkpointer = _get_checkpointer()
+        checkpointer = get_checkpointer()
         assert isinstance(checkpointer, MemorySaver)
 
         # Test 2: Redis enabled (second priority after test mode is cleared)
@@ -448,28 +353,18 @@ class TestCheckpointerFallbackChain:
             mock_settings.REDIS_CHECKPOINT_TTL = 3600
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            checkpointer = _get_checkpointer()
+            checkpointer = get_checkpointer()
             # Should use Redis when test mode is off and Redis is configured
             assert checkpointer == mock_redis_instance
 
-        # Test 3: PostgreSQL (third priority when Redis is disabled)
-        mock_postgres_saver_class = MagicMock()
-        mock_postgres_instance = MagicMock()
-        mock_postgres_saver_class.from_conn_string.return_value = mock_postgres_instance
-
-        with (
-            patch(
-                "app.domains.analysis.workflows.graph_builder.PostgresSaver",
-                mock_postgres_saver_class,
-            ),
-            patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings,
-        ):
+        # Test 3: MemorySaver (third priority when Redis is disabled)
+        with patch("app.domains.analysis.workflows.graph_builder.settings") as mock_settings:
             mock_settings.USE_REDIS_CHECKPOINT = False
             mock_settings.DATABASE_URL = "postgresql://localhost/db"
 
-            checkpointer = _get_checkpointer()
-            # Should use PostgreSQL when Redis is disabled
-            assert checkpointer == mock_postgres_instance
+            checkpointer = get_checkpointer()
+            # Should use MemorySaver when Redis is disabled (PostgresSaver disabled)
+            assert isinstance(checkpointer, MemorySaver)
 
 
 class TestCheckpointerIntegration:
@@ -493,7 +388,7 @@ class TestCheckpointerIntegration:
         # but we verify it accepts the parameter without error
 
     def test_build_graph_uses_default_checkpointer(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that build_analysis_graph uses _get_checkpointer() by default."""
+        """Test that build_analysis_graph uses get_checkpointer() by default."""
         monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
         with patch("app.core.config.settings") as mock_settings:
@@ -502,7 +397,7 @@ class TestCheckpointerIntegration:
 
             from app.domains.analysis.workflows.graph_builder import build_analysis_graph
 
-            # Build graph without override (should use _get_checkpointer)
+            # Build graph without override (should use get_checkpointer)
             graph = build_analysis_graph()
 
             # Should compile successfully

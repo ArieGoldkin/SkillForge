@@ -628,16 +628,16 @@ class TestRealQueryFixtureValidation:
 
         # The queries fixture should be valid after #255 implementation
         assert result.is_valid is True, f"Queries fixture validation failed: {result.errors}"
-        assert result.example_count == 21, "Queries fixture should have 21 queries"
+        assert result.example_count == 26, "Queries fixture should have 26 queries"
 
         # Check distribution warning for minimum coverage
         distribution_warning = next((w for w in result.warnings if "Distribution:" in w), None)
         assert distribution_warning is not None, "Should include distribution summary"
 
         # Verify all difficulty levels are represented
-        # Distribution updated after q-sem-synonym changed from easy→medium (PR #288)
-        assert "trivial: 3" in distribution_warning
-        assert "easy: 4" in distribution_warning
-        assert "medium: 7" in distribution_warning
-        assert "hard: 3" in distribution_warning
+        # Distribution updated after golden dataset expansion (Issue #602)
+        assert "trivial: 4" in distribution_warning
+        assert "easy: 5" in distribution_warning
+        assert "medium: 9" in distribution_warning
+        assert "hard: 4" in distribution_warning
         assert "adversarial: 4" in distribution_warning
