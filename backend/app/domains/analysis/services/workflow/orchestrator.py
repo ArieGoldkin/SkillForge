@@ -4,6 +4,7 @@ from typing import Any
 
 from app.core.branded_ids import AnalysisID
 from app.core.config import settings
+from app.core.embedding_utils import has_embedding
 from app.core.exception_utils import async_exception_context
 from app.core.logging import get_logger
 from app.core.timeout_config import create_runnable_config
@@ -190,7 +191,9 @@ class WorkflowOrchestrator:
                             input_state["extraction_metadata"] = (
                                 existing_analysis.extraction_metadata
                             )
-                        if existing_analysis.content_embedding:
+                        # Issue #602: Use has_embedding() for safe numpy array check
+                        # Vector(1536) returns numpy array which has ambiguous truth value
+                        if has_embedding(existing_analysis.content_embedding):
                             input_state["content_embedding"] = existing_analysis.content_embedding
 
                         # Set skip flags so graph bypasses extraction/embedding nodes
@@ -224,7 +227,8 @@ class WorkflowOrchestrator:
                                 input_state["extraction_metadata"] = (
                                     existing_analysis.extraction_metadata
                                 )
-                            if existing_analysis.content_embedding:
+                            # Issue #602: Use has_embedding() for safe numpy array check
+                            if has_embedding(existing_analysis.content_embedding):
                                 input_state["content_embedding"] = (
                                     existing_analysis.content_embedding
                                 )

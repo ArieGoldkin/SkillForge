@@ -1,7 +1,9 @@
 """Test to verify Redis password is not logged in plaintext."""
 
 from unittest.mock import Mock, patch
-from redis import ConnectionPool, Redis
+
+from redis import ConnectionPool
+
 from app.shared.services.cache.redis_connection import create_redis_client
 
 
@@ -37,10 +39,12 @@ class TestRedisConnectionSecurityLogging:
         logged_components = log_call[1]["redis_url_components"]
 
         # Verify password is NOT in the logged components
-        assert "password" not in logged_components, \
+        assert "password" not in logged_components, (
             "Password field should not be present in logged url_components"
-        assert logged_components.get("password") is None, \
+        )
+        assert logged_components.get("password") is None, (
             "Password should be None or absent from logged data"
+        )
 
         # Verify other components are still logged (for debugging)
         assert logged_components.get("hostname") == "redis-host"

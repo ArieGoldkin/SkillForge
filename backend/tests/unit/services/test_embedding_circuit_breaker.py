@@ -4,10 +4,10 @@ Issue: 2025 best practice OpenAI client timeout and circuit breaker pattern
 Tests the httpx.Timeout configuration and CircuitBreaker integration.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
+import pytest
 from openai import APIConnectionError, APITimeoutError, RateLimitError
 
 from app.core.circuit_breaker import CircuitState

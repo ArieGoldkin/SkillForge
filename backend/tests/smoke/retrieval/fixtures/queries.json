@@ -241,6 +241,61 @@
       "min_score": 0.5,
       "max_score": null,
       "description": "Should find both coarse intro and fine what-agents-do"
+    },
+    {
+      "id": "q-context-kv-cache-trivial",
+      "query": "KV-cache context engineering LLM agents",
+      "modes": ["semantic", "keyword", "hybrid"],
+      "category": "specific",
+      "difficulty": "trivial",
+      "expected_chunks": ["context-engineering-manus/kv-cache"],
+      "min_score": 0.85,
+      "max_score": null,
+      "description": "Direct keyword match for KV-cache section in Manus context engineering"
+    },
+    {
+      "id": "q-context-logits-masking-easy",
+      "query": "How to manage tool availability without modifying context",
+      "modes": ["semantic", "hybrid"],
+      "category": "specific",
+      "difficulty": "easy",
+      "expected_chunks": ["context-engineering-manus/mask-not-remove"],
+      "min_score": 0.70,
+      "max_score": null,
+      "description": "Should find logits masking section - paraphrased tool management"
+    },
+    {
+      "id": "q-context-file-memory-medium",
+      "query": "External memory patterns for long-running agent tasks",
+      "modes": ["semantic", "hybrid"],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": ["context-engineering-manus/file-system-context"],
+      "min_score": 0.55,
+      "max_score": null,
+      "description": "Paraphrased query about using file system as agent memory"
+    },
+    {
+      "id": "q-context-error-preservation-medium",
+      "query": "Why keep failed attempts in agent context window",
+      "modes": ["semantic"],
+      "category": "specific",
+      "difficulty": "medium",
+      "expected_chunks": ["context-engineering-manus/keep-wrong-stuff"],
+      "min_score": 0.55,
+      "max_score": null,
+      "description": "Tests understanding of error preservation rationale"
+    },
+    {
+      "id": "q-context-few-shot-hard",
+      "query": "Problems with example-based prompting causing rigid agent behavior",
+      "modes": ["semantic"],
+      "category": "specific",
+      "difficulty": "hard",
+      "expected_chunks": ["context-engineering-manus/avoid-few-shot"],
+      "min_score": 0.40,
+      "max_score": null,
+      "description": "Multi-hop reasoning about few-shot example pitfalls and template copying"
     }
   ]
 }

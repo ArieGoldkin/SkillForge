@@ -123,9 +123,12 @@ class SpecificityScorer:
     }
 
     # Numeric value patterns (values WITH units)
+    # IMPORTANT: All patterns must allow optional whitespace (\s*) between
+    # number and unit to handle natural language formatting from models like
+    # Gemini that prefer "100 milliseconds" over "100ms"
     NUMERIC_PATTERNS: ClassVar[dict[str, str]] = {
         # Time units
-        "time_ms": r"\d+[\d,.]*(ms|milliseconds?)\b",
+        "time_ms": r"\d+[\d,.]*\s*(ms|milliseconds?)\b",
         "time_s": r"\d+[\d,.]*\s*(s|sec|seconds?)\b",
         "time_min": r"\d+[\d,.]*\s*(min|mins|minutes?)\b",
         "time_hours": r"\d+[\d,.]*\s*(h|hr|hrs|hours?)\b",

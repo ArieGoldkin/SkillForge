@@ -315,7 +315,9 @@ class EmbeddingService:
             return embedding
 
         # Call through circuit breaker
-        return await self._circuit_breaker.call(_api_call)
+        # Circuit breaker preserves return type at runtime; cast for static analysis
+        result = await self._circuit_breaker.call(_api_call)
+        return cast("list[float]", result)
 
     @retry(
         stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
@@ -688,7 +690,9 @@ class EmbeddingService:
             return embeddings
 
         # Call through circuit breaker
-        return await self._circuit_breaker.call(_api_call)
+        # Circuit breaker preserves return type at runtime; cast for static analysis
+        result = await self._circuit_breaker.call(_api_call)
+        return cast("list[list[float]]", result)
 
     async def _embed_batch(  # noqa: PLR0915
         self,

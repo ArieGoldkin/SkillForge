@@ -43,10 +43,14 @@ def mock_session():
     return session
 
 
+@patch("app.domains.analysis.workflows.agents.base.settings")
 @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
 @patch("app.domains.analysis.workflows.agents.base.create_agent")
-def test_create_structured_agent(mock_create_agent, mock_get_model):
-    """Test creating agent with structured output."""
+def test_create_structured_agent(mock_create_agent, mock_get_model, mock_settings):
+    """Test creating agent with structured output (non-Gemini provider)."""
+    # Use Anthropic provider to test ToolStrategy path
+    mock_settings.resolved_llm_provider.return_value = "anthropic"
+    mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
     mock_model = MagicMock()
     mock_get_model.return_value = mock_model
     mock_create_agent.return_value = MagicMock()
@@ -62,18 +66,22 @@ def test_create_structured_agent(mock_create_agent, mock_get_model):
     assert "response_format" in call_args.kwargs
 
 
+@patch("app.domains.analysis.workflows.agents.base.settings")
 @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
 @patch("app.domains.analysis.workflows.agents.base.create_agent")
 @patch("app.domains.analysis.workflows.agents.base.ToolStrategy")
 def test_create_structured_agent_uses_tool_strategy(
-    mock_tool_strategy, mock_create_agent, mock_get_model
+    mock_tool_strategy, mock_create_agent, mock_get_model, mock_settings
 ):
-    """Test creating agent uses ToolStrategy for response validation.
+    """Test creating agent uses ToolStrategy for response validation (non-Gemini).
 
     Note: ToolStrategy handles schema validation internally. LangChain 1.2.x
     strict mode is applied via with_structured_output() in non-agent paths
     (supervisor, synthesis, compression).
     """
+    # Use Anthropic provider to test ToolStrategy path
+    mock_settings.resolved_llm_provider.return_value = "anthropic"
+    mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
     mock_model = MagicMock()
     mock_get_model.return_value = mock_model
     mock_create_agent.return_value = MagicMock()
@@ -87,14 +95,20 @@ def test_create_structured_agent_uses_tool_strategy(
     mock_tool_strategy.assert_called_once_with(MockAgentSchema)
 
 
+@patch("app.domains.analysis.workflows.agents.base.settings")
 @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
 @patch("app.domains.analysis.workflows.agents.base.create_agent")
-def test_create_structured_agent_uses_tool_choice_auto(mock_create_agent, mock_get_model):
-    """Test creating agent uses tool_choice='auto' (LangChain 1.2.x).
+def test_create_structured_agent_uses_tool_choice_auto(
+    mock_create_agent, mock_get_model, mock_settings
+):
+    """Test creating agent uses tool_choice='auto' (LangChain 1.2.x, non-Gemini).
 
     Issue #299-304: Explicit tool_choice provides consistent behavior across
     different LLM providers (Anthropic, OpenAI, Gemini).
     """
+    # Use Anthropic provider to test ToolStrategy path (bind_tools path)
+    mock_settings.resolved_llm_provider.return_value = "anthropic"
+    mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
     mock_model = MagicMock()
     mock_get_model.return_value = mock_model
     mock_create_agent.return_value = MagicMock()
@@ -109,10 +123,14 @@ def test_create_structured_agent_uses_tool_choice_auto(mock_create_agent, mock_g
     assert bind_tools_call.kwargs.get("tool_choice") == "auto"
 
 
+@patch("app.domains.analysis.workflows.agents.base.settings")
 @patch("app.domains.analysis.workflows.agents.base.get_chat_model")
 @patch("app.domains.analysis.workflows.agents.base.create_agent")
-def test_create_structured_agent_with_task_type(mock_create_agent, mock_get_model):
-    """Test creating agent with task_type for model routing."""
+def test_create_structured_agent_with_task_type(mock_create_agent, mock_get_model, mock_settings):
+    """Test creating agent with task_type for model routing (non-Gemini)."""
+    # Use Anthropic provider to test ToolStrategy path
+    mock_settings.resolved_llm_provider.return_value = "anthropic"
+    mock_settings.ANTHROPIC_PROMPT_CACHE_TTL = "5m"
     mock_model = MagicMock()
     mock_get_model.return_value = mock_model
     mock_create_agent.return_value = MagicMock()

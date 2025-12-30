@@ -1,11 +1,20 @@
 """FastAPI application initialization and middleware."""
 
+from __future__ import annotations
+
 import asyncio
 import os
 import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    from psycopg import AsyncConnection
+    from psycopg_pool import AsyncConnectionPool
 
 import structlog
 from dotenv import dotenv_values, load_dotenv
@@ -201,7 +210,12 @@ async def lifespan(app: FastAPI):  # noqa: PLR0912, PLR0915 - Lifespan needs man
             # Use explicit await pool.open() instead of auto-open in constructor
             await pool.open()
 
-            saver = AsyncPostgresSaver(pool)
+            # AsyncPostgresSaver is compatible with the pool at runtime
+            # (psycopg_pool type stubs don't reflect row_factory configuration)
+            from typing import cast
+
+            typed_pool = cast("AsyncConnectionPool[AsyncConnection[dict[str, Any]]]", pool)
+            saver = AsyncPostgresSaver(typed_pool)
             await saver.setup()
             app.state.checkpointer = saver
 

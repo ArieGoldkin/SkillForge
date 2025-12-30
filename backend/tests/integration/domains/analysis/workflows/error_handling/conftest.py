@@ -69,6 +69,27 @@ def requires_database():
         pytest.skip("DATABASE_URL not configured")
 
 
+@pytest.fixture(autouse=True, scope="function")
+async def cleanup_test_urls_after_test():
+    """Auto-cleanup test URLs after each test to prevent DB pollution.
+
+    This fixture runs after every test and deletes any analysis records
+    with URLs matching the test-* pattern commonly used in error handling tests.
+    """
+    yield  # Run the test first
+
+    # Cleanup after test completes
+    from sqlalchemy import delete
+
+    try:
+        async with AsyncSessionLocal() as session:
+            # Delete test analyses (CASCADE will handle related records)
+            await session.execute(delete(Analysis).where(Analysis.url.like("https://test-%")))
+            await session.commit()
+    except Exception:
+        pass  # Ignore cleanup errors - don't fail the test
+
+
 async def wait_for_event_persistence(
     analysis_id: uuid.UUID, event_type: str, max_wait: float = 10.0
 ) -> bool:
@@ -153,6 +174,67 @@ async def create_test_analysis(
         )
         session.add(analysis)
         await session.commit()
+
+
+async def cleanup_test_analysis(analysis_id: uuid.UUID) -> None:
+    """Clean up test analysis and related records from database.
+
+    Args:
+        analysis_id: UUID of the analysis to delete
+
+    Note: Uses CASCADE delete via foreign keys for related progress/findings.
+
+    """
+    from sqlalchemy import delete
+
+    async with AsyncSessionLocal() as session:
+        # Delete progress events first (if no CASCADE)
+        await session.execute(
+            delete(AnalysisProgress).where(AnalysisProgress.analysis_id == analysis_id)
+        )
+        # Delete the analysis record
+        await session.execute(delete(Analysis).where(Analysis.id == analysis_id))
+        await session.commit()
+
+
+@pytest.fixture
+def cleanup_analysis():
+    """Fixture that provides cleanup function and tracks created analyses.
+
+    Usage:
+        async def test_something(cleanup_analysis):
+            analysis_id = uuid.uuid4()
+            await create_test_analysis(analysis_id, "https://test-url.com")
+            cleanup_analysis.track(analysis_id)  # Will be cleaned up after test
+            # ... test code ...
+
+    """
+    created_ids: list[uuid.UUID] = []
+
+    class CleanupTracker:
+        def track(self, analysis_id: uuid.UUID) -> None:
+            created_ids.append(analysis_id)
+
+    tracker = CleanupTracker()
+    yield tracker
+
+    # Cleanup after test completes
+    async def do_cleanup():
+        for aid in created_ids:
+            try:
+                await cleanup_test_analysis(aid)
+            except Exception:
+                pass  # Ignore cleanup errors
+
+    # Run cleanup synchronously using asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(do_cleanup())
+        else:
+            loop.run_until_complete(do_cleanup())
+    except RuntimeError:
+        asyncio.run(do_cleanup())
 
 
 async def verify_error_event(

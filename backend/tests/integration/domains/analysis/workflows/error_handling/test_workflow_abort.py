@@ -31,7 +31,6 @@ async def test_embedding_failure_stops_workflow(requires_database, reset_engine_
     test_url = f"https://test-embedding-abort-{analysis_id}.com"
 
     await create_test_analysis(analysis_id, test_url)
-
     # Track which nodes were called
     nodes_called = {
         "supervisor": False,

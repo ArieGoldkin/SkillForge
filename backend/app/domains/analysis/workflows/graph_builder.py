@@ -14,6 +14,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.types import Send
 
 from app.core.config import settings
+from app.core.embedding_utils import safe_bool_for_logging
 from app.core.exception_utils import enrich_exception
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.core.logging import get_logger
@@ -347,7 +348,7 @@ async def _generate_embedding_node(state: AnalysisState) -> dict[str, object]:
         logger.info(
             "generate_embedding_skipped_already_completed",
             analysis_id=state.get("analysis_id"),
-            has_embedding=bool(state.get("content_embedding")),
+            has_embedding=safe_bool_for_logging(state.get("content_embedding")),
             reason="retry_from_analyzing_stage",
         )
         return {}
