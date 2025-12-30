@@ -829,6 +829,34 @@ class Settings(BaseSettings):
         ),
     )
 
+    # HyDE (Hypothetical Document Embeddings) Configuration (Issue #602)
+    # Improves retrieval for vocabulary mismatch queries via LLM-generated hypotheticals
+    HYDE_ENABLED: bool = Field(
+        default=True,
+        description=(
+            "Enable HyDE (Hypothetical Document Embeddings) for semantic search. "
+            "When enabled, generates hypothetical answer documents to bridge "
+            "vocabulary gap between queries and corpus. Adds ~300ms latency on cache miss."
+        ),
+    )
+    HYDE_SANITIZE_QUERIES: bool = Field(
+        default=True,
+        description=(
+            "Enable PII sanitization before sending queries to LLM. "
+            "Strips UUIDs, emails, and sensitive metadata patterns. "
+            "SECURITY: Should always be True in production."
+        ),
+    )
+    HYDE_MAX_QUERY_LENGTH: int = Field(
+        default=500,
+        ge=50,
+        le=2000,
+        description=(
+            "Maximum query length for HyDE generation (50-2000 chars). "
+            "Longer queries are truncated to prevent token abuse. Default: 500."
+        ),
+    )
+
     model_config = SettingsConfigDict(
         env_file=_get_env_file(),
         env_file_encoding="utf-8",
