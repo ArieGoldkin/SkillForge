@@ -41,6 +41,12 @@ jobs:
       # Local PostgreSQL uses current user (no password) on macOS
       DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
       PYTHONUNBUFFERED: "1"
+      # Langfuse observability for search/retrieval traces (Issue #602)
+      # Only enable if secrets are configured (graceful fallback for forks)
+      LANGFUSE_ENABLED: ${{ secrets.LANGFUSE_PUBLIC_KEY != '' && 'true' || 'false' }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
 
     steps:
       # Pre-checkout cleanup: Remove .venv before git clean runs (avoids cross-runner cache issues)
