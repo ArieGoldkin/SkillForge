@@ -61,6 +61,15 @@ env:
   LLM_MODEL: gpt-4o-mini
   # E2E environment identifier
   ENVIRONMENT: e2e
+  # ==========================================================================
+  # RUNNER ISOLATION: Unique project name per CI run
+  # ==========================================================================
+  # Self-hosted runners share the same Docker daemon with dev environment.
+  # Using unique COMPOSE_PROJECT_NAME ensures each CI run has isolated:
+  # - Container names (skillforge-test-{run_id}-frontend vs skillforge-test-frontend)
+  # - Networks (skillforge-test-{run_id}_default)
+  # - No conflicts with dev containers or other CI runs
+  COMPOSE_PROJECT_NAME: skillforge-test-${{ github.run_id }}
 
 jobs:
   # ===========================================================================
@@ -400,7 +409,11 @@ jobs:
         if: failure()
         run: |
           echo "## Docker Compose Logs (Test Environment)" >> $GITHUB_STEP_SUMMARY
+          echo "Project: ${COMPOSE_PROJECT_NAME}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          # Show container status first
+          echo "=== Container Status ==="
+          docker compose -f docker-compose.test.yml ps -a 2>&1 || true
           # Print backend-seed logs to console for debugging
           echo "=== Backend Seed Logs ==="
           docker compose -f docker-compose.test.yml logs backend-seed --tail=200 2>&1 || true
@@ -411,6 +424,7 @@ jobs:
       - name: Cleanup test environment
         if: always()
         run: |
+          echo "Cleaning up project: ${COMPOSE_PROJECT_NAME}"
           docker compose -f docker-compose.test.yml down -v --remove-orphans
           # Clean up any env files
           rm -f backend/.env.test
@@ -630,7 +644,12 @@ jobs:
         if: failure()
         run: |
           echo "## Docker Compose Logs (Test Environment with LLM + Langfuse)" >> $GITHUB_STEP_SUMMARY
+          echo "Project: ${COMPOSE_PROJECT_NAME}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          # Show container status first
+          echo "=== Container Status ==="
+          docker compose -f docker-compose.test.yml ps -a 2>&1 || true
+          echo "=== Container Logs ==="
           # Comprehensive API key filtering for all supported LLM providers
           # Patterns: OpenAI, Anthropic, LangChain, Jina, Google, xAI, DeepSeek, generic, Langfuse
           docker compose -f docker-compose.test.yml logs --tail=100 2>&1 | \
@@ -658,6 +677,7 @@ jobs:
       - name: Cleanup test environment
         if: always()
         run: |
+          echo "Cleaning up project: ${COMPOSE_PROJECT_NAME}"
           docker compose -f docker-compose.test.yml down -v --remove-orphans
           # Secure cleanup - ensure no env files remain
           shred -u backend/.env.test 2>/dev/null || rm -f backend/.env.test
