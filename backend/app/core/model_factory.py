@@ -1,4 +1,14 @@
-"""Utilities for initializing chat models with multi-provider support."""
+"""Utilities for initializing chat models with multi-provider support.
+
+This is the SINGLE source of truth for LLM model initialization in SkillForge.
+Supports cloud providers (OpenAI, Anthropic, Google, etc.) and local Ollama.
+
+When OLLAMA_ENABLED=true, all LLM calls use local models:
+- reasoning/g_eval → deepseek-r1:70b
+- coding/supervisor → qwen2.5-coder:32b
+
+Issue #606: Unified factory with Ollama support for 93% CI cost reduction.
+"""
 
 from __future__ import annotations
 
@@ -54,6 +64,18 @@ TASK_MODEL_MAP: dict[str, str] = {
     # "agent" and "synthesis" use the default model from settings
 }
 
+# Ollama task-to-model mapping for local inference (Issue #606)
+# When OLLAMA_ENABLED=true, these models are used instead of cloud APIs
+OLLAMA_TASK_MODEL_MAP: dict[str, str] = {
+    "reasoning": "deepseek-r1:70b",  # Complex reasoning, synthesis, G-Eval
+    "g_eval": "deepseek-r1:70b",  # Quality evaluation needs reasoning
+    "coding": "qwen2.5-coder:32b",  # Code analysis, generation
+    "supervisor": "qwen2.5-coder:32b",  # Fast classification
+    "agent": "qwen2.5-coder:32b",  # Agent execution
+    "synthesis": "deepseek-r1:70b",  # Document synthesis
+    "default": "qwen2.5-coder:32b",  # General purpose
+}
+
 
 def _get_redis_cache_for_model():
     """Get Redis semantic cache for LLM responses.
@@ -76,6 +98,55 @@ def _get_redis_cache_for_model():
             fallback="no_cache",
         )
         return None
+
+
+def _get_ollama_chat_model(task_type: str | None = None) -> BaseChatModel:
+    """Get an Ollama ChatModel for local inference.
+
+    This function returns a LangChain-compatible ChatOllama instance
+    configured for the specified task type. Used when OLLAMA_ENABLED=true.
+
+    Args:
+        task_type: Task type for model selection (reasoning, coding, g_eval, etc.)
+
+    Returns:
+        ChatOllama instance configured for the task
+
+    Issue #606: Unified Ollama support in model_factory for 93% CI cost reduction.
+
+    """
+    from langchain_ollama import ChatOllama
+
+    # Select model based on task type
+    model = OLLAMA_TASK_MODEL_MAP.get(
+        task_type or "default",
+        OLLAMA_TASK_MODEL_MAP["default"],
+    )
+
+    # Override with settings if available (for explicit model specification)
+    if task_type in {"reasoning", "g_eval", "synthesis"}:
+        model = settings.OLLAMA_MODEL_REASONING
+    elif task_type in {"coding", "supervisor", "agent"}:
+        model = settings.OLLAMA_MODEL_CODING
+
+    llm = ChatOllama(
+        model=model,
+        base_url=settings.OLLAMA_HOST,
+        temperature=0.0,
+        num_ctx=settings.OLLAMA_NUM_CTX,
+        keep_alive="5m",  # Keep model loaded for faster subsequent calls
+        client_kwargs={"timeout": settings.OLLAMA_TIMEOUT},
+    )
+
+    logger.info(
+        "ollama_chat_model_initialized",
+        model=model,
+        task_type=task_type,
+        host=settings.OLLAMA_HOST,
+        num_ctx=settings.OLLAMA_NUM_CTX,
+    )
+
+    return llm
 
 
 def _resolve_model_from_registry(model_key: str) -> tuple[str, str | None]:
@@ -118,6 +189,11 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
 ) -> BaseChatModel:
     """Create a chat model instance using the configured provider/model.
 
+    This is the SINGLE unified LLM factory for SkillForge.
+
+    When OLLAMA_ENABLED=true, returns a local Ollama model for zero-cost inference.
+    Otherwise, returns a cloud provider model (OpenAI, Anthropic, Google, etc.).
+
     Supports runtime configuration via config parameter for model switching.
     Supports task-based routing to use cheaper/faster models for specific tasks.
     Configures temperature, max_tokens, timeout, and max_retries from settings.
@@ -143,7 +219,24 @@ def get_chat_model(  # noqa: PLR0912, PLR0915
         proper async behavior. The timeout parameter applies to both streaming and
         non-streaming calls. Timeout is enforced at the model level by LangChain.
 
+        Issue #606: When OLLAMA_ENABLED=true, uses local models for 93% CI cost reduction.
+
     """
+    # ==========================================================================
+    # OLLAMA PATH: Use local models when OLLAMA_ENABLED=true (Issue #606)
+    # ==========================================================================
+    if settings.OLLAMA_ENABLED:
+        logger.info(
+            "ollama_mode_active",
+            task_type=task_type,
+            ollama_host=settings.OLLAMA_HOST,
+        )
+        return _get_ollama_chat_model(task_type)
+
+    # ==========================================================================
+    # CLOUD PATH: Use cloud providers (OpenAI, Anthropic, Google, etc.)
+    # ==========================================================================
+
     # Check for runtime model override in config
     runtime_config: dict[str, object] = config.get("configurable", {}) if config else {}
     runtime_model = runtime_config.get("model")
