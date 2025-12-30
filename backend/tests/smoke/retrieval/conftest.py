@@ -61,14 +61,14 @@ pytestmark = [
 def fixture_loader() -> FixtureLoader:
     """Provide fixture loader for test data.
 
-    TODO(#299): These fixtures were designed for synthetic test data.
-    After removing fake artifacts from golden dataset, we need to either:
-    1. Regenerate queries.json to match real golden dataset content (RAG, LangGraph, etc.)
-    2. Create separate synthetic test database for these smoke tests
+    Uses expanded fixtures (documents_expanded.json, queries_expanded.json) which contain:
+    - 100 documents with proper bucket values (short/long)
+    - 208 queries with validated section references
+    - Real content including Manus context engineering article
 
-    For now, skip validation in CI to unblock PR #349.
+    The expanded fixtures were validated with 0 missing section references.
     """
-    loader = FixtureLoader()
+    loader = FixtureLoader(use_expanded=True)
 
     # Skip validation in CI (temporary workaround for issue #299)
     if os.getenv("CI") != "true":
