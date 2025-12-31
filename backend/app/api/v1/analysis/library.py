@@ -23,6 +23,8 @@ from app.db.repositories.library_repository import ILibraryRepository, get_libra
 from app.db.session import get_db
 from app.schemas.library import LibraryFilters, LibraryListResponse, LibrarySearchResult
 from app.shared.services.embeddings.service import EmbeddingService
+from app.shared.services.search.search_service import SearchService
+from app.schemas.search import SearchMode as ChunkSearchMode
 
 router = APIRouter(tags=["library"])
 logger = get_logger(__name__)
@@ -144,24 +146,37 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                 offset=offset,
             )
 
-            # Initialize embedding service for semantic/hybrid search
-            embedding_service: EmbeddingService | None = None
-            query_embedding: list[float] = []
+            # Use SearchService for semantic/hybrid search (with HyDE support)
+            search_service: SearchService | None = None
+            chunk_results = []
 
-            # Generate embedding if needed for semantic or hybrid search
+            # Use SearchService for semantic or hybrid search to get HyDE benefits
             if search_mode in (SearchMode.semantic, SearchMode.hybrid):
                 try:
+                    # Initialize services
                     embedding_service = EmbeddingService()
-                    query_embedding = await embedding_service.generate_embedding(query.strip())
+                    search_service = SearchService(session, embedding_service)
+
+                    # Determine chunk-level search mode
+                    chunk_mode = ChunkSearchMode.SEMANTIC if search_mode == SearchMode.semantic else ChunkSearchMode.HYBRID
+
+                    # Search at chunk level with HyDE integration
+                    # Fetch more results since we'll aggregate by analysis
+                    chunk_results = await search_service.search(
+                        query=query.strip(),
+                        mode=chunk_mode,
+                        top_k=limit * 3,  # Fetch more to aggregate by analysis
+                    )
+
                 except Exception as e:
                     logger.warning(
-                        "library_embedding_failed",
+                        "library_search_service_failed",
                         query=query,
                         search_mode=search_mode.value,
                         error=str(e),
                         fallback_to_fulltext=True,
                     )
-                    # Fallback to full-text search if embedding fails
+                    # Fallback to full-text search if search service fails
                     if search_mode == SearchMode.hybrid:
                         # For hybrid, fallback to fulltext
                         search_mode = SearchMode.fulltext
@@ -169,7 +184,7 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                         # For semantic-only, raise error
                         raise HTTPException(
                             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Embedding generation failed",
+                            detail="Search service failed",
                         ) from e
                 finally:
                     if embedding_service:
