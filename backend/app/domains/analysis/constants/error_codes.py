@@ -11,6 +11,7 @@ class AgentStatus:
     SUCCESS = "success"
     FAILED = "failed"
     SKIPPED = "skipped"
+    NO_DATA = "no_data"  # Legitimately empty results (e.g., no technologies to validate)
 
 
 # Agent-specific error codes (detailed failure reasons)

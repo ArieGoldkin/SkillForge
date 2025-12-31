@@ -217,9 +217,23 @@ def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noq
         return issue_count + bp_count
 
     if agent_type == "trend_validator":
-        # Schema uses 'trend_assessments', not 'trends'
+        # Count all valuable insights, not just trend_assessments
+        # This allows meta-content articles (no technologies) to pass validation
+        # when they provide other insights (future_outlook, recommendation, etc.)
         trends = findings.get("trend_assessments", [])
-        return len(trends) if isinstance(trends, list) else 0
+        alternatives = findings.get("modern_alternatives", [])
+        future_outlook = findings.get("future_outlook", "")
+        recommendation = findings.get("recommendation", "")
+
+        trend_count = len(trends) if isinstance(trends, list) else 0
+        alt_count = len(alternatives) if isinstance(alternatives, list) else 0
+        insight_count = (
+            trend_count
+            + alt_count
+            + (1 if future_outlook and isinstance(future_outlook, str) and future_outlook.strip() else 0)
+            + (1 if recommendation and isinstance(recommendation, str) and recommendation.strip() else 0)
+        )
+        return insight_count
 
     if agent_type == "dependency_mapper":
         # Schema uses required_dependencies, optional_dependencies, core_dependencies

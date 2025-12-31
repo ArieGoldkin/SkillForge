@@ -43,6 +43,9 @@ from app.domains.analysis.workflows.agents.validation import (
     validate_findings_count,
     validate_specificity_score,
 )
+from app.domains.analysis.workflows.agents.validation.execution_helpers import (
+    ValidationCheckResult,
+)
 
 logger = get_logger(__name__)
 
@@ -370,6 +373,40 @@ async def _execute_agent_retry_loop(  # noqa: PLR0913
             current_attempt=attempts,
             max_retries=max_retries,
         )
+
+        # Special case for trend_validator: Allow empty trend_assessments when other insights exist
+        # This handles meta-content articles that have no technologies to validate
+        if (
+            params.agent_type == "trend_validator"
+            and insights_count == 0
+            and findings_check.should_fail
+        ):
+            # Check if other fields have valuable content
+            has_other_insights = any(
+                [
+                    findings.get("future_outlook"),
+                    findings.get("recommendation"),
+                    findings.get("modern_alternatives"),
+                ]
+            )
+            if has_other_insights:
+                # Legitimately empty - no technologies to validate
+                logger.info(
+                    "trend_validator_empty_but_has_insights",
+                    analysis_id=str(params.analysis_id),
+                    future_outlook=bool(findings.get("future_outlook")),
+                    recommendation=bool(findings.get("recommendation")),
+                    modern_alternatives=bool(findings.get("modern_alternatives")),
+                )
+                # Override validation result - mark as passed but will be "no_data" in aggregation
+                findings_check = ValidationCheckResult(
+                    passed=True,
+                    should_retry=False,
+                    should_fail=False,
+                )
+                # Mark findings as "no_data" for aggregation processing
+                findings["status"] = "no_data"
+                findings["no_data_reason"] = "No technologies to validate (expected for meta-content)"
 
         if findings_check.should_fail:
             raise ValueError(findings_check.error_message)

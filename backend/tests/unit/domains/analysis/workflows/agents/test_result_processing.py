@@ -675,3 +675,104 @@ async def test_process_agent_result_warns_on_low_specificity(
     assert warning_call.kwargs["vague_phrases"] == 8
     assert "sample_vague_phrases" in warning_call.kwargs
     assert len(warning_call.kwargs["sample_vague_phrases"]) <= 3  # Max 3 samples
+
+
+# Tests for _count_insights function
+from app.domains.analysis.workflows.agents.result_processing import _count_insights
+
+
+def test_count_insights_trend_validator_counts_all_fields():
+    """Test that trend_validator insight counting includes all valuable fields."""
+    findings = {
+        "trend_assessments": [],
+        "future_outlook": "Meta-content has no technologies",
+        "recommendation": "Use key_insights agent instead",
+        "modern_alternatives": [],
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 2  # future_outlook + recommendation
+
+
+def test_count_insights_trend_validator_counts_trend_assessments():
+    """Test that trend_validator counts trend_assessments correctly."""
+    findings = {
+        "trend_assessments": [
+            {"technology": "React", "status": "current"},
+            {"technology": "Vue", "status": "current"},
+        ],
+        "future_outlook": "",
+        "recommendation": "",
+        "modern_alternatives": [],
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 2  # 2 trend assessments
+
+
+def test_count_insights_trend_validator_counts_modern_alternatives():
+    """Test that trend_validator counts modern_alternatives."""
+    findings = {
+        "trend_assessments": [],
+        "modern_alternatives": [
+            {"old_tech": "jQuery", "new_tech": "React"},
+            {"old_tech": "Backbone", "new_tech": "Vue"},
+        ],
+        "future_outlook": "",
+        "recommendation": "",
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 2  # 2 modern alternatives
+
+
+def test_count_insights_trend_validator_counts_all_fields_combined():
+    """Test that trend_validator counts all fields correctly when all have content."""
+    findings = {
+        "trend_assessments": [{"technology": "React", "status": "current"}],
+        "modern_alternatives": [{"old_tech": "jQuery", "new_tech": "React"}],
+        "future_outlook": "React will remain stable until 2028+",
+        "recommendation": "Adopt React for new projects",
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 4  # 1 trend + 1 alternative + 1 outlook + 1 recommendation
+
+
+def test_count_insights_trend_validator_ignores_empty_strings():
+    """Test that trend_validator ignores empty strings in future_outlook and recommendation."""
+    findings = {
+        "trend_assessments": [],
+        "modern_alternatives": [],
+        "future_outlook": "",  # Empty string
+        "recommendation": "   ",  # Whitespace only
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 0  # Empty strings don't count
+
+
+def test_count_insights_trend_validator_handles_missing_fields():
+    """Test that trend_validator handles missing fields gracefully."""
+    findings = {
+        "trend_assessments": [],
+        # Missing modern_alternatives, future_outlook, recommendation
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 0  # All fields empty or missing
+
+
+def test_count_insights_trend_validator_handles_non_list_trend_assessments():
+    """Test that trend_validator handles non-list trend_assessments gracefully."""
+    findings = {
+        "trend_assessments": "not a list",  # Invalid type
+        "future_outlook": "Some outlook",
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 1  # Only future_outlook counts
+
+
+def test_count_insights_trend_validator_handles_non_list_alternatives():
+    """Test that trend_validator handles non-list modern_alternatives gracefully."""
+    findings = {
+        "trend_assessments": [],
+        "modern_alternatives": "not a list",  # Invalid type
+        "recommendation": "Some recommendation",
+    }
+    count = _count_insights(findings, "trend_validator")
+    assert count == 1  # Only recommendation counts
