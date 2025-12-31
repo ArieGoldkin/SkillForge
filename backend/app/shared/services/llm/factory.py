@@ -99,26 +99,26 @@ def get_embedding_provider() -> EmbeddingService | OllamaEmbeddingService:
     if settings.OLLAMA_ENABLED:
         from app.shared.services.embeddings.ollama_service import OllamaEmbeddingService
 
-        service = OllamaEmbeddingService()
+        ollama_svc = OllamaEmbeddingService()
         logger.info(
             "embedding_provider_selected",
             provider="ollama",
-            model=service.model,
-            dimensions=service.expected_dimensions,
+            model=ollama_svc.model,
+            dimensions=ollama_svc.expected_dimensions,
         )
-        return service
+        return ollama_svc
 
     # Cloud provider (existing OpenAI-based service)
     from app.shared.services.embeddings.service import EmbeddingService
 
-    service = EmbeddingService()
+    openai_svc = EmbeddingService()
     logger.info(
         "embedding_provider_selected",
         provider="openai",
-        model=service.model,
-        dimensions=service.expected_dimensions,
+        model=openai_svc.model,
+        dimensions=openai_svc.expected_dimensions,
     )
-    return service
+    return openai_svc
 
 
 def is_ollama_available() -> bool:

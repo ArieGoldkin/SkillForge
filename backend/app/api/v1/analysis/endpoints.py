@@ -3,7 +3,7 @@
 import asyncio
 import os
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, ClassVar
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
 from sqlalchemy.exc import IntegrityError
@@ -37,24 +37,50 @@ logger = get_logger(__name__)
 
 
 class WorkflowCache:
-    """Cache for workflow instance to avoid global variable."""
+    """Cache for workflow instances keyed by checkpointer type.
 
-    _instance: Any = None
+    Maintains separate cached workflows for different checkpointer types
+    (e.g., AsyncPostgresSaver for production, MemorySaver for tests).
+    Issue #602: Support checkpointer injection from FastAPI app.state.
+    """
+
+    _instances: ClassVar[dict[str, Any]] = {}
 
     @classmethod
-    def get_or_create(cls) -> Any:
-        """Get cached workflow instance or create new one."""
-        if cls._instance is None:
-            cls._instance = create_analysis_workflow()
-        return cls._instance
+    def get_or_create(cls, checkpointer: Any = None) -> Any:
+        """Get cached workflow instance or create new one.
+
+        Args:
+            checkpointer: Optional checkpointer instance (AsyncPostgresSaver, etc.)
+                         If None, falls back to default in graph_builder.
+
+        Returns:
+            Compiled workflow graph
+
+        """
+        # Key by checkpointer type to maintain separate caches
+        key = type(checkpointer).__name__ if checkpointer else "default"
+        if key not in cls._instances:
+            cls._instances[key] = create_analysis_workflow(checkpointer=checkpointer)
+        return cls._instances[key]
 
 
-def get_orchestrator() -> WorkflowOrchestrator:
-    """Get WorkflowOrchestrator instance with workflow injected.
+def get_orchestrator(request: Request) -> WorkflowOrchestrator:
+    """Get WorkflowOrchestrator instance with workflow and checkpointer injected.
 
     For FastAPI dependency injection. Creates workflow on first call.
+    Issue #602: Injects checkpointer from app.state for AsyncPostgresSaver.
+
+    Args:
+        request: FastAPI Request to access app.state.checkpointer
+
+    Returns:
+        WorkflowOrchestrator with checkpointer-enabled workflow
+
     """
-    workflow = WorkflowCache.get_or_create()
+    # Get checkpointer from app.state (initialized in main.py lifespan)
+    checkpointer = getattr(request.app.state, "checkpointer", None)
+    workflow = WorkflowCache.get_or_create(checkpointer=checkpointer)
     return WorkflowOrchestrator(workflow=workflow)
 
 
@@ -287,7 +313,7 @@ async def create_analysis(
         )
     else:
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
-        orchestrator = get_orchestrator()
+        orchestrator = get_orchestrator(fastapi_request)
         task: asyncio.Task[None] = asyncio.create_task(
             # Issue #436: Pass analysis_mode for tier-based agent filtering
             orchestrator.run(analysis_uuid, url_str, request.skill_level, request.analysis_mode)  # type: ignore[arg-type]
@@ -563,7 +589,7 @@ async def rerun_analysis(
         )
     else:
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
-        orchestrator = get_orchestrator()
+        orchestrator = get_orchestrator(fastapi_request)
         task: asyncio.Task[None] = asyncio.create_task(
             orchestrator.run(
                 analysis_id,
@@ -698,7 +724,7 @@ async def retry_analysis(
         )
     else:
         # Start workflow asynchronously
-        orchestrator = get_orchestrator()
+        orchestrator = get_orchestrator(fastapi_request)
         # Note: WorkflowOrchestrator.run() doesn't currently support start_from_stage parameter
         # For now, we'll restart from pending and let the workflow handle status transitions
         # TODO(#544): Add start_from_stage parameter to WorkflowOrchestrator.run() for efficiency

@@ -187,8 +187,13 @@ def _route_after_review(state: TutorState) -> str:
     return "end"
 
 
-def build_tutor_graph():
+def build_tutor_graph(checkpointer_override=None):
     """Build and compile tutor StateGraph workflow.
+
+    Args:
+        checkpointer_override: Optional checkpointer instance (AsyncPostgresSaver, etc.)
+                              If None, falls back to get_checkpointer().
+                              Issue #602: Support checkpointer injection from FastAPI app.state.
 
     Returns:
         Compiled StateGraph ready for execution
@@ -249,14 +254,36 @@ def build_tutor_graph():
     # After reflection, session is complete
     graph.add_edge("guide_reflection", END)
 
-    # Compile with checkpointer
-    checkpointer = get_checkpointer()
+    # Compile with checkpointer (use override if provided)
+    checkpointer = (
+        checkpointer_override if checkpointer_override is not None else get_checkpointer()
+    )
     compiled_graph = graph.compile(checkpointer=checkpointer)
 
-    logger.info("tutor_graph_compiled", workflow_type="StateGraph")
+    logger.info(
+        "tutor_graph_compiled",
+        workflow_type="StateGraph",
+        checkpointer_type=type(checkpointer).__name__,
+    )
 
     return compiled_graph
 
 
-# Global workflow instance
+def create_tutor_workflow(checkpointer=None):
+    """Create tutor workflow with optional checkpointer injection.
+
+    Issue #602: Supports checkpointer injection from FastAPI app.state.
+
+    Args:
+        checkpointer: Optional checkpointer instance (AsyncPostgresSaver, etc.)
+
+    Returns:
+        Compiled StateGraph ready for execution
+
+    """
+    return build_tutor_graph(checkpointer_override=checkpointer)
+
+
+# Global workflow instance (for backward compatibility)
+# New code should use create_tutor_workflow() with injected checkpointer
 tutor_workflow = build_tutor_graph()

@@ -35,7 +35,7 @@ Usage:
 import hashlib
 from typing import Literal
 
-from cachetools import TTLCache
+from cachetools import TTLCache  # type: ignore[import-untyped]
 from pydantic import BaseModel
 
 from app.core.config import settings
