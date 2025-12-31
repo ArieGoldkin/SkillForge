@@ -1,0 +1,155 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "agent": {
+    "backend-architect": {
+      "description": "FastAPI, SQLAlchemy, async patterns, database design",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    
+    "frontend-developer": {
+      "description": "React 19, Server Components, TailwindCSS, TypeScript",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true
+      }
+    },
+    
+    "llm-integrator": {
+      "description": "LLM APIs, RAG, Ollama local inference, cost optimization",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    
+    "workflow-architect": {
+      "description": "Multi-agent workflows, LangGraph, state management",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true
+      }
+    },
+    
+    "database-engineer": {
+      "description": "Schema design, migrations, query optimization",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true
+      }
+    },
+    
+    "security-auditor": {
+      "description": "OWASP Top 10, security best practices, vulnerability scanning",
+      "mode": "subagent",
+      "model": "anthropic/claude-haiku-4-20250514",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    
+    "code-reviewer": {
+      "description": "Code quality, best practices, maintainability, testing",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    
+    "test-generator": {
+      "description": "Unit/integration/E2E test creation, coverage targets",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    
+    "debug-investigator": {
+      "description": "Root cause analysis, stack traces, error patterns",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "bash": true
+      }
+    },
+    
+    "rapid-ui-designer": {
+      "description": "TailwindCSS, responsive design, accessibility",
+      "mode": "subagent",
+      "model": "anthropic/claude-haiku-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true
+      }
+    },
+    
+    "ux-researcher": {
+      "description": "User journeys, mobile UX, accessibility",
+      "mode": "subagent",
+      "model": "anthropic/claude-haiku-4-20250514",
+      "tools": {
+        "write": true
+      }
+    },
+    
+    "data-pipeline-engineer": {
+      "description": "Embeddings, ETL, vector databases",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    
+    "system-design-reviewer": {
+      "description": "Architecture validation, scalability review",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    
+    "security-layer-auditor": {
+      "description": "Defense-in-depth validation, LLM safety",
+      "mode": "subagent",
+      "model": "anthropic/claude-haiku-4-20250514",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    }
+  },
+  
+  "permission": {
+    "edit": "ask",
+    "bash": {
+      "git commit": "ask",
+      "git push": "ask"
+    }
+  }
+}

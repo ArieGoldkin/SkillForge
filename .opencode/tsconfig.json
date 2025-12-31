@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ESNext"],
+    "moduleResolution": "bundler",
+    "types": ["bun-types", "@opencode-ai/plugin"],
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["plugin/**/*.ts"],
+  "exclude": ["node_modules", ".opencode/node_modules"]
+}
