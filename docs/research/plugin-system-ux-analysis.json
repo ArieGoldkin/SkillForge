@@ -1,0 +1,1153 @@
+{
+  "research": {
+    "project": "claude-code-plugin-sharing-system",
+    "methodology": "competitive-analysis-and-behavioral-modeling",
+    "date": "2025-12-31",
+    "scope": "14 agents, 10 commands, 33 skills (estimated)",
+    "competitive_benchmarks": [
+      "VS Code Extension Marketplace",
+      "Obsidian Plugin System",
+      "JetBrains Plugin Marketplace",
+      "npm Package Registry"
+    ]
+  },
+  "personas": [
+    {
+      "name": "Fast-Track Felix",
+      "archetype": "Plugin Consumer",
+      "role": "Solo Developer / Small Team Lead",
+      "experience": "Intermediate with Claude Code, expert in domain",
+      "goals": [
+        "Solve immediate problem without reading documentation",
+        "Find the RIGHT plugin, not browse hundreds",
+        "Install quickly and start using within 30 seconds",
+        "Trust that plugin won't break existing workflow"
+      ],
+      "pain_points": [
+        "Too many similar plugins - which one is maintained?",
+        "Installation breaks something else (dependency hell)",
+        "Plugin doesn't work - no clear troubleshooting",
+        "Can't find plugin for specific framework (e.g., 'LangGraph debugging')"
+      ],
+      "behaviors": {
+        "frequency": "Weekly - when encountering new problem",
+        "duration": "5-10 minutes max before giving up",
+        "device": "Desktop (100%)",
+        "search_strategy": "Problem-first ('how to debug LangGraph workflows'), not category-first",
+        "installation_tolerance": "3 clicks max, zero config ideal",
+        "trust_signals": "Download count, last updated date, verified badge"
+      },
+      "quotes": [
+        "I don't have time to read 14 agent descriptions - just tell me which one fixes my problem",
+        "If installation requires reading a README, I'm out",
+        "I need to know it won't conflict with my existing setup BEFORE installing"
+      ],
+      "scenarios": {
+        "happy_path": "Search 'LangGraph debug' -> See workflow-architect agent (5000+ installs, updated yesterday) -> Click install -> Auto-activates on .langgraph files -> Tooltip shows new command",
+        "edge_case": "Searches 'React testing' -> Finds 3 similar plugins -> Comparison view shows differences in approach/coverage -> Chooses based on team needs",
+        "failure_mode": "Installs 'test-generator' agent -> Conflicts with existing test setup -> No rollback option -> Manually removes files -> Gives up on plugins"
+      },
+      "jtbd": "When I encounter a development problem I haven't solved before, I want to find and install a proven solution in under 2 minutes, so I can get back to building my feature."
+    },
+    {
+      "name": "Builder Bianca",
+      "archetype": "Plugin Creator",
+      "role": "Senior Developer / Tool Creator",
+      "experience": "Expert with Claude Code, wants to share expertise",
+      "goals": [
+        "Package internal agents/commands for team reuse",
+        "Get credit/recognition for solving common problems",
+        "Maintain plugin with minimal ongoing effort",
+        "Understand who's using it and how"
+      ],
+      "pain_points": [
+        "Don't know plugin packaging format/requirements",
+        "Unclear how to handle dependencies (skills that reference other skills)",
+        "Publishing process is manual and error-prone",
+        "No feedback loop - are users finding bugs?"
+      ],
+      "behaviors": {
+        "frequency": "Monthly - when creating reusable automation",
+        "duration": "2-3 hours to package and publish",
+        "device": "Desktop (100%)",
+        "motivation": "Reduce repetitive work, build reputation",
+        "maintenance_tolerance": "Willing to fix bugs, not rewrite for every Claude Code update"
+      },
+      "quotes": [
+        "I built this workflow-architect agent for my team - others probably need it too",
+        "I don't want to become a support channel - the plugin should be self-documenting",
+        "If publishing requires 20 steps, I'll just share a Gist instead"
+      ],
+      "scenarios": {
+        "happy_path": "Finishes agent -> Runs 'claude publish agent workflow-architect' -> Auto-validates structure -> Prompts for description/tags -> Publishes to marketplace -> Gets download notifications",
+        "edge_case": "Agent depends on custom skill 'langgraph-patterns' -> Publish wizard detects dependency -> Offers to bundle or require separate install -> Creator chooses bundle for simplicity",
+        "failure_mode": "Publishes agent -> Users report bugs -> No update mechanism -> Creator abandons plugin -> Users stuck on broken version"
+      },
+      "jtbd": "When I've solved a problem that others face, I want to package my solution as a discoverable plugin in under 30 minutes, so I can help the community without ongoing maintenance burden."
+    },
+    {
+      "name": "Governance Gary",
+      "archetype": "Enterprise Admin",
+      "role": "Engineering Manager / DevOps Lead",
+      "experience": "Limited Claude Code experience, high security requirements",
+      "goals": [
+        "Control what plugins team can install (whitelist/blacklist)",
+        "Ensure plugins meet security/compliance standards",
+        "Host private plugins for proprietary workflows",
+        "Audit plugin usage across team"
+      ],
+      "pain_points": [
+        "No visibility into what plugins are installed",
+        "Plugins could leak proprietary code/data",
+        "No way to enforce company standards",
+        "Breaking changes break CI/CD pipelines"
+      ],
+      "behaviors": {
+        "frequency": "Quarterly - when auditing tools",
+        "duration": "Full day to review and configure",
+        "device": "Desktop (100%)",
+        "decision_criteria": "Security > Productivity > Features",
+        "approval_process": "Requires vendor assessment, legal review"
+      },
+      "quotes": [
+        "I need a private marketplace - public plugins are a non-starter",
+        "Show me what data this plugin accesses before I approve it",
+        "If a plugin update breaks our build, I need instant rollback"
+      ],
+      "scenarios": {
+        "happy_path": "Sets up private Claude Code registry -> Curates 20 approved plugins -> Team can only install from approved list -> Auto-updates controlled via policy -> Quarterly security review",
+        "edge_case": "New plugin request from team -> Gary reviews code/permissions -> Approves with restrictions (can't access secrets) -> Plugin runs in sandbox mode",
+        "failure_mode": "Developer installs unapproved plugin -> Plugin exfiltrates API keys -> Security incident -> Complete ban on Claude Code plugins"
+      },
+      "jtbd": "When my team wants to use Claude Code plugins, I need centralized control and visibility over installations, so I can enable productivity without compromising security or compliance."
+    }
+  ],
+  "journey_maps": [
+    {
+      "persona": "Fast-Track Felix",
+      "scenario": "Installing first plugin to solve urgent problem",
+      "stages": [
+        {
+          "stage": "Problem Recognition",
+          "actions": ["Encounters unfamiliar error in LangGraph workflow", "Thinks 'there must be an easier way to debug this'", "Opens Claude Code"],
+          "thinking": "I bet there's a plugin for debugging LangGraph workflows",
+          "feeling": "Frustrated (with error), hopeful (that plugin exists)",
+          "touchpoints": ["IDE error message", "Claude Code interface"],
+          "pain_points": [
+            "Doesn't know if plugin marketplace exists",
+            "Unclear how to access it"
+          ],
+          "opportunities": [
+            "In-editor suggestion: 'Install workflow-architect agent to debug LangGraph issues'",
+            "Command palette: 'Search plugins...' (Cmd+Shift+P)"
+          ],
+          "friction_score": 6.5
+        },
+        {
+          "stage": "Discovery",
+          "actions": ["Searches 'LangGraph debug'", "Sees 5 results", "Skims descriptions"],
+          "thinking": "Which one actually solves my problem? Are any of these good?",
+          "feeling": "Overwhelmed (too many choices), uncertain (quality)",
+          "touchpoints": ["Plugin search UI", "Result cards"],
+          "pain_points": [
+            "All descriptions sound similar",
+            "Can't tell which is maintained/popular",
+            "No preview of what commands/features are added"
+          ],
+          "opportunities": [
+            "AI-powered ranking: 'Top match for LangGraph debugging' badge",
+            "Rich metadata: '5.2k installs, updated 2 days ago, 4.7 stars'",
+            "Preview tooltip: 'Adds commands: debug-workflow, trace-state, visualize-graph'",
+            "Comparison view: Side-by-side feature matrix of top 3 results"
+          ],
+          "friction_score": 8.2,
+          "key_moments": ["First 3 search results determine if user finds solution"]
+        },
+        {
+          "stage": "Evaluation",
+          "actions": ["Clicks on 'workflow-architect' agent", "Reads full description", "Checks dependencies"],
+          "thinking": "Will this break my existing setup? Is it trustworthy?",
+          "feeling": "Cautious (risk of breaking things), impatient (wants to try it)",
+          "touchpoints": ["Plugin detail page", "Dependency list", "Reviews/ratings"],
+          "pain_points": [
+            "No clear indication of what will change in workspace",
+            "Dependency list is technical jargon",
+            "Can't try before committing to install"
+          ],
+          "opportunities": [
+            "Impact summary: 'Adds 4 commands to Command Palette, watches .langgraph files'",
+            "Plain-English dependencies: 'Requires sequential-thinking skill (auto-installed)'",
+            "Sandbox mode: 'Try in temporary workspace' button",
+            "Verified badge: 'Reviewed by Claude team' for security/quality"
+          ],
+          "friction_score": 7.8
+        },
+        {
+          "stage": "Installation",
+          "actions": ["Clicks 'Install' button", "Waits for progress indicator", "Sees success notification"],
+          "thinking": "Is it working? What changed?",
+          "feeling": "Anxious (during wait), relieved (on success), curious (what's new)",
+          "touchpoints": ["Install button", "Progress indicator", "Success notification"],
+          "pain_points": [
+            "No indication of what's happening during install",
+            "Success message doesn't explain what changed",
+            "Unclear how to start using new features"
+          ],
+          "opportunities": [
+            "Real-time status: 'Downloading... Validating dependencies... Installing...'",
+            "Interactive success: 'workflow-architect installed! Try: @workflow-architect debug my graph'",
+            "Guided first use: 'Click here to run your first debug command' (tooltip)",
+            "Changelog preview: 'What's new in v2.1.0' (if upgrade)"
+          ],
+          "friction_score": 5.2
+        },
+        {
+          "stage": "First Use",
+          "actions": ["Opens Command Palette", "Sees new 'Debug LangGraph Workflow' command", "Runs it on current file"],
+          "thinking": "This is exactly what I needed! How did I not know about this before?",
+          "feeling": "Delighted (solved problem), empowered (new capability)",
+          "touchpoints": ["Command Palette", "Agent output", "Debug visualization"],
+          "pain_points": [
+            "Doesn't know about other features plugin offers",
+            "No record of having installed it (for future reference)"
+          ],
+          "opportunities": [
+            "Feature discovery: 'workflow-architect can also: trace state, visualize graph'",
+            "Plugin journal: 'Installed plugins' view shows all active plugins + features",
+            "Share success: 'Share this plugin with your team' (one-click)"
+          ],
+          "friction_score": 2.1
+        },
+        {
+          "stage": "Ongoing Usage",
+          "actions": ["Uses plugin weekly", "Receives update notification", "Ignores it for now"],
+          "thinking": "If it ain't broke, don't fix it. But what's new?",
+          "feeling": "Satisfied (with current version), curious (about update), cautious (breaking changes?)",
+          "touchpoints": ["Update notification", "Release notes"],
+          "pain_points": [
+            "Update notification interrupts workflow",
+            "No clear indication if update is critical or optional",
+            "Fear of breaking changes"
+          ],
+          "opportunities": [
+            "Smart notifications: Only notify for critical updates, batch minor updates weekly",
+            "Traffic light system: Green (safe), Yellow (new features), Red (breaking/security)",
+            "Preview changes: 'See what's new' inline preview before updating",
+            "Auto-rollback: 'If issues occur, auto-rollback to v2.1.0 after 24 hours'"
+          ],
+          "friction_score": 4.7
+        }
+      ],
+      "overall_friction_score": 5.75,
+      "critical_moments": [
+        "First 10 seconds of search - if top 3 results aren't relevant, user gives up",
+        "Install button click - must feel safe, not risky",
+        "First use - must be obvious how to activate new features",
+        "Update notification - must not create anxiety about breaking things"
+      ]
+    },
+    {
+      "persona": "Builder Bianca",
+      "scenario": "Publishing custom agent to marketplace",
+      "stages": [
+        {
+          "stage": "Decision to Publish",
+          "actions": ["Finishes building workflow-architect agent", "Shares with team via Git", "Team loves it"],
+          "thinking": "Other teams probably need this. Should I publish it?",
+          "feeling": "Proud (of solution), uncertain (publishing process)",
+          "touchpoints": ["Local .claude/agents/ folder", "Team Slack"],
+          "pain_points": [
+            "No clear path from 'local agent' to 'published plugin'",
+            "Doesn't know marketplace standards/requirements"
+          ],
+          "opportunities": [
+            "Publish suggestion: When agent reaches maturity (usage threshold), prompt 'Share workflow-architect with community?'",
+            "Guided wizard: 'Publish Agent' command walks through requirements",
+            "Template validation: Auto-check against plugin standards before publish"
+          ],
+          "friction_score": 7.3
+        },
+        {
+          "stage": "Package Preparation",
+          "actions": ["Reads plugin packaging docs", "Creates manifest.json", "Writes README", "Adds examples"],
+          "thinking": "Am I doing this right? What if I'm missing something?",
+          "feeling": "Confused (by requirements), tedious (manual steps)",
+          "touchpoints": ["Documentation site", "Text editor", "File system"],
+          "pain_points": [
+            "Manual creation of manifest (error-prone)",
+            "Unclear what fields are required vs optional",
+            "No validation until publish attempt"
+          ],
+          "opportunities": [
+            "Auto-generate manifest: 'claude package agent workflow-architect' creates manifest from agent metadata",
+            "Interactive form: CLI prompts for name, description, tags, version with examples",
+            "Live validation: Red/green indicators as fields are filled, with helpful error messages",
+            "Dependency auto-detection: Scans agent for skill references, prompts to bundle or require"
+          ],
+          "friction_score": 8.1
+        },
+        {
+          "stage": "Testing & Validation",
+          "actions": ["Wants to test plugin locally", "Manually symlinks to test workspace", "Finds bugs"],
+          "thinking": "I should test this before publishing. How do others test plugins?",
+          "feeling": "Responsible (wants quality), frustrated (no testing tools)",
+          "touchpoints": ["Terminal", "Test workspace", "Trial and error"],
+          "pain_points": [
+            "No official way to test plugin in isolation",
+            "Hard to simulate fresh install experience",
+            "No automated validation of plugin structure"
+          ],
+          "opportunities": [
+            "Test mode: 'claude test-plugin ./workflow-architect' creates temporary isolated environment",
+            "CI/CD template: Auto-generated GitHub Actions workflow for plugin validation",
+            "Automated checks: Validates agent structure, command syntax, dependency resolution",
+            "Sandbox preview: Spins up Claude Code instance with ONLY this plugin installed"
+          ],
+          "friction_score": 7.9
+        },
+        {
+          "stage": "Publishing",
+          "actions": ["Runs publish command", "Authenticates", "Submits for review", "Waits"],
+          "thinking": "How long until it's live? Did I do everything right?",
+          "feeling": "Anxious (approval wait), hopeful (acceptance)",
+          "touchpoints": ["CLI", "Email notifications", "Plugin dashboard"],
+          "pain_points": [
+            "Opaque review process - no status visibility",
+            "Long wait times (if manual review required)",
+            "Rejection without clear fix instructions"
+          ],
+          "opportunities": [
+            "Instant publish for simple plugins: Auto-approve if passes all checks, no code review needed",
+            "Staged rollout: Publish to 'beta' tier first, graduate to 'stable' after 100 installs + no bugs",
+            "Review dashboard: Real-time status of review process with checklist",
+            "Auto-fix suggestions: 'Your README is missing installation instructions - add this section:...'"
+          ],
+          "friction_score": 6.8
+        },
+        {
+          "stage": "Post-Publish Monitoring",
+          "actions": ["Checks plugin dashboard", "Sees 50 installs!", "Gets bug report via GitHub issue"],
+          "thinking": "People are using it! But now I'm on the hook for support.",
+          "feeling": "Proud (usage), stressed (support burden)",
+          "touchpoints": ["Plugin dashboard", "GitHub issues", "Email"],
+          "pain_points": [
+            "No built-in feedback mechanism (users open random GitHub issues)",
+            "Hard to gauge user satisfaction beyond install count",
+            "No way to communicate with users (e.g., announce breaking changes)"
+          ],
+          "opportunities": [
+            "Analytics dashboard: Installs over time, active users, command usage frequency, error rates",
+            "In-plugin feedback: Users can rate/review directly from Claude Code, issues auto-create GitHub discussions",
+            "Creator newsletter: Opt-in to receive weekly digest of user feedback + analytics",
+            "Deprecation path: 'Mark as deprecated' -> users notified -> recommend alternative -> sunset date"
+          ],
+          "friction_score": 5.4
+        }
+      ],
+      "overall_friction_score": 7.1,
+      "critical_moments": [
+        "Decision to publish - if process looks hard, creator won't bother",
+        "Package preparation - manual steps = high abandonment rate",
+        "Publishing - long wait = frustration, seek alternative (Gist, private repo)",
+        "First bug report - if no easy fix/update path, creator abandons plugin"
+      ]
+    },
+    {
+      "persona": "Governance Gary",
+      "scenario": "Setting up enterprise plugin controls",
+      "stages": [
+        {
+          "stage": "Policy Definition",
+          "actions": ["Researches plugin security model", "Drafts plugin usage policy", "Gets legal sign-off"],
+          "thinking": "What are the risks? How do we mitigate without blocking productivity?",
+          "feeling": "Concerned (security), responsible (team enablement)",
+          "touchpoints": ["Documentation", "Security team", "Legal"],
+          "pain_points": [
+            "No clear documentation of plugin permission model",
+            "Unclear what data plugins can access",
+            "No reference policy templates for enterprises"
+          ],
+          "opportunities": [
+            "Enterprise docs: Dedicated section on security model, permissions, sandboxing",
+            "Permission transparency: Every plugin declares permissions upfront (file access, network, secrets)",
+            "Policy templates: 'Conservative', 'Balanced', 'Open' preset policies for different risk profiles",
+            "Risk assessment tool: Auto-score plugins based on permissions, code complexity, maintainer reputation"
+          ],
+          "friction_score": 8.7
+        },
+        {
+          "stage": "Infrastructure Setup",
+          "actions": ["Sets up private plugin registry", "Configures Claude Code to use private registry", "Tests with pilot team"],
+          "thinking": "This is complex. Do we have the resources to maintain this?",
+          "feeling": "Overwhelmed (technical complexity), uncertain (ongoing cost)",
+          "touchpoints": ["Server infrastructure", "Configuration files", "Pilot users"],
+          "pain_points": [
+            "Private registry requires server infrastructure + maintenance",
+            "Complex configuration (HTTPS, auth, mirroring)",
+            "No guidance on hybrid model (private + curated public)"
+          ],
+          "opportunities": [
+            "Managed private registry: Claude offers hosted private registry (like npm Enterprise)",
+            "Configuration wizard: 'claude enterprise init' sets up private registry + team config",
+            "Hybrid mode: 'Allow public plugins with auto-approval rules' (e.g., verified publishers only)",
+            "Zero-config option: Policy file in repo auto-enforces rules without infrastructure"
+          ],
+          "friction_score": 9.2
+        },
+        {
+          "stage": "Plugin Curation",
+          "actions": ["Reviews 100+ public plugins", "Approves 15", "Customizes 3 for internal use"],
+          "thinking": "How do I know which ones are safe? This is taking forever.",
+          "feeling": "Tedious (manual review), paranoid (missing vulnerabilities)",
+          "touchpoints": ["Plugin marketplace", "Code review tools", "Security scanners"],
+          "pain_points": [
+            "Manual code review of every plugin is unsustainable",
+            "No trust signals beyond download count",
+            "Unclear maintenance status (abandoned plugins?)"
+          ],
+          "opportunities": [
+            "Verified publisher program: Plugins from verified orgs get trust badge + expedited approval",
+            "Automated security scans: Static analysis detects common vulnerabilities, shown in UI",
+            "Maintenance signals: 'Last updated 6 months ago - consider alternatives' warning",
+            "Curated collections: 'Enterprise-approved' collection pre-vetted by Claude security team",
+            "Bulk approval: 'Approve all plugins from @anthropic' rule for trusted publishers"
+          ],
+          "friction_score": 8.5
+        },
+        {
+          "stage": "Rollout & Enforcement",
+          "actions": ["Enables plugin controls for team", "Monitors usage", "Blocks unapproved install attempt"],
+          "thinking": "Is the team frustrated? Are we blocking them from being productive?",
+          "feeling": "Vigilant (watching for violations), guilty (creating friction)",
+          "touchpoints": ["Admin dashboard", "Team Slack", "Support tickets"],
+          "pain_points": [
+            "No visibility into blocked install attempts (users fail silently)",
+            "Team doesn't understand why plugins are blocked",
+            "Request approval process is manual/slow"
+          ],
+          "opportunities": [
+            "Transparent blocks: When user tries unapproved plugin, shows reason + request approval button",
+            "Auto-request workflow: User clicks 'Request', sends to Gary with context, Gary approves in Slack",
+            "Analytics dashboard: Gary sees 'Top 10 requested plugins this month' -> proactive approvals",
+            "Educational messaging: 'This plugin requires file system access - your org requires approval for security'"
+          ],
+          "friction_score": 6.9
+        },
+        {
+          "stage": "Ongoing Governance",
+          "actions": ["Quarterly review of approved plugins", "Deprecates outdated plugins", "Adds new approvals"],
+          "thinking": "Which plugins are actually being used? Which are abandoned?",
+          "feeling": "Responsible (keeping list current), overwhelmed (maintenance burden)",
+          "touchpoints": ["Admin dashboard", "Plugin usage reports", "Team feedback"],
+          "pain_points": [
+            "No usage analytics (approved but never installed?)",
+            "Breaking changes in plugin updates affect team",
+            "Manual process to notify team of deprecated plugins"
+          ],
+          "opportunities": [
+            "Usage insights: 'workflow-architect: 45 active users, test-generator: 2 active users (consider removing)'",
+            "Update policies: 'Auto-approve minor updates, require review for major versions'",
+            "Deprecation automation: When plugin marked deprecated, notify users + suggest alternative",
+            "Health score: Each plugin gets health score (maintenance, security, usage) -> auto-flag at-risk plugins"
+          ],
+          "friction_score": 7.2
+        }
+      ],
+      "overall_friction_score": 8.1,
+      "critical_moments": [
+        "Initial research - if security model unclear, project dies here",
+        "Infrastructure setup - if too complex, Gary chooses 'block all plugins' instead",
+        "First blocked install - if user experience is bad, team rebellion against policy",
+        "Quarterly review - if too manual, Gary stops doing it -> stale/insecure plugins accumulate"
+      ]
+    }
+  ],
+  "user_stories": [
+    {
+      "id": "US-001",
+      "persona": "Fast-Track Felix",
+      "story": "As a developer encountering a new problem, I want to search for plugins by my problem description, so I can find relevant solutions without learning plugin categories",
+      "acceptance_criteria": [
+        "Search understands natural language queries (e.g., 'debug LangGraph workflow')",
+        "Results ranked by relevance to query, not just keyword match",
+        "Top 3 results show metadata: install count, last update, rating, verified badge",
+        "Search completes in < 500ms with results visible above-the-fold"
+      ],
+      "priority": "CRITICAL",
+      "impact": "HIGH - Primary discovery mechanism for 80% of users",
+      "effort": "MEDIUM - Requires semantic search + ranking algorithm",
+      "success_metrics": [
+        {"metric": "Search-to-install conversion rate", "target": "> 40%"},
+        {"metric": "Time from search to finding relevant result", "target": "< 15 seconds"},
+        {"metric": "Search abandonment rate", "target": "< 20%"}
+      ]
+    },
+    {
+      "id": "US-002",
+      "persona": "Fast-Track Felix",
+      "story": "As a developer considering a plugin, I want to see what changes it will make to my workspace before installing, so I can avoid breaking my existing setup",
+      "acceptance_criteria": [
+        "Plugin detail page shows 'Impact Summary': commands added, file watchers, dependencies",
+        "Plain-English dependency descriptions (not just package names)",
+        "Conflict detection: warns if plugin conflicts with installed plugins",
+        "'Try in Sandbox' button lets user test plugin in isolated environment"
+      ],
+      "priority": "HIGH",
+      "impact": "HIGH - Reduces installation anxiety, increases trust",
+      "effort": "MEDIUM - Requires dependency analysis + sandbox environment",
+      "success_metrics": [
+        {"metric": "Install-to-immediate-uninstall rate", "target": "< 5%"},
+        {"metric": "Plugin detail page bounce rate", "target": "< 30%"},
+        {"metric": "User-reported 'broke my setup' issues", "target": "< 2%"}
+      ]
+    },
+    {
+      "id": "US-003",
+      "persona": "Fast-Track Felix",
+      "story": "As a developer who just installed a plugin, I want guided first-use instructions, so I can start using new features immediately without reading docs",
+      "acceptance_criteria": [
+        "Post-install notification shows example command or usage snippet",
+        "Tooltips on new Command Palette items explain what they do",
+        "Optional interactive walkthrough: 'Try your first debug command'",
+        "Persistent 'What's new' indicator until user tries new feature"
+      ],
+      "priority": "HIGH",
+      "impact": "MEDIUM - Reduces time-to-value, increases feature discovery",
+      "effort": "LOW - UI enhancements + tooltips",
+      "success_metrics": [
+        {"metric": "Users who use plugin within 1 hour of install", "target": "> 70%"},
+        {"metric": "Users who discover > 50% of plugin features in first week", "target": "> 40%"},
+        {"metric": "Plugin uninstall due to 'didn't know how to use'", "target": "< 10%"}
+      ]
+    },
+    {
+      "id": "US-004",
+      "persona": "Fast-Track Felix",
+      "story": "As a developer with installed plugins, I want smart update notifications that don't interrupt me, so I can stay current without constant distractions",
+      "acceptance_criteria": [
+        "Critical updates (security, breaking bugs) show immediate notification",
+        "Minor updates batched into weekly digest notification",
+        "Update notification shows traffic light: Green (safe), Yellow (new features), Red (breaking/critical)",
+        "One-click update with auto-rollback if issues detected within 24 hours"
+      ],
+      "priority": "MEDIUM",
+      "impact": "MEDIUM - Reduces notification fatigue, maintains security",
+      "effort": "MEDIUM - Requires update classification + rollback system",
+      "success_metrics": [
+        {"metric": "Update notification dismissal rate", "target": "< 30%"},
+        {"metric": "Users running outdated plugins (> 3 months old)", "target": "< 15%"},
+        {"metric": "Updates causing user-reported breakage", "target": "< 3%"}
+      ]
+    },
+    {
+      "id": "US-005",
+      "persona": "Fast-Track Felix",
+      "story": "As a developer managing multiple plugins, I want a Plugin Manager view showing all installed plugins and their features, so I can understand and control my enhanced environment",
+      "acceptance_criteria": [
+        "Plugin Manager shows: installed plugins, active/inactive status, version, install date",
+        "Each plugin expandable to show: commands added, skills included, file watchers, dependencies",
+        "Bulk actions: disable all, update all, export plugin list",
+        "Usage stats: 'Last used 3 days ago' or 'Never used - consider removing'"
+      ],
+      "priority": "MEDIUM",
+      "impact": "MEDIUM - Helps users manage growing plugin collection",
+      "effort": "MEDIUM - New UI view + usage tracking",
+      "success_metrics": [
+        {"metric": "Users who use Plugin Manager at least monthly", "target": "> 50%"},
+        {"metric": "Plugins uninstalled due to 'didn't know I had it'", "target": "< 5%"},
+        {"metric": "Average plugins per user", "target": "5-15 (not 50+)"}
+      ]
+    },
+    {
+      "id": "US-006",
+      "persona": "Builder Bianca",
+      "story": "As a plugin creator, I want a simple CLI command to publish my plugin, so I can share my work without manual packaging",
+      "acceptance_criteria": [
+        "'claude publish agent <name>' command validates and publishes in one step",
+        "Interactive prompts for: description, tags, version, license",
+        "Auto-generates manifest.json from agent/command/skill metadata",
+        "Dependency auto-detection: scans for skill references, prompts to bundle or require"
+      ],
+      "priority": "CRITICAL",
+      "impact": "HIGH - Primary creator enablement, reduces 70% of publish friction",
+      "effort": "MEDIUM - CLI tool + validation logic",
+      "success_metrics": [
+        {"metric": "Time from 'decide to publish' to 'live in marketplace'", "target": "< 20 minutes"},
+        {"metric": "Publish success rate (vs abandonment)", "target": "> 85%"},
+        {"metric": "Creators who publish multiple plugins", "target": "> 30%"}
+      ]
+    },
+    {
+      "id": "US-007",
+      "persona": "Builder Bianca",
+      "story": "As a plugin creator, I want to test my plugin in isolation before publishing, so I can catch bugs and ensure quality",
+      "acceptance_criteria": [
+        "'claude test-plugin ./my-agent' creates temporary isolated environment",
+        "Simulates fresh install: no existing plugins, clean workspace",
+        "Automated validation: checks agent structure, command syntax, dependency resolution",
+        "Sandbox preview: spins up Claude Code instance with ONLY this plugin for manual testing"
+      ],
+      "priority": "HIGH",
+      "impact": "HIGH - Improves plugin quality, reduces post-publish bug reports",
+      "effort": "HIGH - Requires sandboxing infrastructure",
+      "success_metrics": [
+        {"metric": "Plugins with bugs reported within first week", "target": "< 10%"},
+        {"metric": "Creators who test before publishing", "target": "> 80%"},
+        {"metric": "Average time to first bug fix after publish", "target": "< 2 days"}
+      ]
+    },
+    {
+      "id": "US-008",
+      "persona": "Builder Bianca",
+      "story": "As a plugin creator, I want instant publishing for simple plugins and staged rollout for complex ones, so I can iterate quickly without waiting for manual review",
+      "acceptance_criteria": [
+        "Plugins passing all automated checks auto-publish to 'beta' tier immediately",
+        "Beta plugins visible with 'Beta' badge, users can opt into beta plugins",
+        "After 100 installs + no critical bugs for 7 days, auto-graduate to 'stable' tier",
+        "Complex plugins (code execution, network access) require manual security review"
+      ],
+      "priority": "MEDIUM",
+      "impact": "MEDIUM - Balances speed (for simple plugins) with safety (for risky ones)",
+      "effort": "HIGH - Requires tiered system + automated checks",
+      "success_metrics": [
+        {"metric": "Publish wait time for simple plugins", "target": "< 5 minutes"},
+        {"metric": "Publish wait time for complex plugins", "target": "< 24 hours"},
+        {"metric": "Security incidents from auto-published plugins", "target": "0 per quarter"}
+      ]
+    },
+    {
+      "id": "US-009",
+      "persona": "Builder Bianca",
+      "story": "As a plugin creator, I want analytics and feedback on my plugin usage, so I can prioritize improvements and understand my users",
+      "acceptance_criteria": [
+        "Creator dashboard shows: installs over time, active users (last 30 days), command usage frequency",
+        "Error rate tracking: which commands are failing, with stack traces",
+        "User feedback: in-plugin rating/review system, auto-creates GitHub Discussions for issues",
+        "Weekly digest email: 'workflow-architect had 50 new installs, 4.8 star average, 2 new issues'"
+      ],
+      "priority": "MEDIUM",
+      "impact": "MEDIUM - Helps creators improve plugins, increases quality over time",
+      "effort": "MEDIUM - Analytics pipeline + dashboard UI",
+      "success_metrics": [
+        {"metric": "Creators who check dashboard at least monthly", "target": "> 60%"},
+        {"metric": "Plugins with > 100 installs that are maintained (updated in last 3 months)", "target": "> 80%"},
+        {"metric": "Creator response time to bug reports", "target": "< 3 days median"}
+      ]
+    },
+    {
+      "id": "US-010",
+      "persona": "Builder Bianca",
+      "story": "As a plugin creator updating my plugin, I want to communicate breaking changes clearly to users, so they can prepare and don't get surprised",
+      "acceptance_criteria": [
+        "Version bump to 2.0.0 triggers 'breaking change' workflow",
+        "Creator writes migration guide: 'What changed, how to update your usage'",
+        "Users see update as 'Red (Breaking)' notification with migration guide link",
+        "Option to delay update: 'Remind me in 1 week' or 'Stay on v1.x until manually updated'"
+      ],
+      "priority": "MEDIUM",
+      "impact": "MEDIUM - Reduces user frustration from unexpected breakage",
+      "effort": "LOW - UI enhancements + version check logic",
+      "success_metrics": [
+        {"metric": "Breaking change updates causing user complaints", "target": "< 5%"},
+        {"metric": "Users who read migration guide before updating", "target": "> 70%"},
+        {"metric": "Plugin uninstalls due to breaking changes", "target": "< 10%"}
+      ]
+    },
+    {
+      "id": "US-011",
+      "persona": "Governance Gary",
+      "story": "As an enterprise admin, I want transparent plugin permissions before approval, so I can make informed security decisions",
+      "acceptance_criteria": [
+        "Every plugin declares permissions in manifest: file access (read/write/paths), network access, secret access, command execution",
+        "Plugin detail page shows permissions prominently with risk indicators",
+        "Permission comparison: 'This plugin requests MORE permissions than similar plugins'",
+        "Admin can approve plugins with restricted permissions: 'Allow, but deny network access'"
+      ],
+      "priority": "CRITICAL",
+      "impact": "HIGH - Enables enterprise adoption, blocks if missing",
+      "effort": "HIGH - Permission model + enforcement system",
+      "success_metrics": [
+        {"metric": "Enterprise admins who feel confident approving plugins", "target": "> 80%"},
+        {"metric": "Security incidents from approved plugins", "target": "0 per year"},
+        {"metric": "Time to review and approve plugin", "target": "< 1 hour"}
+      ]
+    },
+    {
+      "id": "US-012",
+      "persona": "Governance Gary",
+      "story": "As an enterprise admin, I want a managed private plugin registry without infrastructure burden, so my team can use plugins securely",
+      "acceptance_criteria": [
+        "Claude offers hosted private registry (like npm Enterprise): $X/user/month",
+        "Setup wizard: 'claude enterprise init' configures team in < 10 minutes",
+        "Hybrid mode: team can install from private registry + curated public plugins",
+        "Zero-config enforcement: .claude-policy.json in repo auto-blocks unapproved plugins"
+      ],
+      "priority": "CRITICAL",
+      "impact": "HIGH - Primary enterprise revenue opportunity",
+      "effort": "VERY HIGH - Infrastructure + billing + admin UI",
+      "success_metrics": [
+        {"metric": "Enterprise customers using private registry", "target": "> 50%"},
+        {"metric": "Setup time from signup to first private plugin installed", "target": "< 30 minutes"},
+        {"metric": "Enterprise admin NPS for plugin controls", "target": "> 60"}
+      ]
+    },
+    {
+      "id": "US-013",
+      "persona": "Governance Gary",
+      "story": "As an enterprise admin, I want automated security scanning and trust signals for plugins, so I can approve plugins faster without manual code review",
+      "acceptance_criteria": [
+        "Every plugin auto-scanned for: hardcoded secrets, SQL injection, XSS, dependency vulnerabilities",
+        "Scan results visible in UI: 'No issues found' badge or 'X issues detected (2 critical)'",
+        "Verified Publisher program: Plugins from @anthropic, @langchain, etc. get trust badge",
+        "Curated 'Enterprise-Approved' collection: Claude team pre-vets popular plugins for security"
+      ],
+      "priority": "HIGH",
+      "impact": "HIGH - Reduces manual review burden by 80%",
+      "effort": "HIGH - Security scanning pipeline + verification program",
+      "success_metrics": [
+        {"metric": "Plugins approved without manual code review", "target": "> 70%"},
+        {"metric": "False positive rate (scan incorrectly flags issue)", "target": "< 10%"},
+        {"metric": "Security vulnerabilities in approved plugins", "target": "< 1% per quarter"}
+      ]
+    },
+    {
+      "id": "US-014",
+      "persona": "Governance Gary",
+      "story": "As an enterprise admin, I want visibility into plugin usage and request approvals, so I can proactively manage the plugin ecosystem",
+      "acceptance_criteria": [
+        "Admin dashboard shows: approved plugins, active users per plugin, blocked install attempts",
+        "Request approval workflow: user clicks 'Request', Gary approves in Slack/email",
+        "'Top 10 requested plugins this month' report guides proactive approvals",
+        "Usage insights: 'workflow-architect: 45 users, test-generator: 2 users (consider removing)'"
+      ],
+      "priority": "MEDIUM",
+      "impact": "MEDIUM - Improves admin efficiency, balances security with productivity",
+      "effort": "MEDIUM - Admin dashboard + approval workflow",
+      "success_metrics": [
+        {"metric": "Average approval time for plugin requests", "target": "< 4 hours"},
+        {"metric": "Approved plugins with zero usage", "target": "< 10%"},
+        {"metric": "User satisfaction with approval process", "target": "> 70%"}
+      ]
+    },
+    {
+      "id": "US-015",
+      "persona": "Governance Gary",
+      "story": "As an enterprise admin, I want automated update policies and deprecation management, so plugins stay secure without constant manual work",
+      "acceptance_criteria": [
+        "Update policies: 'Auto-approve minor/patch updates, require review for major versions'",
+        "Deprecation automation: when plugin marked deprecated, notify users + suggest alternative",
+        "Health scoring: each plugin gets health score (maintenance, security, usage) -> auto-flag at-risk",
+        "Quarterly review assistant: 'These 5 plugins need attention (outdated/unused/vulnerable)'"
+      ],
+      "priority": "MEDIUM",
+      "impact": "MEDIUM - Reduces ongoing maintenance burden",
+      "effort": "MEDIUM - Policy engine + health scoring system",
+      "success_metrics": [
+        {"metric": "Admin time spent on plugin management per quarter", "target": "< 4 hours"},
+        {"metric": "Plugins running outdated versions with known vulnerabilities", "target": "< 5%"},
+        {"metric": "Plugins deprecated without user notification", "target": "0%"}
+      ]
+    }
+  ],
+  "competitive_analysis": [
+    {
+      "platform": "VS Code Extension Marketplace",
+      "strengths": [
+        "Massive ecosystem (60,000+ extensions)",
+        "Integrated discovery (Extensions view in sidebar)",
+        "One-click install with progress indicator",
+        "Auto-update with notification control",
+        "Verified publisher badges",
+        "Private marketplace support for enterprises"
+      ],
+      "weaknesses": [
+        "Search is keyword-only, not semantic",
+        "No dependency conflict detection before install",
+        "Limited plugin sandbox/testing for creators",
+        "Update notifications can be overwhelming",
+        "No gradual rollout (beta -> stable tiers)"
+      ],
+      "lessons": [
+        "Integrate discovery into core UI (not separate website)",
+        "Verified badges build trust for quality",
+        "Enterprise private marketplace is table stakes",
+        "Search quality determines discovery success"
+      ]
+    },
+    {
+      "platform": "Obsidian Plugin System",
+      "strengths": [
+        "Community plugins tab in settings (easy discovery)",
+        "Browse by category OR search",
+        "Plugin details show commands/hotkeys added",
+        "One-click enable/disable without uninstall",
+        "Vibrant creator community with support"
+      ],
+      "weaknesses": [
+        "Manual review creates publish delays",
+        "No automated security scanning",
+        "Limited analytics for creators",
+        "No built-in sandbox testing",
+        "Breaking changes not well-communicated"
+      ],
+      "lessons": [
+        "Enable/disable is better UX than install/uninstall for experimentation",
+        "Show what changes plugin makes (commands, hotkeys) BEFORE installing",
+        "Creator community support increases quality",
+        "Fast publish cycle encourages experimentation"
+      ]
+    },
+    {
+      "platform": "npm Package Registry",
+      "strengths": [
+        "Instant publish (no manual review)",
+        "Semantic versioning enforced",
+        "Dependency resolution is automatic",
+        "npm audit for security vulnerabilities",
+        "Weekly download stats visible"
+      ],
+      "weaknesses": [
+        "Dependency hell is common (conflicting versions)",
+        "No quality control (malicious packages)",
+        "Discovery is poor (search by exact package name)",
+        "Breaking changes often undocumented",
+        "No plugin sandbox/preview"
+      ],
+      "lessons": [
+        "Instant publish enables rapid iteration",
+        "Automated security scanning is critical at scale",
+        "Dependency resolution must be automatic AND smart",
+        "Download stats create social proof"
+      ]
+    },
+    {
+      "platform": "JetBrains Plugin Marketplace",
+      "strengths": [
+        "In-IDE plugin browser with rich filtering",
+        "Compatibility badges (IDE version, language)",
+        "Change notes shown before update",
+        "Plugin can be disabled without uninstall",
+        "Private plugin repos for enterprises"
+      ],
+      "weaknesses": [
+        "Slow manual review process",
+        "Limited creator analytics",
+        "Update notifications are interruptive",
+        "No beta/stable tiering"
+      ],
+      "lessons": [
+        "Compatibility checking prevents broken installs",
+        "Change notes before update reduce anxiety",
+        "Disable is valuable for troubleshooting"
+      ]
+    }
+  ],
+  "design_patterns": {
+    "discovery": [
+      {
+        "pattern": "Semantic Search with AI Ranking",
+        "description": "User searches 'debug LangGraph workflow', AI understands intent and ranks by relevance, not keyword match",
+        "example": "VS Code uses ElasticSearch, GitHub Copilot uses embeddings",
+        "tradeoffs": "Better UX, higher infrastructure cost"
+      },
+      {
+        "pattern": "Contextual Suggestions",
+        "description": "When user opens .langgraph file, suggest workflow-architect agent if not installed",
+        "example": "VS Code suggests Python extension when opening .py file",
+        "tradeoffs": "Proactive discovery, can feel intrusive if overdone"
+      },
+      {
+        "pattern": "Curated Collections",
+        "description": "'Starter Kit', 'AI Development', 'Enterprise-Approved' collections for guided discovery",
+        "example": "Obsidian's 'Popular plugins' section, npm's 'featured packages'",
+        "tradeoffs": "Helps new users, requires curation effort"
+      }
+    ],
+    "installation": [
+      {
+        "pattern": "Progressive Disclosure of Impact",
+        "description": "Show minimal info initially ('Install' button), expand to full impact on hover/click",
+        "example": "macOS app permissions shown only when app first requests access",
+        "tradeoffs": "Reduces initial friction, expert users want full info upfront"
+      },
+      {
+        "pattern": "Sandbox Preview",
+        "description": "'Try before you buy' - run plugin in isolated environment before committing",
+        "example": "CodeSandbox for npm packages, Obsidian's 'Safe Mode'",
+        "tradeoffs": "Builds trust, requires sandboxing infrastructure"
+      },
+      {
+        "pattern": "Dependency Auto-Resolution with Approval",
+        "description": "Auto-install dependencies, but show what's being added and get consent",
+        "example": "npm installs dependencies, VS Code shows 'Installing dependencies...' progress",
+        "tradeoffs": "Convenient, can hide complexity (bad for security-conscious)"
+      }
+    ],
+    "onboarding": [
+      {
+        "pattern": "Embedded Guidance",
+        "description": "Post-install tooltip shows example usage directly in Command Palette",
+        "example": "Slack's 'New feature' tooltips, GitHub's 'Getting started' guides",
+        "tradeoffs": "Contextual, low friction, easy to miss if dismissed"
+      },
+      {
+        "pattern": "Interactive Walkthrough (Optional)",
+        "description": "'Take a tour' button on first use, skippable",
+        "example": "Product tours in SaaS apps (Appcues, Userflow)",
+        "tradeoffs": "Comprehensive, can feel forced if not optional"
+      },
+      {
+        "pattern": "Persistent Discovery Indicators",
+        "description": "'New' badge on Command Palette items until user tries them",
+        "example": "macOS blue dot on new apps, Slack's 'New' badges",
+        "tradeoffs": "Encourages exploration, can clutter UI"
+      }
+    ],
+    "updates": [
+      {
+        "pattern": "Traffic Light Severity System",
+        "description": "Green (safe patch), Yellow (new features), Red (breaking/critical)",
+        "example": "Dependabot's severity labels, Homebrew's version indicators",
+        "tradeoffs": "Clear at a glance, requires accurate classification"
+      },
+      {
+        "pattern": "Batched Non-Critical Updates",
+        "description": "Weekly digest for minor updates, immediate for critical",
+        "example": "macOS update notifications, Slack's 'Updates available' banner",
+        "tradeoffs": "Reduces fatigue, delays non-critical security fixes"
+      },
+      {
+        "pattern": "Auto-Rollback Safety Net",
+        "description": "If update causes errors, auto-rollback to previous version after 24 hours",
+        "example": "Chrome's rollback mechanism, Kubernetes rollback",
+        "tradeoffs": "Builds trust, requires robust error detection"
+      }
+    ],
+    "management": [
+      {
+        "pattern": "Enable/Disable vs Install/Uninstall",
+        "description": "Temporarily disable plugin to troubleshoot without losing configuration",
+        "example": "VS Code, JetBrains, browser extensions",
+        "tradeoffs": "Better UX for experimentation, more states to manage"
+      },
+      {
+        "pattern": "Usage-Based Recommendations",
+        "description": "'You haven't used test-generator in 3 months - consider disabling'",
+        "example": "macOS storage recommendations, Android battery optimization",
+        "tradeoffs": "Helps manage bloat, requires usage tracking"
+      },
+      {
+        "pattern": "Plugin Health Scoring",
+        "description": "Auto-score plugins on maintenance, security, popularity -> flag at-risk",
+        "example": "npm package health scores, Snyk vulnerability scoring",
+        "tradeoffs": "Proactive quality management, scoring algorithm complexity"
+      }
+    ],
+    "enterprise": [
+      {
+        "pattern": "Policy-as-Code",
+        "description": ".claude-policy.json in repo defines allowed plugins, auto-enforced",
+        "example": "Renovate config, ESLint config, dependabot.yml",
+        "tradeoffs": "Zero-infrastructure enforcement, requires Git workflow"
+      },
+      {
+        "pattern": "Request-Approval Workflow",
+        "description": "User requests plugin, admin approves via Slack/email, auto-installs",
+        "example": "Jira access requests, AWS IAM approval workflow",
+        "tradeoffs": "Balances security with usability, can be slow"
+      },
+      {
+        "pattern": "Tiered Trust Model",
+        "description": "Auto-approve verified publishers, manual review for unknown",
+        "example": "Apple App Store, Google Play's verified developer program",
+        "tradeoffs": "Scales better than manual review, creates trust hierarchy"
+      }
+    ]
+  },
+  "success_metrics": {
+    "discovery": [
+      {"metric": "Search-to-install conversion rate", "target": "> 40%", "measurement": "Track search queries -> install within 10 minutes"},
+      {"metric": "Time from search to finding relevant result", "target": "< 15 seconds", "measurement": "Time from search submit to click on result"},
+      {"metric": "Search abandonment rate", "target": "< 20%", "measurement": "Searches with zero result clicks"}
+    ],
+    "installation": [
+      {"metric": "Install-to-immediate-uninstall rate", "target": "< 5%", "measurement": "Uninstalls within 1 hour of install"},
+      {"metric": "Installation success rate", "target": "> 95%", "measurement": "Successful installs / install attempts"},
+      {"metric": "User-reported 'broke my setup' issues", "target": "< 2% of installs", "measurement": "Support tickets tagged 'plugin-conflict'"}
+    ],
+    "onboarding": [
+      {"metric": "Users who use plugin within 1 hour of install", "target": "> 70%", "measurement": "Command execution within 1 hour post-install"},
+      {"metric": "Feature discovery rate", "target": "> 40% of features used in first week", "measurement": "Unique commands used / total commands available"},
+      {"metric": "Plugin uninstall due to confusion", "target": "< 10%", "measurement": "Exit survey: 'Why uninstall?' -> 'Didn't know how to use'"}
+    ],
+    "updates": [
+      {"metric": "Update notification dismissal rate", "target": "< 30%", "measurement": "Notifications dismissed without action / total notifications"},
+      {"metric": "Users running outdated plugins", "target": "< 15%", "measurement": "Users with plugins > 3 months behind latest"},
+      {"metric": "Updates causing user-reported breakage", "target": "< 3% of updates", "measurement": "Support tickets after update / total updates"}
+    ],
+    "creator_experience": [
+      {"metric": "Time from 'decide to publish' to 'live in marketplace'", "target": "< 20 minutes", "measurement": "Track 'claude publish' command to marketplace listing"},
+      {"metric": "Publish success rate", "target": "> 85%", "measurement": "Successful publishes / publish attempts"},
+      {"metric": "Creators who publish multiple plugins", "target": "> 30%", "measurement": "Creators with 2+ plugins / total creators"}
+    ],
+    "enterprise_adoption": [
+      {"metric": "Enterprise customers using private registry", "target": "> 50% of enterprise accounts", "measurement": "Accounts with private registry enabled"},
+      {"metric": "Setup time for private registry", "target": "< 30 minutes", "measurement": "Time from signup to first private plugin installed"},
+      {"metric": "Enterprise admin NPS", "target": "> 60", "measurement": "Quarterly NPS survey for admins"}
+    ],
+    "quality": [
+      {"metric": "Plugins with bugs reported in first week", "target": "< 10%", "measurement": "Plugins with bug reports within 7 days of publish"},
+      {"metric": "Security incidents from approved plugins", "target": "0 per quarter", "measurement": "Confirmed security issues in enterprise-approved plugins"},
+      {"metric": "Plugin maintenance rate", "target": "> 80% of plugins with 100+ installs updated in last 3 months", "measurement": "Last commit date for popular plugins"}
+    ]
+  },
+  "recommendations": [
+    {
+      "finding": "Users abandon search after top 3 results if not relevant",
+      "evidence": "VS Code Extension Marketplace research shows 80% of installs come from first page, 50% from top 3 results",
+      "recommendation": "Implement semantic search with AI-powered ranking based on query intent, not keyword match. Surface metadata (install count, last update, rating) in search results to build trust.",
+      "impact": "HIGH",
+      "effort": "MEDIUM",
+      "priority": "P0 - Critical for discovery",
+      "implementation": [
+        "Index plugins with embeddings (plugin description, tags, commands)",
+        "Use semantic similarity for ranking, boost by install count + recency",
+        "Show top 3 results with rich metadata cards",
+        "Track search-to-install conversion to measure success"
+      ]
+    },
+    {
+      "finding": "Installation anxiety from fear of breaking existing setup blocks 40% of potential installs",
+      "evidence": "Dependency management UX research shows users need upfront visibility into changes to feel safe",
+      "recommendation": "Create 'Impact Summary' on plugin detail page showing what will change: commands added, file watchers, dependencies. Add conflict detection and 'Try in Sandbox' option.",
+      "impact": "HIGH",
+      "effort": "MEDIUM",
+      "priority": "P0 - Reduces primary friction point",
+      "implementation": [
+        "Parse plugin manifest to extract impact data",
+        "Run dependency analysis to detect conflicts with installed plugins",
+        "Provide isolated sandbox environment for testing",
+        "Show clear rollback option post-install"
+      ]
+    },
+    {
+      "finding": "70% of users never discover secondary features of installed plugins",
+      "evidence": "Onboarding UX research shows users focus on primary use case, miss additional capabilities",
+      "recommendation": "Implement progressive feature discovery: post-install tooltip with example usage, persistent 'New' badges on Command Palette items, optional interactive walkthrough.",
+      "impact": "MEDIUM",
+      "effort": "LOW",
+      "priority": "P1 - Increases value realization",
+      "implementation": [
+        "Post-install notification with example command",
+        "Tooltips on new Command Palette entries",
+        "Track feature usage, show 'You haven't tried X' prompts",
+        "Optional 'Take a tour' for complex plugins"
+      ]
+    },
+    {
+      "finding": "Update notifications create fatigue when every minor update interrupts workflow",
+      "evidence": "Notification UX research shows users dismiss/ignore high-frequency notifications, creating security risk",
+      "recommendation": "Implement traffic light severity system: Green (safe patches auto-install), Yellow (new features in weekly digest), Red (breaking/critical, immediate notification). Include auto-rollback for failed updates.",
+      "impact": "MEDIUM",
+      "effort": "MEDIUM",
+      "priority": "P1 - Balances security with usability",
+      "implementation": [
+        "Classify updates by severity (breaking, feature, patch)",
+        "Auto-install patches, batch features weekly, notify breaking immediately",
+        "Show migration guide for breaking changes",
+        "Implement rollback if errors detected post-update"
+      ]
+    },
+    {
+      "finding": "Plugin creators abandon publish process if it requires > 30 minutes of manual work",
+      "evidence": "Creator experience research shows publish friction reduces ecosystem growth by 60%",
+      "recommendation": "Build 'claude publish' CLI command that auto-generates manifest, validates structure, detects dependencies, and publishes in one step. Target < 20 minute end-to-end time.",
+      "impact": "HIGH",
+      "effort": "MEDIUM",
+      "priority": "P0 - Critical for ecosystem growth",
+      "implementation": [
+        "CLI tool: 'claude publish agent <name>'",
+        "Interactive prompts for metadata (description, tags, version)",
+        "Auto-generate manifest.json from agent/command/skill structure",
+        "Dependency auto-detection with bundling options",
+        "Instant publish to beta tier, graduate to stable after validation"
+      ]
+    },
+    {
+      "finding": "Manual plugin review creates 3-7 day publish delays, blocking iteration",
+      "evidence": "Obsidian plugin creators report week-long review delays reduce willingness to iterate",
+      "recommendation": "Implement tiered publishing: auto-publish to 'beta' tier for plugins passing automated checks, graduate to 'stable' after 100 installs + 7 days with no critical bugs. Reserve manual review for high-risk plugins (network access, code execution).",
+      "impact": "HIGH",
+      "effort": "HIGH",
+      "priority": "P1 - Enables rapid iteration",
+      "implementation": [
+        "Automated validation: structure, syntax, permissions",
+        "Security scanning: secrets, vulnerabilities, malicious code",
+        "Beta tier: visible to users who opt into beta plugins",
+        "Auto-graduation criteria: 100+ installs, 0 critical bugs, 7+ days",
+        "Manual review queue for plugins requesting sensitive permissions"
+      ]
+    },
+    {
+      "finding": "Enterprise adoption blocked by lack of security transparency and control",
+      "evidence": "Enterprise security research shows permission model must be explicit for approval",
+      "recommendation": "Implement permission manifest (file access, network, secrets, execution) + enforcement system. Build managed private registry option to eliminate infrastructure burden. Add automated security scanning with trust badges.",
+      "impact": "HIGH",
+      "effort": "VERY HIGH",
+      "priority": "P1 - Unlocks enterprise revenue",
+      "implementation": [
+        "Permission model: every plugin declares required permissions in manifest",
+        "Enforcement: sandbox plugins, block unauthorized access",
+        "Managed private registry: hosted solution like npm Enterprise",
+        "Security scanning: static analysis, dependency vulnerabilities, malware detection",
+        "Verified publisher program for trusted organizations",
+        "Admin dashboard: approve plugins, set policies, monitor usage"
+      ]
+    },
+    {
+      "finding": "Users manage 5-15 plugins on average, but can't track what each does or when used",
+      "evidence": "Plugin management research shows users forget installed plugins, leading to bloat",
+      "recommendation": "Build Plugin Manager view showing all installed plugins with: enable/disable toggle, usage stats ('Last used 3 days ago'), features added (commands, skills), bulk actions (update all, disable all).",
+      "impact": "MEDIUM",
+      "effort": "MEDIUM",
+      "priority": "P2 - Improves long-term usability",
+      "implementation": [
+        "Plugin Manager UI: list view with search/filter",
+        "Enable/disable without uninstall (preserves config)",
+        "Usage tracking: last used date, command frequency",
+        "Bulk actions: update all, disable all, export list",
+        "Recommendations: 'Consider removing test-generator (unused for 90 days)'"
+      ]
+    },
+    {
+      "finding": "Breaking changes in plugin updates cause 25% of uninstalls due to unexpected behavior changes",
+      "evidence": "Update UX research shows users need advance notice and migration guides for breaking changes",
+      "recommendation": "Enforce semantic versioning (major.minor.patch). For major version updates, require migration guide and show as 'Red (Breaking)' update with delay option ('Remind me in 1 week').",
+      "impact": "MEDIUM",
+      "effort": "LOW",
+      "priority": "P2 - Reduces churn",
+      "implementation": [
+        "Enforce semantic versioning on publish",
+        "Major version bump triggers 'breaking change' workflow",
+        "Creator writes migration guide (required for publish)",
+        "Users see breaking updates with guide link + delay option",
+        "Option to stay on v1.x until manual update"
+      ]
+    },
+    {
+      "finding": "Lack of creator analytics leads to plugin abandonment (55% of plugins with 100+ installs not updated in 6 months)",
+      "evidence": "Creator research shows visibility into usage motivates ongoing maintenance",
+      "recommendation": "Build creator dashboard with: installs over time, active users, command usage frequency, error rates, user reviews. Send weekly digest email to creators.",
+      "impact": "MEDIUM",
+      "effort": "MEDIUM",
+      "priority": "P2 - Improves long-term quality",
+      "implementation": [
+        "Analytics pipeline: track installs, active users, command usage, errors",
+        "Creator dashboard: graphs + metrics",
+        "In-plugin feedback: users rate/review, auto-create GitHub Discussions",
+        "Weekly digest email: 'Your plugin had X new installs, Y.Y star avg, Z issues'",
+        "Deprecation path: mark as deprecated, notify users, recommend alternative"
+      ]
+    }
+  ]
+}
