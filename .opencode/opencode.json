@@ -1,11 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "plugin": ["./plugin/skillforge-bridge.ts"],
+  "model": "opencode/glm-4.7-free",
 
   "agent": {
+    "build": {
+      "model": "opencode/glm-4.7-free"
+    },
+    "plan": {
+      "model": "opencode/glm-4.7-free"
+    },
     "backend-architect": {
       "description": "FastAPI, SQLAlchemy, async patterns, database design",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": true,
         "edit": true,
@@ -16,7 +24,7 @@
     "frontend-developer": {
       "description": "React 19, Server Components, TailwindCSS, TypeScript",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": true,
         "edit": true
@@ -26,7 +34,7 @@
     "llm-integrator": {
       "description": "LLM APIs, RAG, Ollama local inference, cost optimization",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": true,
         "edit": true,
@@ -37,7 +45,7 @@
     "workflow-architect": {
       "description": "Multi-agent workflows, LangGraph, state management",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": true,
         "edit": true
@@ -47,7 +55,7 @@
     "database-engineer": {
       "description": "Schema design, migrations, query optimization",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": true,
         "edit": true
@@ -57,7 +65,7 @@
     "security-auditor": {
       "description": "OWASP Top 10, security best practices, vulnerability scanning",
       "mode": "subagent",
-      "model": "anthropic/claude-haiku-4-20250514",
+      "model": "opencode/grok-code",
       "tools": {
         "write": false,
         "edit": false
@@ -67,7 +75,7 @@
     "code-reviewer": {
       "description": "Code quality, best practices, maintainability, testing",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": false,
         "edit": false
@@ -77,7 +85,7 @@
     "test-generator": {
       "description": "Unit/integration/E2E test creation, coverage targets",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": true,
         "edit": true,
@@ -88,7 +96,7 @@
     "debug-investigator": {
       "description": "Root cause analysis, stack traces, error patterns",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "bash": true
       }
@@ -97,7 +105,7 @@
     "rapid-ui-designer": {
       "description": "TailwindCSS, responsive design, accessibility",
       "mode": "subagent",
-      "model": "anthropic/claude-haiku-4-20250514",
+      "model": "opencode/grok-code",
       "tools": {
         "write": true,
         "edit": true
@@ -107,7 +115,7 @@
     "ux-researcher": {
       "description": "User journeys, mobile UX, accessibility",
       "mode": "subagent",
-      "model": "anthropic/claude-haiku-4-20250514",
+      "model": "opencode/grok-code",
       "tools": {
         "write": true
       }
@@ -116,7 +124,7 @@
     "data-pipeline-engineer": {
       "description": "Embeddings, ETL, vector databases",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": true,
         "edit": true,
@@ -127,7 +135,7 @@
     "system-design-reviewer": {
       "description": "Architecture validation, scalability review",
       "mode": "subagent",
-      "model": "anthropic/claude-sonnet-4-20250514",
+      "model": "opencode/glm-4.7-free",
       "tools": {
         "write": false,
         "edit": false
@@ -137,7 +145,7 @@
     "security-layer-auditor": {
       "description": "Defense-in-depth validation, LLM safety",
       "mode": "subagent",
-      "model": "anthropic/claude-haiku-4-20250514",
+      "model": "opencode/grok-code",
       "tools": {
         "write": false,
         "edit": false

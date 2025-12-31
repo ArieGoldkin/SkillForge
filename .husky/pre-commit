@@ -1,2 +1,3 @@
 # Run lint-staged in frontend directory
-cd frontend && npx lint-staged
+# Use local node_modules to avoid PATH issues in restricted environments
+cd frontend && ./node_modules/.bin/lint-staged
