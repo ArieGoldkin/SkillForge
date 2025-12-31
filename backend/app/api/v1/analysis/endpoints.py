@@ -84,7 +84,7 @@ def get_orchestrator(request: Request) -> WorkflowOrchestrator:
     return WorkflowOrchestrator(workflow=workflow)
 
 
-def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Task]) -> None:
+def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Task], analysis_id: AnalysisID | None = None) -> None:
     """Handle background task completion and check for exceptions.
 
     This callback checks for exceptions (including GeneratorExit) that occur
@@ -97,6 +97,7 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
     Args:
         task: The completed background task
         background_tasks: Set of active background tasks to update
+        analysis_id: Optional analysis ID to update status on failure (Fix for stuck "pending" status)
 
     """
     background_tasks.discard(task)
@@ -135,6 +136,28 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
                 error_message=str(exception),
                 context="background_task_done_callback",
             )
+            # Update analysis status to failed if analysis_id provided (Fix for stuck "pending" status)
+            if analysis_id:
+                from app.db.session import get_session_factory
+                import asyncio
+
+                async def mark_failed_on_exception() -> None:
+                    session_factory = get_session_factory()
+                    async with session_factory() as session:
+                        repo = get_analysis_repository(session)
+                        # Only update if status is still pending (workflow never started properly)
+                        analysis = await repo.get_by_id(analysis_id, validate=False)
+                        if analysis and analysis.status == "pending":
+                            await repo.mark_failed(
+                                analysis_id=analysis_id,
+                                error_code="WORKFLOW_EXECUTION_FAILED",
+                                error_message=f"Workflow execution failed: {str(exception)}",
+                                failed_at_stage="workflow_execution",
+                            )
+                            await session.commit()
+
+                # Schedule the status update as a background task
+                asyncio.create_task(mark_failed_on_exception())
 
 
 @router.get(
@@ -313,17 +336,45 @@ async def create_analysis(
         )
     else:
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
-        orchestrator = get_orchestrator(fastapi_request)
-        task: asyncio.Task[None] = asyncio.create_task(
-            # Issue #436: Pass analysis_mode for tier-based agent filtering
-            orchestrator.run(analysis_uuid, url_str, request.skill_level, request.analysis_mode)  # type: ignore[arg-type]
-        )
-        background_tasks = fastapi_request.app.state.background_tasks
-        background_tasks.add(task)
-        # Use functools.partial to bind background_tasks to callback
-        from functools import partial
+        try:
+            orchestrator = get_orchestrator(fastapi_request)
+            task: asyncio.Task[None] = asyncio.create_task(
+                # Issue #436: Pass analysis_mode for tier-based agent filtering
+                orchestrator.run(analysis_uuid, url_str, request.skill_level, request.analysis_mode)  # type: ignore[arg-type]
+            )
+            background_tasks = fastapi_request.app.state.background_tasks
+            background_tasks.add(task)
+            # Use functools.partial to bind background_tasks to callback
+            from functools import partial
 
-        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks))
+            task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_uuid))
+        except Exception as e:
+            # Handle immediate workflow startup failures (Fix for stuck "pending" status)
+            logger.error(
+                "workflow_startup_failed",
+                analysis_id=str(analysis_uuid),
+                error=str(e),
+                exc_info=True,
+            )
+            # Update analysis status to failed
+            from app.db.session import get_session_factory
+
+            async def mark_failed() -> None:
+                session_factory = get_session_factory()
+                async with session_factory() as session:
+                    repo = get_analysis_repository(session)
+                    await repo.mark_failed(
+                        analysis_id=analysis_uuid,
+                        error_code="WORKFLOW_STARTUP_FAILED",
+                        error_message=f"Failed to start workflow: {str(e)}",
+                        failed_at_stage="workflow_startup",
+                    )
+                    await session.commit()
+
+            # Schedule the status update as a background task
+            import asyncio
+
+            asyncio.create_task(mark_failed())
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_uuid}/stream"
@@ -604,7 +655,7 @@ async def rerun_analysis(
         # Use functools.partial to bind background_tasks to callback
         from functools import partial
 
-        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks))
+        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_id))
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_id}/stream"
@@ -740,7 +791,7 @@ async def retry_analysis(
         background_tasks.add(task)
         from functools import partial
 
-        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks))
+        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_id))
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_id}/stream"

@@ -239,12 +239,22 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                             error=str(e),
                         )
 
+                # Get title with fallback to extraction_metadata (Fix for "Untitled" issue)
+                title: str | None = None
+                if analysis.title:
+                    title = str(analysis.title)
+                elif analysis.extraction_metadata and isinstance(analysis.extraction_metadata, dict):
+                    # Fallback to extraction_metadata.title if analysis.title is null
+                    metadata_title = analysis.extraction_metadata.get("title")
+                    if isinstance(metadata_title, str) and metadata_title.strip():
+                        title = metadata_title.strip()
+
                 # Type casts needed: SQLAlchemy Column types to Python types
                 items.append(
                     LibrarySearchResult(
                         analysis_id=str(analysis.id),
                         url=str(analysis.url),
-                        title=str(analysis.title) if analysis.title else None,
+                        title=title,
                         content_type=str(analysis.content_type),
                         status=str(analysis.status),
                         snippet=snippet,
@@ -302,22 +312,33 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
 
         # Build response items
         # Type casts needed: SQLAlchemy Column types to Python types
-        items = [
-            LibrarySearchResult(
-                analysis_id=str(analysis.id),
-                url=str(analysis.url),
-                title=str(analysis.title) if analysis.title else None,
-                content_type=str(analysis.content_type),
-                status=str(analysis.status),
-                snippet=None,  # No snippet in listing mode
-                rank=0.0,  # No ranking in listing mode
-                created_at=analysis.created_at.isoformat() if analysis.created_at else "",
-                # Error tracking fields (Issue #441)
-                error_code=str(analysis.error_code) if analysis.error_code else None,
-                failed_at_stage=str(analysis.failed_at_stage) if analysis.failed_at_stage else None,
+        items = []
+        for analysis in analyses:
+            # Get title with fallback to extraction_metadata (Fix for "Untitled" issue)
+            title: str | None = None
+            if analysis.title:
+                title = str(analysis.title)
+            elif analysis.extraction_metadata and isinstance(analysis.extraction_metadata, dict):
+                # Fallback to extraction_metadata.title if analysis.title is null
+                metadata_title = analysis.extraction_metadata.get("title")
+                if isinstance(metadata_title, str) and metadata_title.strip():
+                    title = metadata_title.strip()
+
+            items.append(
+                LibrarySearchResult(
+                    analysis_id=str(analysis.id),
+                    url=str(analysis.url),
+                    title=title,
+                    content_type=str(analysis.content_type),
+                    status=str(analysis.status),
+                    snippet=None,  # No snippet in listing mode
+                    rank=0.0,  # No ranking in listing mode
+                    created_at=analysis.created_at.isoformat() if analysis.created_at else "",
+                    # Error tracking fields (Issue #441)
+                    error_code=str(analysis.error_code) if analysis.error_code else None,
+                    failed_at_stage=str(analysis.failed_at_stage) if analysis.failed_at_stage else None,
+                )
             )
-            for analysis in analyses
-        ]
 
         logger.info(
             "library_list_complete",
