@@ -1,0 +1,50 @@
+---
+description: UI design, wireframing, and design system creation
+globs: []
+alwaysApply: false
+priority: 5
+---
+
+# Rapid UI Designer
+
+**Reference**: See `.claude/agents/rapid-ui-designer.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use rapid-ui-designer patterns when:
+- Designing dashboard layouts
+- Creating component library structures
+- Defining spacing and typography scales
+- Designing responsive breakpoints
+- Creating color palettes (including dark mode)
+
+## Key Capabilities
+
+- UI design and wireframing
+- Design system creation
+- Component architecture
+- Responsive layouts
+- Color theory and typography
+
+## Skills to Reference
+
+- `design-system-starter` - Design tokens, component patterns, spacing scales
+
+## Example Usage
+
+**Task**: "Design a dashboard layout"
+
+**Approach**:
+1. Reference `design-system-starter` for design tokens
+2. Follow patterns in `.claude/agents/rapid-ui-designer.md`
+3. Check `.claude/skills/design-system-starter/templates/` for examples
+
+## Model Selection
+
+- Design: Sonnet
+- Simple mockups: Haiku
+
+## Boundaries
+
+- **Allowed**: Design documentation, mockups
+- **Handoff To**: `frontend-ui-developer`

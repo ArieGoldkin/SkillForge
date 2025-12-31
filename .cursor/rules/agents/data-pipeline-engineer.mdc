@@ -1,0 +1,55 @@
+---
+description: Embeddings, vector indexing, and data transformation pipelines
+globs: ["backend/app/shared/services/embeddings/**", "backend/scripts/**"]
+alwaysApply: false
+priority: 6
+---
+
+# Data Pipeline Engineer
+
+**Reference**: See `.claude/agents/data-pipeline-engineer.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use data-pipeline-engineer patterns when:
+- Regenerating embeddings
+- Implementing semantic chunking
+- Rebuilding vector indexes (HNSW)
+- Warming caches
+- Validating embedding quality
+- Transforming content for embedding
+
+## Key Capabilities
+
+- Embedding generation and management
+- Semantic chunking with overlap
+- Vector indexing (HNSW, PGVector)
+- Batch processing
+- Cache warming strategies
+- Data quality validation
+
+## Skills to Reference
+
+- `ai-native-development` - RAG patterns, embeddings
+- `pgvector-search` - Hybrid search, indexing strategies
+- `golden-dataset-management` - Dataset backup, validation
+
+## Example Usage
+
+**Task**: "Regenerate embeddings for the docs folder"
+
+**Approach**:
+1. Reference `pgvector-search` for indexing patterns
+2. Use `golden-dataset-management` for validation
+3. Follow patterns in `.claude/agents/data-pipeline-engineer.md`
+4. Check `.claude/skills/pgvector-search/templates/` for examples
+
+## Model Selection
+
+- Batch processing: Sonnet
+- Simple ops: Haiku
+
+## Boundaries
+
+- **Allowed**: `backend/app/shared/services/embeddings/**`, `backend/scripts/**`, `tests/unit/services/**`
+- **Forbidden**: `frontend/**`, `workflow_definitions/**`

@@ -1,0 +1,54 @@
+---
+description: PGVector hybrid search, RRF, and vector indexing
+globs: ["backend/app/models/**", "backend/app/services/**"]
+alwaysApply: false
+priority: 6
+---
+
+# PGVector Hybrid Search Skill
+
+**Reference**: See `.claude/skills/pgvector-search/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/pgvector-search/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/pgvector-search/SKILL.md` (~500 tokens)
+3. **References**: Read `references/` for hybrid search patterns
+4. **Templates**: Use `templates/` for query examples
+
+## What This Skill Provides
+
+- Hybrid search with RRF (Reciprocal Rank Fusion)
+- PGVector indexing (HNSW)
+- BM25 integration
+- Metadata filtering
+- Score boosting strategies
+
+## When to Use
+
+- Implementing semantic search
+- Building hybrid search (vector + keyword)
+- Optimizing vector queries
+- Adding metadata filters
+- Tuning search relevance
+
+## Related Agents
+
+- `data-pipeline-engineer` - For embedding generation
+- `database-engineer` - For index creation
+- `backend-system-architect` - For search API design
+
+## MCP Tools
+
+- `pg-aiguide` - PostgreSQL vector expertise
+- `postgres-mcp` - Query testing
+
+## Example Usage
+
+**Task**: "Implement hybrid search endpoint"
+
+**Approach**:
+1. Read `capabilities.json` to understand hybrid search
+2. Read `references/hybrid-search-rrf.md` for RRF implementation
+3. Check `templates/` for query examples
+4. Use pg-aiguide MCP for PostgreSQL vector functions

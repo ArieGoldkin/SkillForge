@@ -1,0 +1,62 @@
+---
+description: Backend API and database architecture patterns
+globs: ["backend/**/*.py", "backend/app/api/**", "backend/app/services/**"]
+alwaysApply: false
+priority: 8
+---
+
+# Backend System Architect
+
+**Reference**: See `.claude/agents/backend-system-architect.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use backend-system-architect patterns when:
+- Designing REST/GraphQL APIs
+- Creating database schemas
+- Implementing authentication/authorization
+- Setting up service layer patterns
+- Configuring middleware (CORS, rate limiting)
+- Designing microservice boundaries
+
+## Key Capabilities
+
+- API design (OpenAPI 3.1, RESTful conventions)
+- SQLAlchemy 2.0 async models
+- FastAPI dependency injection
+- JWT authentication with refresh tokens
+- Repository pattern implementation
+- Rate limiting and caching
+- Webhook systems
+
+## Skills to Reference
+
+- `api-design-framework` - REST patterns, versioning
+- `database-schema-designer` - Schema design, migrations
+- `security-checklist` - OWASP compliance, input validation
+- `streaming-api-patterns` - SSE, WebSocket patterns
+- `observability-monitoring` - Logging, metrics, tracing
+- `performance-optimization` - Query optimization, caching
+- `resilience-patterns` - Circuit breakers, retries
+
+## Example Usage
+
+**Task**: "Create a user registration endpoint"
+
+**Approach**:
+1. Reference `api-design-framework` skill for endpoint patterns
+2. Use `security-checklist` for input validation
+3. Follow patterns in `.claude/agents/backend-system-architect.md`
+4. Check `.claude/skills/api-design-framework/templates/` for examples
+5. Use context7 MCP for current FastAPI/Pydantic documentation
+
+## Model Selection
+
+- Design tasks: Sonnet
+- Simple queries: Haiku
+- Complex analysis: Opus
+
+## Boundaries
+
+- **Allowed**: `backend/**`, `api/**`, `database/**`, `services/**`
+- **Forbidden**: `frontend/**`, `components/**`, `styles/**`

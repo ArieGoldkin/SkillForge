@@ -1,0 +1,53 @@
+---
+description: OWASP Top 10, authentication patterns, and security best practices
+globs: ["backend/**", "frontend/**"]
+alwaysApply: false
+priority: 9
+---
+
+# Security Checklist Skill
+
+**Reference**: See `.claude/skills/security-checklist/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/security-checklist/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/security-checklist/SKILL.md` (~800 tokens)
+3. **Checklists**: Read `checklists/` for specific security domains
+4. **References**: Read `references/` for detailed patterns
+
+## What This Skill Provides
+
+- OWASP Top 10 compliance checklists
+- Authentication patterns (JWT, OAuth2, API keys)
+- Input validation strategies
+- Encryption guidance
+- Dependency scanning patterns
+- Secret management
+- SQL injection prevention
+- XSS prevention
+
+## When to Use
+
+- Reviewing code for security issues
+- Implementing authentication/authorization
+- Validating user inputs
+- Auditing dependencies
+- Checking for hardcoded secrets
+- Ensuring OWASP compliance
+
+## Related Agents
+
+- `security-auditor` - Primary agent for security reviews
+- `backend-system-architect` - For secure API design
+- `code-quality-reviewer` - For security in code reviews
+
+## Example Usage
+
+**Task**: "Review authentication implementation"
+
+**Approach**:
+1. Read `capabilities.json` to understand security domains
+2. Read `SKILL.md#authentication-patterns` for auth guidance
+3. Check `checklists/owasp-top-10.md` for compliance
+4. Review `references/` for specific vulnerability patterns

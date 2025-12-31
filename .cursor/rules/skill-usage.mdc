@@ -1,0 +1,109 @@
+---
+description: Progressive skill loading protocol and token optimization
+globs: []
+alwaysApply: true
+priority: 10
+---
+
+# Skill Usage Guide
+
+**Reference**: See `.claude/agent-registry.json` for skill catalog.
+
+## Progressive Skill Loading Protocol
+
+**CRITICAL**: Never load full SKILL.md files when only specific guidance is needed.
+
+### Loading Tiers
+
+```
+Tier 1: capabilities.json (~100 tokens)
+        └─► Use for: Initial discovery, "is this skill relevant?"
+
+Tier 2: SKILL.md overview (~500-800 tokens)
+        └─► Use for: Confirmed relevant, need patterns
+
+Tier 3: references/*.md (~100-200 tokens each)
+        └─► Use for: Specific implementation guidance
+
+Tier 4: templates/*.* (~150-300 tokens each)
+        └─► Use for: Code generation
+```
+
+## Token Optimization Strategy
+
+### Example: API Endpoint Task
+
+**❌ OLD WAY (2500+ tokens)**:
+- Load `api-design-framework/SKILL.md` (600)
+- Load `security-checklist/SKILL.md` (800)
+- Load `testing-strategy-builder/SKILL.md` (500)
+
+**✅ NEW WAY (800 tokens)**:
+1. Check `.claude/workflows/secure-api-endpoint.md` (exists!)
+2. OR load only:
+   - `api-design-framework/capabilities.json` (100)
+   - `api-design-framework/references/endpoint-patterns.md` (150)
+   - `security-checklist/capabilities.json` (100)
+   - `security-checklist/SKILL.md#input-validation` (150)
+
+## When to Load What
+
+### Discovery Phase
+- Load `capabilities.json` for all potentially relevant skills
+- Match capabilities against task requirements
+- Select 2-3 most relevant skills
+
+### Planning Phase
+- Load `SKILL.md` overview for selected skills
+- Understand patterns and best practices
+- Identify specific references needed
+
+### Implementation Phase
+- Load specific `references/*.md` files as needed
+- Use `templates/*` only when generating code
+- Use MCP tools (context7) for current library docs
+
+## Skill Integration
+
+Skills often integrate with each other:
+
+- `api-design-framework` + `security-checklist` = Secure API
+- `langgraph-workflows` + `ai-native-development` = AI workflows
+- `type-safety-validation` + `react-server-components-framework` = Type-safe React
+
+Check `skill.integrates_with` in capabilities.json for related skills.
+
+## MCP Tool Usage
+
+Use MCP tools instead of embedding static docs:
+
+- **context7** - Current library documentation (FastAPI, React, etc.)
+- **sequential-thinking** - Complex reasoning for skill selection
+- **memory** - Store skill usage patterns for optimization
+
+## Example: Skill Selection
+
+**Task**: "Create a secure API endpoint"
+
+**Process**:
+1. Discovery: Load capabilities.json for `api-design-framework`, `security-checklist`, `testing-strategy-builder`
+2. Check workflow: `secure-api-endpoint` exists in `.claude/workflows/`
+3. Use workflow (saves ~1700 tokens vs loading full skills)
+4. If workflow doesn't exist: Load only specific references needed
+
+## Recording Skill Usage
+
+After completing tasks, record which skills were useful:
+
+```json
+{
+  "task": "Create paginated search endpoint",
+  "skills_used": [
+    { "skill": "api-design-framework", "tier": "tier_3", "file": "references/rest-patterns.md#pagination" },
+    { "skill": "pgvector-search", "tier": "tier_2", "file": "SKILL.md" }
+  ],
+  "token_savings": "Used composed workflow, saved ~1700 tokens"
+}
+```
+
+This enables future workflow optimization.

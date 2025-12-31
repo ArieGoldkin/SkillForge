@@ -1,0 +1,100 @@
+---
+description: MCP server setup and configuration guide
+globs: []
+alwaysApply: false
+priority: 8
+---
+
+# MCP Server Setup Guide
+
+## Quick Setup
+
+1. **Reinstall MCP servers** (if errors):
+   ```bash
+   ./scripts/reinstall-mcp-servers.sh
+   ```
+
+2. **Sync environment variables** (if Cursor IDE doesn't auto-load `.mcp.env`):
+   ```bash
+   ./scripts/sync-mcp-env.sh
+   ```
+
+3. **Restart Cursor IDE** completely (quit and reopen)
+
+## Configuration Files
+
+- **`.mcp.json`** - Server definitions (committed to git)
+- **`.mcp.env`** - Environment variables (NOT committed, in .gitignore)
+- **`.mcp.env.example`** - Template (committed)
+
+## Environment Variables
+
+### Option 1: Use `.mcp.env` (Recommended)
+
+1. Copy template: `cp .mcp.env.example .mcp.env`
+2. Edit `.mcp.env` with your values
+3. Run sync script: `./scripts/sync-mcp-env.sh`
+4. Restart Cursor IDE
+
+### Option 2: Direct Values in `.mcp.json`
+
+If Cursor IDE doesn't support `.mcp.env` loading, update `.mcp.json` directly:
+
+```json
+"postgres-mcp": {
+  "env": {
+    "POSTGRES_CONNECTION_STRING": "postgresql://user:pass@localhost:5437/dbname"
+  }
+}
+```
+
+**⚠️ Warning**: This exposes credentials in git. Only use for local development.
+
+## Troubleshooting
+
+### Servers Show "Error" Status
+
+1. **Check package installation**:
+   ```bash
+   npx -y @modelcontextprotocol/server-memory --version
+   ```
+
+2. **Reinstall packages**:
+   ```bash
+   ./scripts/reinstall-mcp-servers.sh
+   ```
+
+3. **Check Node.js version**:
+   ```bash
+   node --version  # Should be v18+
+   ```
+
+4. **Check "Show Output"** in Cursor IDE for detailed error messages
+
+5. **Restart Cursor IDE** completely
+
+### Environment Variables Not Loading
+
+- Cursor IDE may not automatically load `.mcp.env`
+- Use `./scripts/sync-mcp-env.sh` to sync values into `.mcp.json`
+- Or manually update `.mcp.json` with actual values
+
+### Connection Errors
+
+- **postgres-mcp**: Verify database is running: `docker ps | grep postgres`
+- **langfuse**: Verify Langfuse is running: `docker ps | grep langfuse`
+- Check connection strings match your actual setup
+
+## Server Status
+
+After restarting Cursor IDE, check server status:
+- ✅ **Connected** - Server is working
+- ⚠️ **Error** - Check "Show Output" for details
+- ⚪ **Disabled** - Toggle switch to enable
+
+## Next Steps
+
+1. Restart Cursor IDE
+2. Check MCP server status in settings
+3. Enable servers you need (toggle switches)
+4. Test with a simple query/operation

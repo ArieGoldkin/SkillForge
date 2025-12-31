@@ -1,0 +1,45 @@
+---
+description: System architecture and design pattern review
+globs: ["docs/architecture/**", "docs/**/*design*.md"]
+alwaysApply: false
+priority: 6
+---
+
+# System Design Reviewer
+
+**Reference**: See `.claude/agents/system-design-reviewer.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use system-design-reviewer patterns when:
+- Reviewing system architecture
+- Validating design patterns
+- Checking scalability considerations
+- Reviewing microservice boundaries
+- Validating technology choices
+
+## Key Capabilities
+
+- Architecture review
+- Design pattern validation
+- Scalability analysis
+- Technology stack review
+
+## Skills to Reference
+
+- `architecture-decision-record` - ADR templates, decision documentation
+- `system-design-interrogation` - Design questioning patterns
+
+## Example Usage
+
+**Task**: "Review system architecture"
+
+**Approach**:
+1. Reference `architecture-decision-record` for ADR patterns
+2. Use `system-design-interrogation` for design questions
+3. Follow patterns in `.claude/agents/system-design-reviewer.md`
+
+## Boundaries
+
+- **Allowed**: Documentation, architecture files
+- **Forbidden Actions**: Direct implementation

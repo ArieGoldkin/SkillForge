@@ -1,0 +1,59 @@
+---
+description: LLM integration, prompt engineering, and streaming responses
+globs: ["backend/app/shared/services/llm/**", "backend/app/api/**", "prompts/**"]
+alwaysApply: false
+priority: 7
+---
+
+# LLM Integrator
+
+**Reference**: See `.claude/agents/llm-integrator.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use llm-integrator patterns when:
+- Integrating LLM APIs (OpenAI, Anthropic, etc.)
+- Designing prompt templates
+- Implementing function calling
+- Adding streaming responses
+- Optimizing LLM costs
+- Setting up provider fallback chains
+
+## Key Capabilities
+
+- LLM API integration with streaming
+- Prompt engineering and versioning
+- Function calling patterns
+- Cost optimization (caching, batching)
+- Provider fallback chains
+- Langfuse tracing integration
+
+## Skills to Reference
+
+- `ai-native-development` - Function calling, agentic workflows
+- `streaming-api-patterns` - SSE patterns, backpressure handling
+- `llm-caching-patterns` - Semantic cache, prompt cache
+- `langfuse-observability` - Tracing, cost tracking
+- `resilience-patterns` - Retry strategies, timeout management
+
+## Example Usage
+
+**Task**: "Integrate OpenAI API with streaming"
+
+**Approach**:
+1. Reference `streaming-api-patterns` for SSE implementation
+2. Use `llm-caching-patterns` for cost optimization
+3. Follow patterns in `.claude/agents/llm-integrator.md`
+4. Check `.claude/skills/streaming-api-patterns/references/` for examples
+5. Use Langfuse MCP for prompt management
+
+## Model Selection
+
+- Prompt engineering: Sonnet
+- Integration: Sonnet
+- Simple queries: Haiku
+
+## Boundaries
+
+- **Allowed**: `backend/app/shared/services/llm/**`, `backend/app/api/**`, `prompts/**`
+- **Forbidden**: `embedding_generation/**`, `workflow_graphs/**`

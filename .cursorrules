@@ -626,14 +626,83 @@ pytest tests/ > /dev/null  # Discards output
 
 ---
 
+## 🤖 Agent & Skill System
+
+This project uses a sophisticated agent and skill system defined in `.claude/`. Cursor IDE rules bridge this system to provide guidance.
+
+### Agent Delegation
+
+When working on tasks, reference agent patterns:
+
+- **Agent Rules**: See `.cursor/rules/agents/` for when to use each agent pattern
+- **Agent Registry**: See `.claude/agent-registry.json` for full agent catalog
+- **Delegation Guide**: See `.cursor/rules/agent-delegation.mdc` for selection decision tree
+
+**Key Agents**:
+- `backend-system-architect` - API design, database schemas, authentication
+- `frontend-ui-developer` - React 19 components, TypeScript, Zod validation
+- `code-quality-reviewer` - Security audits, test coverage, linting
+- `workflow-architect` - LangGraph workflows, multi-agent systems
+- `llm-integrator` - LLM API integration, prompt engineering
+- `test-generator` - Test creation, MSW mocking, VCR.py recording
+
+### Skill Usage
+
+Reference skills for patterns and best practices:
+
+- **Skill Rules**: See `.cursor/rules/skills/` for progressive loading guidance
+- **Skill Catalog**: See `.claude/agent-registry.json` for full skill list
+- **Usage Guide**: See `.cursor/rules/skill-usage.mdc` for token optimization
+
+**Progressive Loading Protocol**:
+1. Discovery: `capabilities.json` (~100 tokens) - Is skill relevant?
+2. Overview: `SKILL.md` (~500-800 tokens) - Confirmed relevant, need patterns
+3. Implementation: `references/*.md` (~100-200 tokens each) - Specific guidance
+4. Generation: `templates/*` (~150-300 tokens each) - Code generation
+
+**Key Skills**:
+- `api-design-framework` - REST patterns, versioning, OpenAPI
+- `langgraph-workflows` - State management, supervisor-worker, checkpointing
+- `testing-strategy-builder` - MSW, VCR.py, coverage strategies
+- `type-safety-validation` - Zod schemas, exhaustive types
+- `security-checklist` - OWASP, authentication, input validation
+
+### Workflow Composition
+
+Before creating ad-hoc agent coordination:
+
+1. Check `.claude/workflows/` for pre-composed solutions
+2. Use composed workflows (60-80% token savings)
+3. Examples: `secure-api-endpoint`, `full-stack-feature`, `ai-integration`
+
+### MCP Tools
+
+Use MCP tools for current documentation and tooling:
+
+**Always Available**:
+- **context7** - Current library docs (FastAPI, React, LangGraph) - Use instead of embedding static docs
+- **sequential-thinking** - Complex reasoning for architecture decisions
+- **memory** - Session persistence and decision storage
+
+**On-Demand**:
+- **postgres-mcp** - Database queries, schema inspection (port 5437)
+- **playwright** - E2E testing, browser automation (prefer browser_snapshot over screenshot)
+- **langfuse** - LLM tracing, cost tracking (http://localhost:3000)
+- **pg-aiguide** - PostgreSQL expertise and best practices
+
+**See**: `.cursor/rules/mcp-usage.mdc` for detailed MCP usage guide and `.mcp.json` for configuration.
+
 ## 📚 Reference
 
 - **Backend Tasks:** `docs/YONATAN_BACKEND_TASKS.md`
 - **Integration Points:** `docs/INTEGRATION_POINTS.md`
 - **API Contract:** `docs/API_CONTRACT.md` (when created)
 - **Architecture:** `docs/ARCHITECTURE.md`
+- **Agent Rules:** `.cursor/rules/agents/`
+- **Skill Rules:** `.cursor/rules/skills/`
+- **Agent Registry:** `.claude/agent-registry.json`
 
 ---
 
-**Last Updated:** November 20, 2025  
+**Last Updated:** December 31, 2025  
 **Maintained By:** Backend Team

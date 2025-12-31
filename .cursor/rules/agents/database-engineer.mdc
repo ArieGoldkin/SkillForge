@@ -1,0 +1,57 @@
+---
+description: Database schema design, migrations, and query optimization
+globs: ["backend/alembic/**", "backend/app/models/**", "docs/database/**"]
+alwaysApply: false
+priority: 7
+---
+
+# Database Engineer
+
+**Reference**: See `.claude/agents/database-engineer.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use database-engineer patterns when:
+- Designing database schemas
+- Creating Alembic migrations
+- Optimizing slow queries
+- Adding indexes (HNSW, B-tree)
+- Setting up full-text search
+- Adding constraints and normalization
+
+## Key Capabilities
+
+- Schema design and normalization
+- Alembic migration patterns (always reversible)
+- Query optimization
+- PGVector indexing (HNSW)
+- Full-text search (tsvector)
+- Foreign key constraints
+
+## Skills to Reference
+
+- `database-schema-designer` - Schema design, migration patterns
+- `pgvector-search` - Vector indexing, hybrid search
+- `performance-optimization` - Query optimization
+
+## Example Usage
+
+**Task**: "Create Alembic migration for new table"
+
+**Approach**:
+1. Reference `database-schema-designer` for migration patterns
+2. Ensure migration is reversible (upgrade/downgrade)
+3. Follow patterns in `.claude/agents/database-engineer.md`
+4. Check `.claude/skills/database-schema-designer/templates/` for examples
+5. Use pg-aiguide MCP for PostgreSQL expertise
+
+## Model Selection
+
+- Schema design: Sonnet
+- Query optimization: Sonnet
+- Simple migrations: Haiku
+
+## Boundaries
+
+- **Allowed**: `backend/alembic/**`, `backend/app/models/**`, `docs/database/**`
+- **Forbidden**: `frontend/**`, `direct_production_access`

@@ -1,54 +1,130 @@
-# Cursor Rules (generated from .claude/skills)
+# Cursor IDE Rules for Claude Agents & Skills
 
-This directory mirrors `.claude/skills/*` into `.cursor/rules/*` as thin rules.
+This directory contains Cursor IDE rules that bridge the gap between Cursor IDE's rule system and the existing `.claude/agents/` and `.claude/skills/` structure used by Claude Code.
 
-## How to use
+## Directory Structure
 
-- Baseline guardrails are always applied: `skillforge-baseline`.
+```
+.cursor/rules/
+├── agents/              # Agent rule files (one per agent)
+│   ├── backend-system-architect.mdc
+│   ├── frontend-ui-developer.mdc
+│   └── ...
+├── skills/              # Skill rule files (key skills)
+│   ├── langgraph-workflows.mdc
+│   ├── api-design-framework.mdc
+│   └── ...
+├── agent-delegation.mdc # Agent selection guide
+├── skill-usage.mdc      # Progressive skill loading guide
+└── README.md           # This file
+```
 
-- Most rules are designed to **Apply Intelligently** (Cursor decides via the rule `description`).
+## How It Works
 
-- Use `globs` only as a guardrail against irrelevant activation.
+### Cursor IDE vs Claude Code
 
-## Rules index
+**Claude Code** (terminal-based):
+- Native support for `.claude/agents/` and `.claude/skills/`
+- Auto-discovery via `agent-registry.json`
+- Direct agent invocation via Task tool
 
-- `ai-native-development`: Apply Intelligently; globs: none
-- `api-design-framework`: Apply Intelligently; globs: none
-- `architecture-decision-record`: Apply Intelligently; globs: none
-- `brainstorming`: Apply Intelligently; globs: none
-- `code-review-playbook`: Apply Intelligently; globs: none
-- `database-schema-designer`: Apply Intelligently; globs: none
-- `design-system-starter`: Apply to Specific Files (globs present) / Apply Intelligently; globs: frontend/**/*.{ts,tsx}
-- `devops-deployment`: Apply Intelligently; globs: none
-- `edge-computing-patterns`: Apply Intelligently; globs: none
-- `evidence-verification`: Apply Intelligently; globs: none
-- `observability-monitoring`: Apply Intelligently; globs: none
-- `performance-optimization`: Apply Intelligently; globs: none
-- `quality-gates`: Apply Intelligently; globs: none
-- `react-server-components-framework`: Apply to Specific Files (globs present) / Apply Intelligently; globs: frontend/**/*.{ts,tsx}
-- `security-checklist`: Apply Intelligently; globs: none
-- `streaming-api-patterns`: Apply Intelligently; globs: none
-- `testing-strategy-builder`: Apply Intelligently; globs: none
-- `type-safety-validation`: Apply Intelligently; globs: none
+**Cursor IDE** (editor-based):
+- Uses `.cursor/rules/` directory with `.mdc` files
+- Rules are instructions, not executable agents
+- Rules reference `.claude/` structure for patterns
 
-## Suggested validation prompts
+### Rule Files (.mdc format)
 
-- "Design a paginated FastAPI endpoint and error model" (expect: `api-design-framework` + baseline)
+Each rule file contains:
+- **Metadata** (YAML frontmatter): description, globs, priority, alwaysApply
+- **Content**: When to use, capabilities, examples, references
 
-- "Implement SSE progress streaming and reconnection" (expect: `streaming-api-patterns` + baseline)
+### Agent Rules
 
-- "Add unit + integration tests for this new service" (expect: `testing-strategy-builder` + baseline)
+Agent rule files (`.cursor/rules/agents/*.mdc`) provide:
+- When to use the agent pattern
+- Key capabilities from `agent-registry.json`
+- Related skills to reference
+- Example usage patterns
+- Model selection guidance
+- Boundary constraints
 
-- "Do a quick security pass for auth + input validation" (expect: `security-checklist` + baseline)
+### Skill Rules
 
-- "Create an ADR documenting a major architecture choice" (expect: `architecture-decision-record` + baseline)
+Skill rule files (`.cursor/rules/skills/*.mdc`) provide:
+- Progressive loading protocol (capabilities.json → SKILL.md → references)
+- What the skill provides
+- When to use it
+- Related agents
+- Token optimization strategies
 
-- "Optimize a slow query / endpoint" (expect: `performance-optimization` + baseline)
+## Usage
 
-- "Add structured logging + tracing hooks" (expect: `observability-monitoring` + baseline)
+### For Cursor IDE
 
-- "Design a migration + indexes" (expect: `database-schema-designer` + baseline)
+1. **Automatic**: Cursor IDE reads `.cursor/rules/` automatically
+2. **Context-aware**: Rules with `globs` apply when matching files are open
+3. **Priority**: Rules with higher `priority` are considered first
+4. **Always apply**: Rules with `alwaysApply: true` are always considered
 
-- "Plan CI/CD deployment config" (expect: `devops-deployment` + baseline)
+### For Developers
 
-- "Brainstorm approaches and create a decision matrix" (expect: `brainstorming` + baseline)
+When working on a task:
+
+1. **Check agent rules**: See `.cursor/rules/agents/` for relevant agent patterns
+2. **Check skill rules**: See `.cursor/rules/skills/` for relevant skill patterns
+3. **Reference full definitions**: Follow links to `.claude/agents/` and `.claude/skills/`
+4. **Use delegation guide**: See `agent-delegation.mdc` for agent selection
+5. **Optimize loading**: See `skill-usage.mdc` for progressive skill loading
+
+## Key Files
+
+- **agent-delegation.mdc**: Decision tree for selecting the right agent
+- **skill-usage.mdc**: Progressive loading protocol to save tokens
+- **mcp-usage.mdc**: MCP server usage guide and tool selection
+- **agents/*.mdc**: Individual agent pattern guides
+- **skills/*.mdc**: Individual skill usage guides
+
+## Source of Truth
+
+The `.claude/` directory structure remains the source of truth:
+- `.claude/agents/` - Full agent definitions
+- `.claude/skills/` - Full skill definitions
+- `.claude/agent-registry.json` - Agent and skill catalog
+
+Cursor IDE rules act as a bridge/interface to help Cursor understand and use the Claude structure.
+
+## MCP Configuration
+
+MCP servers use environment variables from `.mcp.env`:
+
+1. **Copy template**: `cp .mcp.env.example .mcp.env`
+2. **Fill in values**: Edit `.mcp.env` with your actual credentials
+3. **Never commit**: `.mcp.env` is in `.gitignore` (secrets!)
+4. **Restart Cursor**: After changing `.mcp.env`, restart Cursor IDE
+
+**Files**:
+- `.mcp.json` - Server definitions (committed)
+- `.mcp.env` - Environment variables (NOT committed)
+- `.mcp.env.example` - Template (committed)
+
+See `.cursor/rules/mcp-usage.mdc` for detailed MCP usage guide.
+
+## Best Practices
+
+1. **Keep rules focused**: Each rule file <200 lines
+2. **Reference full definitions**: Point to `.claude/` for details
+3. **Use metadata**: Leverage `globs`, `alwaysApply`, `priority`
+4. **Progressive loading**: Load skills incrementally, not all at once
+5. **Check workflows**: Use pre-composed workflows when available
+6. **Use `.mcp.env`**: Never hardcode secrets in `.mcp.json`
+
+## Integration with .cursorrules
+
+The main `.cursorrules` file references this directory and provides:
+- High-level project rules
+- Quality gates
+- Code standards
+- Links to agent/skill system
+
+See `.cursorrules` for the complete project rules.

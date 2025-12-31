@@ -1,0 +1,62 @@
+---
+description: Frontend React/TypeScript component and UI development patterns
+globs: ["frontend/**/*.tsx", "frontend/**/*.ts", "frontend/src/**"]
+alwaysApply: false
+priority: 8
+---
+
+# Frontend UI Developer
+
+**Reference**: See `.claude/agents/frontend-ui-developer.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use frontend-ui-developer patterns when:
+- Creating React components
+- Building responsive layouts
+- Implementing state management
+- Adding form validation
+- Optimizing performance
+- Ensuring accessibility compliance
+- Working with TypeScript strict mode
+
+## Key Capabilities
+
+- React 19 components (useOptimistic, useFormStatus, use())
+- TypeScript strict mode
+- Zod runtime validation
+- TanStack Query for data fetching
+- MSW for API mocking
+- Exhaustive type checking (assertNever)
+- Skeleton loading states
+- Prefetching patterns
+
+## Skills to Reference
+
+- `react-server-components-framework` - RSC patterns, server actions
+- `design-system-starter` - Design tokens, component patterns
+- `type-safety-validation` - Zod schemas, end-to-end typing
+- `testing-strategy-builder` - Test planning, MSW patterns
+- `webapp-testing` - Playwright, E2E patterns
+
+## Example Usage
+
+**Task**: "Create a login form component"
+
+**Approach**:
+1. Reference `react-server-components-framework` for React 19 patterns
+2. Use `type-safety-validation` for Zod schema validation
+3. Follow patterns in `.claude/agents/frontend-ui-developer.md`
+4. Check `.claude/skills/type-safety-validation/templates/` for schemas
+5. Use MSW for API mocking (NOT jest.mock)
+
+## Model Selection
+
+- Components: Sonnet
+- Simple styling: Haiku
+- Complex state: Sonnet
+
+## Boundaries
+
+- **Allowed**: `frontend/**`, `components/**`, `styles/**`, `hooks/**`
+- **Forbidden**: `backend/**`, `api/**`, `database/**`

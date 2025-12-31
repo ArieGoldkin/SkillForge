@@ -1,0 +1,53 @@
+---
+description: Zod schemas, exhaustive type checking, and end-to-end type safety
+globs: ["frontend/**/*.ts", "frontend/**/*.tsx", "backend/**/*.py"]
+alwaysApply: false
+priority: 8
+---
+
+# Type Safety & Validation Skill
+
+**Reference**: See `.claude/skills/type-safety-validation/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/type-safety-validation/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/type-safety-validation/SKILL.md` (~400 tokens)
+3. **Templates**: Use `templates/zod-schema.ts` for schema generation
+
+## What This Skill Provides
+
+- Zod runtime validation schemas
+- Exhaustive type checking with `assertNever`
+- End-to-end type safety (frontend ↔ backend)
+- tRPC patterns (if used)
+- Prisma type generation patterns
+
+## Critical 2025 Patterns
+
+- **Zod validation on ALL API responses** - Never use `await response.json() as Type`
+- **Exhaustive switch statements** - Always include `assertNever` in default case
+- **Runtime validation** - Type assertions are not type safety
+
+## When to Use
+
+- Validating API responses
+- Creating form validation schemas
+- Ensuring exhaustive type coverage
+- Building type-safe API clients
+- Preventing runtime type errors
+
+## Related Agents
+
+- `frontend-ui-developer` - Primary agent for frontend type safety
+- `backend-system-architect` - For API type contracts
+
+## Example Usage
+
+**Task**: "Add validation to API response"
+
+**Approach**:
+1. Read `capabilities.json` to understand validation patterns
+2. Read `SKILL.md#zod-schemas` for schema creation
+3. Use `templates/zod-schema.ts` for code generation
+4. **CRITICAL**: Use `.parse()` not type assertions

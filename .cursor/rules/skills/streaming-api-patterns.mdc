@@ -1,0 +1,49 @@
+---
+description: SSE, WebSocket, and streaming response patterns
+globs: ["backend/app/api/**", "frontend/src/**"]
+alwaysApply: false
+priority: 7
+---
+
+# Streaming API Patterns Skill
+
+**Reference**: See `.claude/skills/streaming-api-patterns/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/streaming-api-patterns/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/streaming-api-patterns/SKILL.md` (~500 tokens)
+3. **References**: Read `references/` for SSE/WebSocket deep dives
+
+## What This Skill Provides
+
+- SSE (Server-Sent Events) patterns
+- WebSocket patterns
+- ReadableStream handling
+- Backpressure handling
+- Reconnection strategies
+- Event deduplication
+
+## When to Use
+
+- Implementing streaming responses
+- Building real-time features
+- Adding SSE endpoints
+- Handling WebSocket connections
+- Managing backpressure
+
+## Related Agents
+
+- `backend-system-architect` - For SSE endpoint design
+- `llm-integrator` - For streaming LLM responses
+- `frontend-ui-developer` - For SSE client implementation
+
+## Example Usage
+
+**Task**: "Add SSE endpoint for progress updates"
+
+**Approach**:
+1. Read `capabilities.json` to understand streaming patterns
+2. Read `references/sse-deep-dive.md` for implementation
+3. Follow patterns in `SKILL.md`
+4. Use `aclosing()` for async generator cleanup

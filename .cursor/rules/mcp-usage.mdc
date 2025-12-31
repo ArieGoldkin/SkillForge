@@ -1,0 +1,248 @@
+---
+description: MCP server usage guide and tool selection
+globs: []
+alwaysApply: true
+priority: 9
+---
+
+# MCP Server Usage Guide
+
+**Reference**: See `.mcp.json` for full MCP server configuration.
+
+## Always Available MCPs
+
+These MCP servers are always active and should be used proactively:
+
+### memory
+**Purpose**: Conversation context persistence across sessions
+
+**Tools**:
+- `memory_create_entities` - Store decisions and learnings
+- `memory_search_nodes` - Find previous context
+- `memory_get_entity` - Retrieve stored information
+- `memory_update_entity` - Update existing context
+
+**When to Use**:
+- After completing significant work
+- Before starting related tasks
+- When you need previous decisions
+
+**Example**:
+```python
+# Store a decision
+mcp__memory__create_entities(entities=[{
+  "name": "api-design-decision",
+  "entityType": "architecture-decision",
+  "observations": ["Chose REST over GraphQL", "Versioning strategy: URL-based"]
+}])
+
+# Search for previous work
+mcp__memory__search_nodes(query="authentication implementation")
+```
+
+### sequential-thinking
+**Purpose**: Advanced multi-step reasoning for complex decisions
+
+**Tools**:
+- `sequentialthinking` - Structured reasoning chain
+
+**When to Use**:
+- Complex architecture decisions
+- Multi-step problem solving
+- When you need to think through trade-offs
+
+**Example**:
+```python
+mcp__sequential-thinking__sequentialthinking(
+  thought="Analyzing trade-offs between microservices and monolith...",
+  thoughtNumber=1,
+  totalThoughts=5,
+  nextThoughtNeeded=true
+)
+```
+
+### context7
+**Purpose**: Current library documentation (use instead of embedding static docs)
+
+**Tools**:
+- `resolve-library-id` - Find library identifier
+- `get-library-docs` - Get current documentation
+
+**When to Use**:
+- Before implementing with any framework
+- Need current API patterns
+- Checking for breaking changes
+
+**Example**:
+```python
+# Get FastAPI documentation
+mcp__context7__get-library-docs(
+  context7CompatibleLibraryID="/tiangolo/fastapi",
+  topic="dependency injection"
+)
+
+# Get React 19 documentation
+mcp__context7__get-library-docs(
+  context7CompatibleLibraryID="/facebook/react",
+  topic="useOptimistic hook"
+)
+```
+
+## On-Demand MCPs
+
+Enable these MCPs when working on specific tasks:
+
+### postgres-mcp
+**Purpose**: PostgreSQL database access for queries, schema inspection, query testing
+
+**When to Use**:
+- Database schema design
+- Query optimization
+- Testing migrations
+- Inspecting table structures
+
+**Tools**:
+- `query` - Execute SQL queries
+- `list_tables` - List all tables
+- `describe_table` - Get table schema
+- `get_table_schema` - Detailed schema info
+
+**Configuration**:
+- Connection: `postgresql://user:password@localhost:5437/dbname`
+- Port: 5437 (mapped from Docker container)
+
+**Example**:
+```python
+# List tables
+mcp__postgres-mcp__list_tables()
+
+# Inspect schema
+mcp__postgres-mcp__describe_table(table_name="analyses")
+
+# Test query
+mcp__postgres-mcp__query(query="SELECT COUNT(*) FROM analyses WHERE status = 'complete'")
+```
+
+### playwright
+**Purpose**: Browser automation for E2E testing and UI verification
+
+**When to Use**:
+- E2E testing
+- UI verification
+- Visual regression testing
+- Testing user flows
+
+**Tools**:
+- `browser_navigate` - Navigate to URL
+- `browser_snapshot` - Get accessibility snapshot (preferred over screenshot)
+- `browser_click` - Click elements
+- `browser_type` - Type text
+- `browser_take_screenshot` - Take screenshot (use sparingly, high token cost)
+
+**Best Practice**: Use `browser_snapshot` instead of `browser_take_screenshot` (10x smaller tokens)
+
+**Example**:
+```python
+# Navigate and test
+mcp__playwright__browser_navigate(url="http://localhost:5173")
+mcp__playwright__browser_snapshot()
+
+# Interact
+mcp__playwright__browser_click(element="Login button", ref="button[type='submit']")
+mcp__playwright__browser_type(element="Email input", ref="input[name='email']", text="test@example.com")
+```
+
+### langfuse
+**Purpose**: LLM tracing, cost tracking, prompt management
+
+**When to Use**:
+- Working with LLM integrations
+- Tracing workflow execution
+- Cost optimization
+- Prompt versioning
+
+**Tools**:
+- `langfuse_get_trace` - Get trace details
+- `langfuse_list_traces` - List recent traces
+- `langfuse_get_prompt` - Get prompt version
+- `langfuse_create_prompt` - Create new prompt version
+
+**Configuration**:
+- Host: `http://localhost:3000` (local Langfuse instance)
+- Requires: `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`
+
+**Example**:
+```python
+# Get recent traces
+mcp__langfuse__langfuse_list_traces(limit=10)
+
+# Get trace details
+mcp__langfuse__langfuse_get_trace(trace_id="trace-123")
+```
+
+### pg-aiguide
+**Purpose**: PostgreSQL expertise and best practices
+
+**When to Use**:
+- Database design questions
+- Query optimization guidance
+- PostgreSQL-specific features
+
+**Note**: HTTP-based documentation server, no specific tools
+
+## Agent-Specific MCP Usage
+
+Based on `.mcp.json` agent_mcp_mapping:
+
+- **backend-system-architect**: context7, postgres-mcp, pg-aiguide
+- **frontend-ui-developer**: context7, playwright
+- **data-pipeline-engineer**: postgres-mcp, context7, pg-aiguide
+- **llm-integrator**: langfuse, context7, memory
+- **workflow-architect**: sequential-thinking, memory, context7, langfuse
+- **code-quality-reviewer**: context7, playwright
+- **database-engineer**: postgres-mcp, pg-aiguide, context7
+- **test-generator**: playwright, context7
+- **debug-investigator**: sequential-thinking, memory, postgres-mcp
+
+## Best Practices
+
+1. **Use context7 instead of embedding docs** - Always use context7 for current library documentation
+2. **Prefer browser_snapshot over screenshot** - 10x token savings
+3. **Store decisions in memory** - Use memory MCP after completing work
+4. **Use sequential-thinking for complex decisions** - Don't skip reasoning steps
+5. **Enable on-demand MCPs only when needed** - Reduces token overhead
+
+## Token Optimization
+
+- **Always available**: ~4,200 tokens (memory, sequential-thinking, context7)
+- **On-demand**: Add only when needed
+- **Total recommended**: 2-5 MCP servers for optimal accuracy
+
+## Configuration
+
+### Environment Variables
+
+**CRITICAL**: Never hardcode credentials in `.mcp.json`. Use `.mcp.env` instead:
+
+1. Copy `.mcp.env.example` to `.mcp.env`
+2. Fill in your actual values
+3. `.mcp.json` references variables like `${POSTGRES_CONNECTION_STRING}`
+4. Cursor IDE automatically loads `.mcp.env` when starting MCP servers
+
+**Files**:
+- `.mcp.json` - Server definitions (committed to git)
+- `.mcp.env` - Environment variables (NOT committed, in .gitignore)
+- `.mcp.env.example` - Template with placeholder values (committed)
+
+### Server Configuration
+
+See `.mcp.json` for:
+- Server command definitions
+- Environment variable references
+- Server descriptions and usage
+
+### Setting Up
+
+1. Copy template: `cp .mcp.env.example .mcp.env`
+2. Edit `.mcp.env` with your actual values
+3. Restart Cursor IDE to load new environment variables
