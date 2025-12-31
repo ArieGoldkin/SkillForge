@@ -34,9 +34,18 @@ read_hook_input() {
 
 # Extract field from hook input using jq
 # Usage: get_field '.tool_input.command'
+#
+# SECURITY (ME-002): This function passes the first argument directly to jq.
+# ONLY pass STATIC filter strings - never pass user-controlled input!
+#
+# Safe:   get_field '.tool_input.file_path'
+# Safe:   get_field '.session_id'
+# UNSAFE: get_field "$USER_INPUT"  # NEVER DO THIS - jq filter injection risk
+#
 get_field() {
+  local filter="$1"
   local input=$(read_hook_input)
-  echo "$input" | jq -r "$1 // \"\"" 2>/dev/null
+  echo "$input" | jq -r "$filter // \"\"" 2>/dev/null
 }
 
 # Get tool name

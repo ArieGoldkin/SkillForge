@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Session Metrics - Tracks tool usage statistics
 # Hook: PostToolUse (*)
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Issue Documentation Requirement Hook for Claude Code
 # Ensures docs/issues/<issue-num>-*/README.md exists before creating issue branches
 # Exit code 2 blocks the command; exit code 0 allows it

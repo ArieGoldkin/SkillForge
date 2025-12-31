@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Git Branch Protection Hook for Claude Code
 # Prevents commits and pushes to dev/main branches
 # Exit code 2 blocks the command; exit code 0 allows it

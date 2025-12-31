@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # CI Simulation Hook - Reminds to run CI checks before commits
 # Hook: PreToolUse (Bash)
 

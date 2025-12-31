@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Session Environment Setup - Initializes session environment
 # Hook: SessionStart
 

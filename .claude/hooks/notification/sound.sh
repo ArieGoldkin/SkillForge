@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Sound Notifications - Plays sounds for task completion
 # Hook: Notification
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Audit Logger - Logs all tool executions for audit trail
 # Hook: PostToolUse (*)
 

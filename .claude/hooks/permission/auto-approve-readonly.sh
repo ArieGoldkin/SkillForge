@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Auto-Approve Readonly - Automatically approves read-only operations
 # Hook: PermissionRequest (Read|Glob|Grep)
 

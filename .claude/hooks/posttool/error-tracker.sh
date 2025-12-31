@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Error Tracker - Tracks and logs tool errors
 # Hook: PostToolUse (*)
 

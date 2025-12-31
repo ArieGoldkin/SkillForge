@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Auto-Approve Safe Bash - Automatically approves safe bash commands
 # Hook: PermissionRequest (Bash)
 

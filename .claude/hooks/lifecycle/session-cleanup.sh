@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Session Cleanup - Cleans up temporary files at session end
 # Hook: SessionEnd
 

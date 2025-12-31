@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Task Completion Check - Verifies tasks are properly completed before stop
 # Hook: Stop
 

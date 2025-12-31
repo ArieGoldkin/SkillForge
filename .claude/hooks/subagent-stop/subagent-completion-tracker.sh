@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Subagent Completion Tracker - Tracks when subagents complete
 # Hook: SubagentStop
 

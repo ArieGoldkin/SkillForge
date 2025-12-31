@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Playwright Safety - Validates browser automation operations
 # Hook: PreToolUse (mcp__playwright__*)
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Subagent Validator - Logs and validates Task tool invocations
 # Hook: PreToolUse (Task)
 
