@@ -38,7 +38,6 @@ This creates/updates `.mcp.json`:
 # Initialize the three agents (planner, generator, healer)
 npx playwright init-agents --loop=claude
 # OR for VS Code: --loop=vscode
-# OR for OpenCode: --loop=opencode
 ```
 
 **What this does:**
