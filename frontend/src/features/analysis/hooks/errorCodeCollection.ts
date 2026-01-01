@@ -1,7 +1,7 @@
 /**
  * Error code collection utilities
  *
- * Extracts error codes from failed stages and SSE events for UI display.
+ * Extracts error codes from failed stages, SSE events, and REST API responses for UI display.
  */
 
 import { isErrorEvent, isProgressEvent } from '@/schemas/sse'
@@ -48,6 +48,20 @@ export function collectErrorCodesFromEvents(events: SSEEvent[]): Set<string> {
         errorCodes.add(errorCode)
       }
     }
+  }
+  return errorCodes
+}
+
+/**
+ * Collect error codes from REST API response
+ *
+ * Extracts error_code from analysis status response when viewing completed analyses.
+ * This complements SSE-based collection for analyses viewed after completion.
+ */
+export function collectErrorCodesFromREST(errorCode: string | null | undefined): Set<string> {
+  const errorCodes = new Set<string>()
+  if (errorCode) {
+    errorCodes.add(errorCode)
   }
   return errorCodes
 }

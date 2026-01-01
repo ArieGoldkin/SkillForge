@@ -115,6 +115,10 @@ export interface AnalyzeResponse {
 export interface AnalysisStatusResponse {
   status: AnalysisStatus
   artifact_id?: string | null
+  // Error tracking fields (Issue #441) - matches backend AnalyzeStatusResponse
+  error_code?: string | null
+  error_message?: string | null
+  failed_at_stage?: string | null
 }
 
 export interface ProgressEventResponse {
@@ -192,6 +196,10 @@ export interface LibrarySearchResult {
   snippet: string | null
   rank: number
   created_at: string
+  // Error tracking fields (Issue #441) - for failed analyses
+  error_code?: string | null
+  error_message?: string | null
+  failed_at_stage?: string | null
 }
 
 export interface LibraryListResponse {

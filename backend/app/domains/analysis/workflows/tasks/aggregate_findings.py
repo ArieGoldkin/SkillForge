@@ -650,8 +650,8 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
                 )
         else:
             # Normal synthesis with tiered fallback chain (Issue #299-304)
-            # The synthesize_with_llm NEVER raises exceptions - it falls back
-            # through tiers (FULL -> REDUCED -> MINIMAL -> STATIC) until one succeeds.
+            # NOTE: Phased synthesis (synthesize_with_llm_phased) CAN raise CircuitBreakerOpenError,
+            # but it handles it internally by using static fallback. Other exceptions are re-raised.
             # Issue #487: Now includes source_context to prevent hallucinations
             async with async_exception_context(
                 operation="synthesize_with_llm",

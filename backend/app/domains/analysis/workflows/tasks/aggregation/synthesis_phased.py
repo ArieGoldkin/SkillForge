@@ -56,6 +56,52 @@ async def _emit_synthesis_heartbeat(
     )
 
 
+async def _create_static_fallback_for_circuit_breaker(
+    validated_findings: list[dict[str, object]],
+    analysis_id: AnalysisID,
+    start_time: float,
+) -> dict[str, Any]:
+    """Create static fallback when circuit breaker is open.
+
+    Args:
+        validated_findings: List of validated agent findings
+        analysis_id: UUID of the analysis
+        start_time: Start time for processing time calculation
+
+    Returns:
+        Static fallback aggregated insights dictionary
+
+    """
+    from app.domains.analysis.workflows.tasks.aggregation_fallback import (
+        _compress_findings,
+        _create_static_fallback,
+    )
+
+    # Convert validated_findings to format expected by _compress_findings
+    findings_for_compression = [
+        {"agent_type": f.get("agent_type", "unknown"), "findings": f.get("findings", {})}
+        for f in validated_findings
+    ]
+    compressed_findings = _compress_findings(findings_for_compression)
+    static_result = _create_static_fallback(compressed_findings)
+
+    # Add metadata indicating circuit breaker fallback
+    static_result["metadata"] = static_result.get("metadata", {})
+    static_result["metadata"]["circuit_breaker_open"] = True
+    static_result["metadata"]["fallback_reason"] = "circuit_breaker_open"
+    static_result["metadata"]["synthesis_status"] = "static_fallback_circuit_breaker"
+
+    elapsed = time.time() - start_time
+    logger.info(
+        "synthesis_static_fallback_complete",
+        analysis_id=str(analysis_id),
+        elapsed_seconds=round(elapsed, 2),
+        reason="circuit_breaker_open",
+    )
+
+    return static_result
+
+
 async def synthesize_with_llm_phased(
     validated_findings: list[dict[str, object]],
     conflicts: list[dict[str, str]],
@@ -131,6 +177,34 @@ async def synthesize_with_llm_phased(
             compressed_count=len(compressed_findings),
             phase_elapsed=round(phase0_elapsed, 2),
         )
+
+        # Check circuit breaker state BEFORE attempting LLM synthesis
+        # Issue: Aggregation stuck when circuit breaker is OPEN - prevent exception by checking first
+        from app.core.resilience import get_resilience_manager
+
+        resilience_manager = get_resilience_manager()
+        circuit_breaker = resilience_manager.get_circuit_breaker("llm_api")
+
+        # If circuit breaker is open, skip LLM synthesis and use static fallback immediately
+        if circuit_breaker.is_open:
+            logger.warning(
+                "synthesis_skipped_circuit_breaker_open",
+                analysis_id=str(analysis_id),
+                circuit_breaker_name="llm_api",
+                timeout_seconds=circuit_breaker.config.timeout_seconds,
+                message="Circuit breaker is OPEN - using static fallback to prevent aggregation hang",
+            )
+
+            await _emit_synthesis_heartbeat(
+                analysis_id,
+                start_time,
+                "Circuit breaker OPEN - using static fallback instead of LLM synthesis",
+            )
+
+            # Use static fallback helper function
+            return await _create_static_fallback_for_circuit_breaker(
+                validated_findings, analysis_id, start_time
+            )
 
         # Emit heartbeat for parallel phases
         await _emit_synthesis_heartbeat(
@@ -220,7 +294,34 @@ async def synthesize_with_llm_phased(
         return result
 
     except Exception as e:
-        # Log failure and re-raise
+        # Check if this is a circuit breaker error - if so, use static fallback instead of re-raising
+        from app.core.circuit_breaker import CircuitBreakerOpenError
+
+        if isinstance(e, CircuitBreakerOpenError):
+            logger.warning(
+                "synthesis_circuit_breaker_error_caught",
+                analysis_id=str(analysis_id),
+                error=str(e),
+                message="Circuit breaker error caught - using static fallback",
+            )
+
+            await _emit_synthesis_heartbeat(
+                analysis_id,
+                start_time,
+                "Circuit breaker OPEN - using static fallback",
+            )
+
+            # Use static fallback helper function
+            static_result = await _create_static_fallback_for_circuit_breaker(
+                validated_findings, analysis_id, start_time
+            )
+            # Update metadata for exception-caught scenario
+            static_result["metadata"]["fallback_reason"] = "circuit_breaker_error"
+            static_result["metadata"]["synthesis_status"] = "static_fallback_circuit_breaker_error"
+
+            return static_result
+
+        # For other exceptions, log and re-raise
         elapsed = time.time() - start_time
         logger.exception(
             "synthesis_multi_phase_failed",

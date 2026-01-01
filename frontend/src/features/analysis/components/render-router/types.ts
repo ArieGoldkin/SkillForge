@@ -83,6 +83,7 @@ export interface CompletionProps {
   steps: AnalysisStep[]
   hasFailedStages: boolean
   failedStagesCount: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisMetadata
   /** Stage statuses for accordion groups */
   stageStatuses: Map<StageName, StageStatusEntry>

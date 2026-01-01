@@ -1,7 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { AnalysisStatus, FilterStatus } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
+
+import { analyzeAPI } from '@/services/api.service'
+import { logger } from '@/lib/logger'
 
 import { normalizeTitle } from '../utils'
 import { dedupeByAnalysisId } from '../utils/libraryTransform'
@@ -17,6 +20,10 @@ interface SearchResultItem {
   tags?: string[]
   content_type: string
   status: AnalysisStatus
+  // Error tracking fields
+  error_code?: string | null
+  error_message?: string | null
+  failed_at_stage?: string | null
 }
 
 interface SearchResultPage {
@@ -40,7 +47,15 @@ function isFailedStatus(status: AnalysisStatus): boolean {
   )
 }
 
-function transformItemToSkill(item: SearchResultItem, navigate: ReturnType<typeof useNavigate>) {
+function transformItemToSkill(
+  item: SearchResultItem & {
+    error_code?: string | null
+    error_message?: string | null
+    failed_at_stage?: string | null
+  },
+  navigate: ReturnType<typeof useNavigate>,
+  onRetry: (analysisId: string, stage?: string) => void
+) {
   const tags = item.tags?.length ? item.tags : [item.content_type]
   const isFailed = isFailedStatus(item.status)
   return {
@@ -57,9 +72,15 @@ function transformItemToSkill(item: SearchResultItem, navigate: ReturnType<typeo
     progress: isFailed ? undefined : 0,
     status: mapAnalysisStatusToSkillStatus(item.status),
     analysisStatus: item.status,
+    // Error tracking fields (for failed analyses)
+    errorCode: item.error_code,
+    errorMessage: item.error_message,
+    failedAtStage: item.failed_at_stage,
     onSelect: (id: string) => {
       navigate({ to: '/analyze/$id', params: { id } })
     },
+    // Retry handler
+    onRetry,
   }
 }
 
@@ -70,11 +91,44 @@ function extractAllItems(searchResults?: UseLibrarySkillsParams['searchResults']
 
 export function useLibrarySkills({ searchResults }: UseLibrarySkillsParams) {
   const navigate = useNavigate()
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set())
+
+  const handleRetry = async (analysisId: string, stage?: string) => {
+    if (retryingIds.has(analysisId)) {
+      return // Already retrying
+    }
+
+    setRetryingIds((prev) => new Set(prev).add(analysisId))
+
+    try {
+      logger.info('Retrying analysis', { analysisId, stage })
+      const response = await analyzeAPI.retryAnalysis(analysisId)
+      logger.info('Analysis retry initiated', {
+        analysisId: response.analysis_id,
+        retryCount: response.retry_count,
+      })
+      // Navigate to analysis page to see progress
+      navigate({ to: '/analyze/$id', params: { id: analysisId } })
+    } catch (error) {
+      logger.error('Failed to retry analysis', {
+        analysisId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      // TODO: Show error toast/notification
+      alert(`Failed to retry analysis: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setRetryingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(analysisId)
+        return next
+      })
+    }
+  }
 
   const skills = useMemo(() => {
     const items = extractAllItems(searchResults)
     if (!items.length) return []
-    return items.map((item) => transformItemToSkill(item, navigate))
+    return items.map((item) => transformItemToSkill(item, navigate, handleRetry))
   }, [searchResults, navigate])
 
   const availableTags = useMemo(() => {

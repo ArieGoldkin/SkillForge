@@ -85,6 +85,9 @@ class LibrarySearchResult(BaseModel):
     error_code: str | None = Field(
         None, description="Error code for categorization (e.g., 'QUALITY_GATE_FAILED')"
     )
+    error_message: str | None = Field(
+        None, description="Human-readable error message explaining what went wrong"
+    )
     failed_at_stage: str | None = Field(
         None, description="Workflow stage where error occurred (e.g., 'quality_gate')"
     )

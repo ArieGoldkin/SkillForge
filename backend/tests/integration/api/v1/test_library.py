@@ -619,3 +619,131 @@ class TestLibraryDeleteEndpoint:
         db_session.expire_all()
         remaining = await db_session.get(Analysis, analysis_id)
         assert remaining is None
+
+
+class TestLibraryErrorFields:
+    """Tests for error tracking fields in library API responses."""
+
+    @pytest.mark.asyncio
+    async def test_list_mode_includes_error_fields_for_failed_analyses(
+        self, test_client, requires_database, reset_engine_connections, db_session
+    ):
+        """Test listing mode includes error_code, error_message, and failed_at_stage for failed analyses."""
+        # Create a failed analysis with error information
+        failed_analysis = await create_pending_analysis(
+            db_session,
+            title="Failed Analysis Test",
+            status="failed",
+            error_code="EXTRACTION_FAILED",
+            error_message="Unable to extract content from URL",
+            failed_at_stage="extraction",
+        )
+        await db_session.commit()
+
+        response = await test_client.get("/api/v1/library", params={"status": "failed"})
+
+        assert response.status_code == 200
+        data = response.json()
+        # Find our specific analysis in the results
+        item = next(
+            (item for item in data["items"] if item["analysis_id"] == str(failed_analysis.id)), None
+        )
+        assert item is not None, f"Failed analysis {failed_analysis.id} not found in results"
+        assert item["status"] == "failed"
+        assert item["error_code"] == "EXTRACTION_FAILED"
+        assert item["error_message"] == "Unable to extract content from URL"
+        assert item["failed_at_stage"] == "extraction"
+
+    @pytest.mark.asyncio
+    async def test_list_mode_returns_null_error_fields_for_complete_analyses(
+        self, test_client, requires_database, reset_engine_connections, db_session
+    ):
+        """Test listing mode returns null for error fields when analysis is complete."""
+        # Create a complete analysis
+        complete_analysis = await create_complete_analysis(
+            db_session,
+            title="Complete Analysis Test",
+        )
+        await db_session.commit()
+
+        response = await test_client.get("/api/v1/library", params={"status": "complete"})
+
+        assert response.status_code == 200
+        data = response.json()
+        # Find our specific analysis in the results
+        item = next(
+            (item for item in data["items"] if item["analysis_id"] == str(complete_analysis.id)), None
+        )
+        assert item is not None, f"Complete analysis {complete_analysis.id} not found in results"
+        assert item["status"] == "complete"
+        assert item["error_code"] is None
+        assert item["error_message"] is None
+        assert item["failed_at_stage"] is None
+
+    @pytest.mark.asyncio
+    async def test_search_mode_includes_error_fields_for_failed_analyses(
+        self, test_client, requires_database, reset_engine_connections, db_session
+    ):
+        """Test search mode includes error fields for failed analyses."""
+        # Create a failed analysis with searchable content
+        failed_analysis = await create_pending_analysis(
+            db_session,
+            title="Failed Search Test",
+            status="failed",
+            error_code="ANALYSIS_FAILED",
+            error_message="Analysis workflow encountered an error",
+            failed_at_stage="analysis",
+            raw_content="This is test content about PostgreSQL.",
+        )
+        await db_session.commit()
+
+        # Mock embedding service
+        with patch("app.api.v1.analysis.library.EmbeddingService") as mock_embedding_cls:
+            mock_service = AsyncMock()
+            mock_service.generate_embedding.return_value = [0.1] * 1536
+            mock_service.close = AsyncMock()
+            mock_embedding_cls.return_value = mock_service
+
+            response = await test_client.get(
+                "/api/v1/library",
+                params={"query": "postgresql", "search_mode": "hybrid"},
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        # Should find the failed analysis in search results
+        failed_items = [item for item in data["items"] if item["status"] == "failed"]
+        if failed_items:
+            item = failed_items[0]
+            assert item["error_code"] == "ANALYSIS_FAILED"
+            assert item["error_message"] == "Analysis workflow encountered an error"
+            assert item["failed_at_stage"] == "analysis"
+
+    @pytest.mark.asyncio
+    async def test_error_message_can_be_null_even_for_failed_analyses(
+        self, test_client, requires_database, reset_engine_connections, db_session
+    ):
+        """Test that error_message can be null even when analysis has failed status."""
+        # Create a failed analysis without error_message
+        failed_analysis = await create_pending_analysis(
+            db_session,
+            title="Failed Without Message Test",
+            status="failed",
+            error_code="EXTRACTION_FAILED",
+            error_message=None,  # Explicitly None
+            failed_at_stage="extraction",
+        )
+        await db_session.commit()
+
+        response = await test_client.get("/api/v1/library", params={"status": "failed"})
+
+        assert response.status_code == 200
+        data = response.json()
+        item = next(
+            (item for item in data["items"] if item["analysis_id"] == str(failed_analysis.id)), None
+        )
+        assert item is not None, f"Failed analysis {failed_analysis.id} not found in results"
+        assert item["status"] == "failed"
+        assert item["error_code"] == "EXTRACTION_FAILED"
+        assert item["error_message"] is None
+        assert item["failed_at_stage"] == "extraction"
