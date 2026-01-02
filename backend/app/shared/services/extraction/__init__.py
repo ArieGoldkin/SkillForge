@@ -11,12 +11,14 @@ from app.shared.services.extraction.content_type import (
 )
 from app.shared.services.extraction.github_extractor import GitHubExtractor
 from app.shared.services.extraction.jina_reader import JinaReader, JinaReaderError
+from app.shared.services.extraction.trafilatura_extractor import TrafilaturaExtractor
 from app.shared.services.extraction.youtube_extractor import YouTubeExtractor
 
 __all__ = [
     "GitHubExtractor",
     "JinaReader",
     "JinaReaderError",
+    "TrafilaturaExtractor",
     "YouTubeExtractor",
     "clean_extracted_content",
     "detect_content_type",

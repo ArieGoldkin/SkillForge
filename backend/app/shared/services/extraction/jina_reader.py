@@ -23,7 +23,7 @@ from app.core.constants import (
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
 from app.core.logging import get_logger
 from app.core.types import ExtractionResult
-from app.shared.services.extraction.content_cleaner import clean_extracted_content
+from app.shared.services.extraction.content_cleaner import sanitize_utf8
 
 logger = get_logger(__name__)
 
@@ -156,8 +156,10 @@ class JinaReader:
                 elif first_line:
                     title = first_line
 
-            # Clean content to remove boilerplate (cookies, nav, footer)
-            content = clean_extracted_content(raw_content)
+            # Sanitize UTF-8 (remove null bytes, surrogates) but keep full content
+            # Trafilatura is primary extractor with ML-based cleaning
+            # Jina is fallback for SPAs/JS-rendered pages
+            content = sanitize_utf8(raw_content)
 
             logger.info(
                 "jina_extraction_success",

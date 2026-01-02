@@ -19,6 +19,13 @@ class TrafilaturaExtractor:
     Trafilatura is a Python library for extracting clean article content
     from web pages. It's self-hosted, free, and fast.
 
+    Configuration:
+        - favor_recall=True: Prioritizes extracting more content when uncertain
+          about whether content is boilerplate. This reduces false negatives at
+          the cost of potentially including some non-essential content.
+        - include_tables=True: Preserves table data which often contains
+          valuable structured information.
+
     Example:
         >>> extractor = TrafilaturaExtractor()
         >>> result = await extractor.extract_article("https://example.com/article")
@@ -67,11 +74,15 @@ class TrafilaturaExtractor:
                 url,
             )
 
+            # Type-safe access to title for logging
+            title = result.get("title")
+            title_length = len(title) if isinstance(title, str) else 0
+
             logger.info(
                 "trafilatura_extraction_success",
                 url=url,
                 word_count=result["word_count"],
-                title_length=len(result["title"]) if result["title"] else 0,
+                title_length=title_length,
             )
 
             return result
@@ -100,14 +111,16 @@ class TrafilaturaExtractor:
         downloaded = self.trafilatura.fetch_url(url)
 
         if not downloaded:
-            raise JinaReaderError(f"Failed to download content from: {url}")
+            msg = f"Failed to download content from: {url}"
+            raise JinaReaderError(msg)
 
         # Extract main content (article text)
         # This removes boilerplate, ads, navigation, etc.
         extracted = self.trafilatura.extract(
             downloaded,
+            favor_recall=True,  # Include more content when unsure
             include_comments=False,  # Don't include comments
-            include_tables=False,  # Don't include tables as structured data
+            include_tables=True,  # Tables often contain valuable data
             include_images=False,  # Don't include image metadata
             include_links=False,  # Don't include link metadata
             output_format="markdown",  # Return as markdown
@@ -117,23 +130,26 @@ class TrafilaturaExtractor:
             # Try extracting as plain text if markdown fails
             extracted = self.trafilatura.extract(
                 downloaded,
+                favor_recall=True,  # Include more content when unsure
                 include_comments=False,
-                include_tables=False,
+                include_tables=True,  # Tables often contain valuable data
                 include_images=False,
                 include_links=False,
                 output_format="txt",
             )
 
         if not extracted:
-            raise JinaReaderError(f"No content extracted from: {url}")
+            msg = f"No content extracted from: {url}"
+            raise JinaReaderError(msg)
 
         # Extract metadata
         metadata = self.trafilatura.extract_metadata(downloaded)
 
         # Get title from metadata or extract from content
+        # Note: trafilatura.extract_metadata() returns a Document object, not a dict
         title = None
         if metadata:
-            title = metadata.get("title")
+            title = getattr(metadata, "title", None)
             if title:
                 title = title.strip()
 
