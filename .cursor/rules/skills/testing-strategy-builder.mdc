@@ -1,0 +1,63 @@
+---
+description: Test planning, MSW mocking, VCR.py recording, and coverage strategies
+globs: ["tests/**", "**/*.test.*", "**/*.spec.*"]
+alwaysApply: false
+priority: 8
+---
+
+# Testing Strategy Builder Skill
+
+**Reference**: See `.claude/skills/testing-strategy-builder/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/testing-strategy-builder/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/testing-strategy-builder/SKILL.md` (~500 tokens)
+3. **Implementation**: Read `references/code-examples.md#<type>` for specific test patterns
+4. **Generation**: Use `templates/test-plan-template.md` for test planning
+
+## What This Skill Provides
+
+- Test planning templates
+- Unit testing patterns (Jest, Vitest, pytest)
+- **MSW (Mock Service Worker)** - Network-level API mocking (NOT jest.mock)
+- **VCR.py** - HTTP recording for Python tests
+- Integration testing patterns
+- E2E testing with Playwright
+- Coverage targets (≥80% backend, ≥85% frontend)
+- Performance testing strategies
+
+## When to Use
+
+- Planning test strategy for new features
+- Writing unit tests
+- Mocking APIs in frontend tests (use MSW, NOT jest.mock)
+- Recording HTTP responses for Python tests (VCR.py)
+- Setting up E2E tests
+- Improving test coverage
+
+## Critical 2025 Patterns
+
+- **MSW for API mocking** - Use Mock Service Worker, NOT `jest.spyOn(global, 'fetch')`
+- **VCR.py for Python** - Record HTTP interactions for deterministic tests
+- **Coverage targets** - Backend ≥80%, Frontend ≥85%
+
+## Related Agents
+
+- `test-generator` - Primary agent for test creation
+- `code-quality-reviewer` - For coverage validation
+
+## MCP Tools
+
+- `playwright` - For E2E browser testing
+- `context7` - Current testing framework docs (Vitest, Jest, Playwright)
+
+## Example Usage
+
+**Task**: "Write tests for API integration"
+
+**Approach**:
+1. Read `capabilities.json` to understand test types
+2. For frontend: Use `SKILL.md#msw-mock-service-worker` (NOT jest.mock)
+3. For backend: Use `SKILL.md#vcrpy-python-http-recording` for HTTP recording
+4. Check `references/code-examples.md#integration-testing` for patterns

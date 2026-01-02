@@ -1,0 +1,52 @@
+---
+description: RAG patterns, embeddings, function calling, and AI integration
+globs: ["backend/app/shared/services/**", "backend/app/workflows/**"]
+alwaysApply: false
+priority: 7
+---
+
+# AI Native Development Skill
+
+**Reference**: See `.claude/skills/ai-native-development/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/ai-native-development/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/ai-native-development/SKILL.md` (~700 tokens)
+3. **References**: Read `references/` for specific AI patterns
+4. **Templates**: Use `templates/` for code generation
+
+## What This Skill Provides
+
+- RAG (Retrieval-Augmented Generation) patterns
+- Embedding generation and management
+- Vector database integration
+- Function calling patterns
+- Agentic workflows
+- Cost optimization strategies
+- LLM observability
+
+## When to Use
+
+- Building RAG systems
+- Generating embeddings
+- Integrating LLM APIs
+- Implementing function calling
+- Optimizing AI costs
+- Adding observability to LLM calls
+
+## Related Agents
+
+- `llm-integrator` - Primary agent for LLM integration
+- `data-pipeline-engineer` - For embeddings and vector indexing
+- `workflow-architect` - For agentic workflows
+
+## Example Usage
+
+**Task**: "Implement RAG retrieval pipeline"
+
+**Approach**:
+1. Read `capabilities.json` to understand RAG patterns
+2. Read `references/rag-patterns.md` for implementation
+3. Check `templates/` for code examples
+4. Use related skills: `pgvector-search`, `llm-caching-patterns`

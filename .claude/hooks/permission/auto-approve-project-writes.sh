@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Auto-Approve Project Writes - Auto-approves writes within project directory
 # Hook: PermissionRequest (Write|Edit)
 

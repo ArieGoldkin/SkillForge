@@ -8,6 +8,11 @@
 
 ### Docker Compose (recommended dev setup)
 
+```bash
+# Start all services (uses unified env file)
+docker compose --env-file backend/.env up -d
+```
+
 - **Backend API**: `http://localhost:8500`
   - Swagger UI: `http://localhost:8500/docs`
   - Health: `http://localhost:8500/api/v1/health`
@@ -16,7 +21,7 @@
   - User: `dev`
   - Password: `devpass`
 
-**Source of truth:** `docker-compose.yml`
+**Source of truth:** `docker-compose.yml`, `backend/.env`
 
 ### Frontend dev server
 
@@ -47,9 +52,52 @@ Notes:
 
 ---
 
+## 🦙 Ollama (Local LLM - Recommended for Dev)
+
+**Default for development: Use Ollama for $0 LLM costs.**
+
+### Quick Start
+```bash
+# Start Ollama
+ollama serve &
+
+# Pull required models (one-time)
+ollama pull deepseek-r1:70b      # Reasoning (42GB)
+ollama pull qwen2.5-coder:32b    # Coding (19GB)
+ollama pull nomic-embed-text     # Embeddings (274MB)
+```
+
+### Enable Ollama
+Create `backend/.env.local` (gitignored):
+```env
+OLLAMA_ENABLED=true
+OLLAMA_HOST=http://localhost:11434
+```
+
+### Ollama Environment Variables
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OLLAMA_ENABLED` | `false` | Enable local Ollama inference |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama server URL |
+| `OLLAMA_MODEL_REASONING` | `deepseek-r1:70b` | Model for complex reasoning |
+| `OLLAMA_MODEL_CODING` | `qwen2.5-coder:32b` | Model for code tasks |
+| `OLLAMA_MODEL_EMBED` | `nomic-embed-text` | Model for embeddings |
+
+### Cost Structure
+```
+Dev (Ollama)  → $0/month
+CI (Ollama)   → $0/month (93% cost reduction - Issue #606)
+Production    → Cloud APIs (pay per use)
+```
+
+**Source of truth:** `backend/app/core/config.py` (lines 715-770)
+
+---
+
 ## 🧩 Backend environment variables (high-level)
 
 Backend env vars are loaded from `backend/.env` (see `backend/.env.example`).
+For local overrides, use `backend/.env.local` (gitignored).
 
 Commonly used variables:
 - **`DATABASE_URL`**: DB connection string

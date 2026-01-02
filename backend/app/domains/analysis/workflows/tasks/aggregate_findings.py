@@ -96,18 +96,25 @@ async def _build_agent_statuses(
     from app.core.agent_config import get_stage_name
     from app.shared.services.messaging.sse_helpers import emit_error_event
 
-    # Build lookup for findings with "no_data" status
+    # Build lookup for findings with "no_data" or "skipped" status
     no_data_agents = {
         finding.get("agent_type")
         for finding in validated_findings
-        if finding.get("status") == "no_data"
+        if finding.get("status") in ("no_data", "skipped")
     }
 
     agent_statuses: dict[str, str] = {}
     for agent_type in selected_agents:
         if agent_type in no_data_agents:
-            # Agent ran but returned no findings - not a failure
-            agent_statuses[agent_type] = "no_data"
+            # Check if skipped vs no_data
+            finding = next(
+                (f for f in validated_findings if f.get("agent_type") == agent_type), None
+            )
+            if finding and finding.get("status") == "skipped":
+                agent_statuses[agent_type] = "skipped"
+            else:
+                # Agent ran but returned no findings - not a failure
+                agent_statuses[agent_type] = "no_data"
         elif agent_type in agent_types:
             agent_statuses[agent_type] = "success"
         else:
@@ -650,8 +657,8 @@ async def _aggregate_findings_impl(  # noqa: PLR0912, PLR0915 - Complex aggregat
                 )
         else:
             # Normal synthesis with tiered fallback chain (Issue #299-304)
-            # The synthesize_with_llm NEVER raises exceptions - it falls back
-            # through tiers (FULL -> REDUCED -> MINIMAL -> STATIC) until one succeeds.
+            # NOTE: Phased synthesis (synthesize_with_llm_phased) CAN raise CircuitBreakerOpenError,
+            # but it handles it internally by using static fallback. Other exceptions are re-raised.
             # Issue #487: Now includes source_context to prevent hallucinations
             async with async_exception_context(
                 operation="synthesize_with_llm",

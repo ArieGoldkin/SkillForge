@@ -55,20 +55,29 @@ from app.domains.analysis.workflows.graph_builder import build_analysis_graph
 logger = get_logger(__name__)
 
 
-def create_analysis_workflow():
+def create_analysis_workflow(checkpointer=None):
     """Create a new analysis workflow instance.
 
     This is a factory function. Each call creates a new workflow instance.
     For production, workflows should be created at application startup and
     reused (injected into components that need them).
 
+    Args:
+        checkpointer: Optional checkpointer instance (AsyncPostgresSaver, MemorySaver, etc.)
+                     If not provided, falls back to get_checkpointer() in graph_builder.
+                     Issue #602: Pass checkpointer from FastAPI app.state for production.
+
     Returns:
         Compiled StateGraph ready for execution
 
     """
     try:
-        workflow = build_analysis_graph()
-        logger.info("workflow_graph_compiled", workflow_type="StateGraph")
+        workflow = build_analysis_graph(checkpointer_override=checkpointer)
+        logger.info(
+            "workflow_graph_compiled",
+            workflow_type="StateGraph",
+            checkpointer_type=type(checkpointer).__name__ if checkpointer else "default",
+        )
         return workflow
     except Exception as build_error:
         # Log graph build errors with full traceback for debugging

@@ -16,13 +16,15 @@ This rule applies to **all work** in this repository (backend, frontend, docs).
 - Do not leak secrets. Never paste API keys/tokens. Avoid logging sensitive values.
 - Prefer small, verifiable steps with evidence (tests, lint/typecheck output).
 
-## Project orientation (read first)
+## Project orientation (reference when needed)
 
-Before you make changes, read:
+When starting work on a new task, consider reading:
 
-- `docs/CURRENT_STATUS.md` (what’s in progress / blockers)
-- `docs/ROADMAP.md` (big picture + phases)
-- `.claude/context/shared-context.json` (prior decisions and evidence)
+- `docs/CURRENT_STATUS.md` (what's in progress / blockers) - Read if working on sprint items
+- `docs/ROADMAP.md` (big picture + phases) - Read if need full project context
+- `.claude/context/shared-context.json` (prior decisions and evidence) - Read if working on related tasks
+
+**Do NOT read these files automatically on every request** - only when they're relevant to the current task.
 
 ## Execution safety
 

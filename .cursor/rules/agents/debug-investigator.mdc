@@ -1,0 +1,54 @@
+---
+description: Root cause analysis and bug investigation
+globs: ["**/*"]
+alwaysApply: false
+priority: 6
+---
+
+# Debug Investigator
+
+**Reference**: See `.claude/agents/debug-investigator.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use debug-investigator patterns when:
+- Investigating why SSE events are not received
+- Finding root cause of intermittent test failures
+- Debugging authentication token expiration
+- Tracing data flow to find mutation bugs
+- Analyzing race conditions in async code
+- Finding memory leaks
+
+## Key Capabilities
+
+- Root cause analysis
+- Bug investigation
+- Log analysis
+- Stack trace parsing
+- Reproduction steps
+- Hypothesis testing
+
+## Skills to Reference
+
+- `observability-monitoring` - Logging, metrics, tracing
+
+## Example Usage
+
+**Task**: "Investigate why SSE events are not received"
+
+**Approach**:
+1. Check logs and stack traces
+2. Trace data flow through the system
+3. Use sequential-thinking MCP for complex reasoning
+4. Reference `observability-monitoring` for logging patterns
+5. Follow patterns in `.claude/agents/debug-investigator.md`
+
+## Model Selection
+
+- Root cause analysis: Sonnet
+- Complex debugging: Opus
+
+## Boundaries
+
+- **Allowed**: `**/*`
+- **Forbidden Actions**: Write, modify, fix bugs

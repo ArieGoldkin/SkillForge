@@ -1,0 +1,131 @@
+{
+  "version": "1.0",
+  "summary": {
+    "total_urls": 5,
+    "passed": 1,
+    "failed": 0,
+    "pass_rate": 20.0,
+    "failure_rate": 0.0,
+    "title_accuracy": 0.0,
+    "content_completeness": 100.0,
+    "average_score": 75.15,
+    "average_title_score": 37.88,
+    "average_content_score": 100.0
+  },
+  "extractor_stats": {
+    "arxiv_pdf": {
+      "count": 3,
+      "passed": 1,
+      "failed": 0,
+      "avg_score": 76.85
+    },
+    "jina_reader": {
+      "count": 2,
+      "passed": 0,
+      "failed": 0,
+      "avg_score": 72.6
+    }
+  },
+  "results": [
+    {
+      "url": "https://arxiv.org/abs/2308.11432",
+      "expected_title": "LLM Agent Architectures and Patterns",
+      "expected_word_count": null,
+      "extraction_failed": false,
+      "error": null,
+      "extractor_used": "arxiv_pdf",
+      "extracted_title": "Front. Comput. Sci., 2025, 0(0): 1\u201342",
+      "extracted_word_count": 16673,
+      "quality": {
+        "overall_score": 67.67,
+        "title_score": 19.18,
+        "content_score": 100.0,
+        "title_match": false,
+        "content_complete": true
+      },
+      "analysis_id": "63fc5a1c-0b37-4dab-bd91-2f5bea5a79d3",
+      "content_type": "article",
+      "stored_title": "LLM Agent Architectures and Patterns"
+    },
+    {
+      "url": "https://arxiv.org/abs/2310.08560",
+      "expected_title": "Agent Memory Systems and Architectures",
+      "expected_word_count": null,
+      "extraction_failed": false,
+      "error": null,
+      "extractor_used": "arxiv_pdf",
+      "extracted_title": "MemGPT: Towards LLMs as Operating Systems",
+      "extracted_word_count": 6914,
+      "quality": {
+        "overall_score": 73.16,
+        "title_score": 32.91,
+        "content_score": 100.0,
+        "title_match": false,
+        "content_complete": true
+      },
+      "analysis_id": "497d4466-e0fe-4b5d-8779-d81647512564",
+      "content_type": "article",
+      "stored_title": "Agent Memory Systems and Architectures"
+    },
+    {
+      "url": "https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
+      "expected_title": "API Security Best Practices: Defense in Depth",
+      "expected_word_count": null,
+      "extraction_failed": false,
+      "error": null,
+      "extractor_used": "jina_reader",
+      "extracted_title": "Title: OWASP Top 10 API Security Risks \u2013 2023",
+      "extracted_word_count": 875,
+      "quality": {
+        "overall_score": 76.89,
+        "title_score": 42.22,
+        "content_score": 100.0,
+        "title_match": false,
+        "content_complete": true
+      },
+      "analysis_id": "4be432f3-dd15-4821-8223-7a56466b0d1c",
+      "content_type": "article",
+      "stored_title": "API Security Best Practices: Defense in Depth"
+    },
+    {
+      "url": "https://arxiv.org/abs/2201.11903",
+      "expected_title": "Chain-of-Thought Prompting",
+      "expected_word_count": null,
+      "extraction_failed": false,
+      "error": null,
+      "extractor_used": "arxiv_pdf",
+      "extracted_title": "Chain-of-Thought Prompting Elicits Reasoning",
+      "extracted_word_count": 16112,
+      "quality": {
+        "overall_score": 89.71,
+        "title_score": 74.29,
+        "content_score": 100.0,
+        "title_match": false,
+        "content_complete": true
+      },
+      "analysis_id": "54ed6fe4-09c7-41e1-ab75-82c7a22791d4",
+      "content_type": "article",
+      "stored_title": "Chain-of-Thought Prompting"
+    },
+    {
+      "url": "https://docs.langchain.com/oss/python/integrations/splitters/index",
+      "expected_title": "Document Chunking Strategies for RAG",
+      "expected_word_count": null,
+      "extraction_failed": false,
+      "error": null,
+      "extractor_used": "jina_reader",
+      "extracted_title": "Title: Text splitters - Docs by LangChain",
+      "extracted_word_count": 401,
+      "quality": {
+        "overall_score": 68.31,
+        "title_score": 20.78,
+        "content_score": 100.0,
+        "title_match": false,
+        "content_complete": true
+      },
+      "analysis_id": "49934e7a-36c1-4055-af96-011e38c55cb9",
+      "content_type": "article",
+      "stored_title": "Document Chunking Strategies for RAG"
+    }
+  ]
+}

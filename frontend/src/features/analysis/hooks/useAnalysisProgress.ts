@@ -25,7 +25,11 @@ import type { SSEEvent, StageName } from '@/schemas/sse'
 import type { AnalysisStage } from '../components/steps/AnalysisProgressCard'
 import type { AnalysisStep } from '../components/steps/AnalysisStepList'
 
-import { collectErrorCodesFromEvents, collectErrorCodesFromStages } from './errorCodeCollection'
+import {
+  collectErrorCodesFromEvents,
+  collectErrorCodesFromREST,
+  collectErrorCodesFromStages,
+} from './errorCodeCollection'
 import { useActivityFeed } from './useActivityFeed'
 import type { AgentActivity } from './useActivityFeed'
 import { useAnalysisMetadata } from './useAnalysisMetadata'
@@ -180,11 +184,22 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
   }, [events])
 
   // ========================================================================
-  // 8. Calculate Failed Stages Count and Collect Error Codes
+  // 8. Status Reconciliation (Issue #489 - SSE Error Recovery)
+  // ========================================================================
+  // When SSE shows error, verify with REST API and override if backend succeeded
+  // NOTE: This must run BEFORE error code collection to make REST error codes available
+  const { reconciledStatus, reconciledArtifactId, reconciledErrorCode } = useStatusReconciliation({
+    analysisId,
+    enabled: errorInfo.hasError || isComplete,
+  })
+
+  // ========================================================================
+  // 9. Calculate Failed Stages Count and Collect Error Codes
   // ========================================================================
   // Count unique failed stages by deduplicating stage names
   // Backend sends BOTH progress events (status="failed") AND error events for the same failure
   // We must deduplicate to avoid double-counting (Issue: frontend bug)
+  // Includes error codes from SSE events, stage statuses, AND REST API responses
   const { hasFailedStages, failedStagesCount, failedStageErrorCodes } = useMemo(() => {
     // Use Set to track unique failed stage names (prevents double-counting)
     const failedStageNames = new Set<string>()
@@ -206,12 +221,17 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
     // Count unique failed stages (deduplicated)
     const failedCount = failedStageNames.size
 
-    // Collect error codes from failed stages and events
+    // Collect error codes from failed stages, events, and REST API response
+    // REST API error codes are important for completed analyses viewed later (no SSE events)
     const errorCodes = new Set<string>()
     for (const code of collectErrorCodesFromStages(stageStatuses)) {
       errorCodes.add(code)
     }
     for (const code of collectErrorCodesFromEvents(events)) {
+      errorCodes.add(code)
+    }
+    // Add error code from REST API response (from useStatusReconciliation)
+    for (const code of collectErrorCodesFromREST(reconciledErrorCode)) {
       errorCodes.add(code)
     }
 
@@ -220,16 +240,7 @@ export function useAnalysisProgress(events: SSEEvent[]): AnalysisProgressData {
       failedStagesCount: failedCount,
       failedStageErrorCodes: Array.from(errorCodes),
     }
-  }, [events, stageStatuses])
-
-  // ========================================================================
-  // 9. Status Reconciliation (Issue #489 - SSE Error Recovery)
-  // ========================================================================
-  // When SSE shows error, verify with REST API and override if backend succeeded
-  const { reconciledStatus, reconciledArtifactId } = useStatusReconciliation({
-    analysisId,
-    enabled: errorInfo.hasError || isComplete,
-  })
+  }, [events, stageStatuses, reconciledErrorCode])
 
   // Compute final reconciled values - REST API is authoritative
   const finalIsComplete = reconciledStatus === 'complete' || isComplete

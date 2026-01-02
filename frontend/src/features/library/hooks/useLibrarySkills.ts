@@ -1,7 +1,10 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import type { AnalysisStatus, FilterStatus } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
+
+import { logger } from '@/lib/logger'
+import { analyzeAPI } from '@/services/api.service'
 
 import { normalizeTitle } from '../utils'
 import { dedupeByAnalysisId } from '../utils/libraryTransform'
@@ -17,6 +20,10 @@ interface SearchResultItem {
   tags?: string[]
   content_type: string
   status: AnalysisStatus
+  // Error tracking fields
+  error_code?: string | null
+  error_message?: string | null
+  failed_at_stage?: string | null
 }
 
 interface SearchResultPage {
@@ -40,9 +47,52 @@ function isFailedStatus(status: AnalysisStatus): boolean {
   )
 }
 
-function transformItemToSkill(item: SearchResultItem, navigate: ReturnType<typeof useNavigate>) {
+/**
+ * Calculate progress percentage from analysis status.
+ *
+ * For completed analyses: 100%
+ * For running/analyzing analyses: Estimated 50-75% based on typical workflow
+ * For failed analyses: undefined (no progress to show)
+ * For pending analyses: 0% (not started)
+ *
+ * TODO: Enhance this with actual stage completion data from analysis status API
+ * when available for more accurate progress tracking.
+ */
+function calculateProgress(status: AnalysisStatus): number | undefined {
+  if (isFailedStatus(status)) {
+    return undefined
+  }
+
+  switch (status) {
+    case 'complete':
+      return 100
+    case 'extracting':
+      // Early stage - extraction typically fast
+      return 20
+    case 'analyzing':
+      // Mid stage - most time spent here
+      return 65
+    case 'generating_artifact':
+      // Late stage - almost done
+      return 85
+    case 'pending':
+      return 0
+    default:
+      // Default to showing some progress for unknown states
+      return 0
+  }
+}
+
+function transformItemToSkill(
+  item: SearchResultItem & {
+    error_code?: string | null
+    error_message?: string | null
+    failed_at_stage?: string | null
+  },
+  navigate: ReturnType<typeof useNavigate>,
+  onRetry: (analysisId: string, stage?: string) => void
+) {
   const tags = item.tags?.length ? item.tags : [item.content_type]
-  const isFailed = isFailedStatus(item.status)
   return {
     id: item.analysis_id,
     title: normalizeTitle(item.title),
@@ -54,12 +104,18 @@ function transformItemToSkill(item: SearchResultItem, navigate: ReturnType<typeo
     duration: 25,
     difficulty: 'intermediate' as const,
     tags,
-    progress: isFailed ? undefined : 0,
+    progress: calculateProgress(item.status),
     status: mapAnalysisStatusToSkillStatus(item.status),
     analysisStatus: item.status,
+    // Error tracking fields (for failed analyses)
+    errorCode: item.error_code,
+    errorMessage: item.error_message,
+    failedAtStage: item.failed_at_stage,
     onSelect: (id: string) => {
       navigate({ to: '/analyze/$id', params: { id } })
     },
+    // Retry handler
+    onRetry,
   }
 }
 
@@ -68,38 +124,81 @@ function extractAllItems(searchResults?: UseLibrarySkillsParams['searchResults']
   return dedupeByAnalysisId(pages.flatMap((page) => page.items))
 }
 
+function extractAvailableTags(items: SearchResultItem[]): string[] {
+  const tagSet = new Set<string>()
+  items.forEach((item) => {
+    const tags = item.tags?.length ? item.tags : [item.content_type]
+    tags.forEach((tag) => {
+      tagSet.add(tag)
+    })
+  })
+  return Array.from(tagSet)
+}
+
+function extractAvailableStatuses(items: SearchResultItem[]): FilterStatus[] {
+  const filterStatusSet = new Set<FilterStatus>()
+  items.forEach((item) => {
+    if (item.status) {
+      filterStatusSet.add(mapAnalysisStatusToFilterStatus(item.status))
+    }
+  })
+  return Array.from(filterStatusSet)
+}
+
 export function useLibrarySkills({ searchResults }: UseLibrarySkillsParams) {
   const navigate = useNavigate()
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set())
+
+  const handleRetry = useCallback(
+    async (analysisId: string, stage?: string) => {
+      if (retryingIds.has(analysisId)) {
+        return // Already retrying
+      }
+
+      setRetryingIds((prev) => new Set(prev).add(analysisId))
+
+      try {
+        logger.info('Retrying analysis', { analysisId, stage })
+        const response = await analyzeAPI.retryAnalysis(analysisId)
+        logger.info('Analysis retry initiated', {
+          analysisId: response.analysis_id,
+          retryCount: response.retry_count,
+        })
+        // Navigate to analysis page to see progress
+        navigate({ to: '/analyze/$id', params: { id: analysisId } })
+      } catch (error) {
+        logger.error('Failed to retry analysis', {
+          analysisId,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        // TODO: Show error toast/notification
+        alert(`Failed to retry analysis: ${error instanceof Error ? error.message : String(error)}`)
+      } finally {
+        setRetryingIds((prev) => {
+          const next = new Set(prev)
+          next.delete(analysisId)
+          return next
+        })
+      }
+    },
+    [retryingIds, navigate]
+  )
 
   const skills = useMemo(() => {
     const items = extractAllItems(searchResults)
     if (!items.length) return []
-    return items.map((item) => transformItemToSkill(item, navigate))
-  }, [searchResults, navigate])
+    return items.map((item) => transformItemToSkill(item, navigate, handleRetry))
+  }, [searchResults, navigate, handleRetry])
 
-  const availableTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    const items = extractAllItems(searchResults)
-    items.forEach((item) => {
-      const tags = item.tags?.length ? item.tags : [item.content_type]
-      tags.forEach((tag) => {
-        tagSet.add(tag)
-      })
-    })
-    return Array.from(tagSet)
-  }, [searchResults])
+  const availableTags = useMemo(
+    () => extractAvailableTags(extractAllItems(searchResults)),
+    [searchResults]
+  )
 
-  // Map AnalysisStatus to FilterStatus for filter component compatibility
-  const availableStatuses = useMemo<FilterStatus[]>(() => {
-    const filterStatusSet = new Set<FilterStatus>()
-    const items = extractAllItems(searchResults)
-    items.forEach((item) => {
-      if (item.status) {
-        filterStatusSet.add(mapAnalysisStatusToFilterStatus(item.status))
-      }
-    })
-    return Array.from(filterStatusSet)
-  }, [searchResults])
+  const availableStatuses = useMemo(
+    () => extractAvailableStatuses(extractAllItems(searchResults)),
+    [searchResults]
+  )
 
   return { skills, availableTags, availableStatuses }
 }

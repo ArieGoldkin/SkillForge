@@ -9,6 +9,7 @@ export function extractCompletionProps(props: {
   steps: AnalysisProps['steps']
   hasFailedStages: boolean
   failedStagesCount: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: AnalysisProps['analysisMetadata']
   stageStatuses?: AnalysisProps['stageStatuses']
   analysisMode?: AnalysisProps['analysisMode']
@@ -25,6 +26,7 @@ export function extractCompletionProps(props: {
     steps: props.steps,
     hasFailedStages: props.hasFailedStages,
     failedStagesCount: props.failedStagesCount,
+    failedStageErrorCodes: props.failedStageErrorCodes,
     analysisMetadata: props.analysisMetadata,
     stageStatuses: props.stageStatuses ?? new Map(),
     analysisMode: props.analysisMode,

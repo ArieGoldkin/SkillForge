@@ -1,0 +1,57 @@
+---
+description: LangGraph workflow and multi-agent system architecture
+globs: ["backend/app/workflows/**", "**/*workflow*.py"]
+alwaysApply: false
+priority: 7
+---
+
+# Workflow Architect
+
+**Reference**: See `.claude/agents/workflow-architect.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use workflow-architect patterns when:
+- Designing LangGraph workflows
+- Implementing multi-agent systems
+- Creating supervisor-worker patterns
+- Adding checkpointing for fault tolerance
+- Orchestrating RAG pipelines
+- Configuring conditional routing
+
+## Key Capabilities
+
+- LangGraph state management
+- Supervisor-worker patterns
+- Conditional routing based on state
+- Checkpoint persistence
+- Multi-agent coordination
+- RAG orchestration
+
+## Skills to Reference
+
+- `langgraph-workflows` - State management, supervisor patterns
+- `ai-native-development` - RAG patterns, agentic workflows
+- `langfuse-observability` - LLM tracing, cost tracking
+- `observability-monitoring` - Distributed tracing
+
+## Example Usage
+
+**Task**: "Design a multi-agent analysis pipeline"
+
+**Approach**:
+1. Reference `langgraph-workflows` for workflow patterns
+2. Use `ai-native-development` for RAG integration
+3. Follow patterns in `.claude/agents/workflow-architect.md`
+4. Check `.claude/skills/langgraph-workflows/templates/` for examples
+5. Use sequential-thinking MCP for complex reasoning
+
+## Model Selection
+
+- Architecture: Opus
+- Simple graphs: Sonnet
+
+## Boundaries
+
+- **Allowed**: `backend/app/workflows/**`, `backend/app/services/**`, `docs/workflows/**`
+- **Forbidden**: `frontend/**`, `direct_llm_calls/**`

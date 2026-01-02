@@ -729,8 +729,8 @@ def test_extract_findings_summary_returns_meaningful_text(
             {
                 "trend_assessments": [],
                 "modern_alternatives": [],
-                "future_outlook": "Test",
-                "recommendation": "Test",
+                "future_outlook": "",  # Empty string - no insight counted
+                "recommendation": "",  # Empty string - no insight counted
                 "confidence_score": 0.5,
                 "data_availability": "insufficient",
             },
@@ -869,8 +869,8 @@ def test_count_insights_handles_empty_lists_gracefully(
             {
                 "trend_assessments": [],
                 "modern_alternatives": [],
-                "future_outlook": "Test",
-                "recommendation": "Test",
+                "future_outlook": "",  # Empty string - no insight counted
+                "recommendation": "",  # Empty string - no insight counted
                 "confidence_score": 0.5,
                 "data_availability": "insufficient",
             },

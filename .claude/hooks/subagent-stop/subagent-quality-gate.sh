@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Subagent Quality Gate - Validates subagent output quality
 # Hook: SubagentStop
 

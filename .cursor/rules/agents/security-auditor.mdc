@@ -1,0 +1,54 @@
+---
+description: Security vulnerability scanning and dependency auditing
+globs: ["**/*"]
+alwaysApply: false
+priority: 9
+---
+
+# Security Auditor
+
+**Reference**: See `.claude/agents/security-auditor.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use security-auditor patterns when:
+- Scanning for security vulnerabilities
+- Auditing npm/pip dependencies for CVEs
+- Checking for hardcoded secrets
+- Verifying OWASP Top 10 compliance
+- Reviewing authentication implementation
+- Finding SQL injection vulnerabilities
+
+## Key Capabilities
+
+- Vulnerability scanning
+- Dependency audit (npm audit, pip-audit)
+- Secret detection
+- OWASP Top 10 compliance
+- Code security review
+- CVE tracking
+
+## Skills to Reference
+
+- `security-checklist` - OWASP, authentication patterns, input validation
+
+## Example Usage
+
+**Task**: "Scan codebase for security vulnerabilities"
+
+**Approach**:
+1. Run npm audit / pip-audit
+2. Reference `security-checklist` for OWASP compliance
+3. Check for hardcoded secrets (API keys, passwords)
+4. Review authentication/authorization patterns
+5. Follow patterns in `.claude/agents/security-auditor.md`
+
+## Model Selection
+
+- Vulnerability scan: Haiku
+- Deep analysis: Sonnet
+
+## Boundaries
+
+- **Allowed**: `**/*`
+- **Forbidden Actions**: Write, modify, execute fixes

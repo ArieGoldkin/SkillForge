@@ -1,7 +1,11 @@
 """Provider factory for LLM and embedding services.
 
-This module provides factory functions that automatically select between
-cloud APIs and local Ollama based on settings.OLLAMA_ENABLED.
+IMPORTANT: This module delegates LLM creation to app.core.model_factory.
+The unified factory (model_factory.py) is the SINGLE source of truth for all
+LLM initialization, including Ollama support.
+
+This module exists for backward compatibility and for embedding services
+which are not yet unified.
 
 Usage:
     ```python
@@ -13,6 +17,7 @@ Usage:
     ```
 
 Issue #606: CI Cost Reduction via Local Models
+Issue #602: Unified factory - delegates to model_factory.py
 """
 
 from __future__ import annotations
@@ -30,7 +35,6 @@ if TYPE_CHECKING:
 
     from app.shared.services.embeddings.ollama_service import OllamaEmbeddingService
     from app.shared.services.embeddings.service import EmbeddingService
-    from app.shared.services.llm.ollama_provider import OllamaProvider
 
 logger = get_logger(__name__)
 
@@ -39,11 +43,14 @@ TaskType = Literal["reasoning", "coding", "general"]
 
 def get_llm_provider(
     task_type: TaskType = "reasoning",
-    model: str | None = None,
-) -> BaseChatModel | OllamaProvider:
+    model: str | None = None,  # noqa: ARG001 - kept for backward compat
+) -> BaseChatModel:
     """Get the appropriate LLM provider based on settings.
 
-    When OLLAMA_ENABLED=true, returns OllamaProvider for local inference.
+    DELEGATES to app.core.model_factory.get_chat_model() which is the
+    SINGLE source of truth for all LLM initialization.
+
+    When OLLAMA_ENABLED=true, returns a local Ollama model.
     Otherwise, returns the cloud-based ChatModel.
 
     Args:
@@ -51,59 +58,28 @@ def get_llm_provider(
             - "reasoning": DeepSeek R1 70B (local) or Gemini 3 Flash (cloud)
             - "coding": Qwen 2.5 Coder 32B (local) or Claude Sonnet (cloud)
             - "general": Default reasoning model
-        model: Override model identifier (bypasses task_type selection)
+        model: Override model identifier (currently unused - for future use)
 
     Returns:
-        LLM provider instance (OllamaProvider or ChatModel)
+        LLM provider instance (ChatOllama or ChatModel)
 
     Example:
         >>> llm = get_llm_provider(task_type="coding")
         >>> response = await llm.ainvoke("Analyze this code")
 
+        Issue #602: Now delegates to model_factory.py for unified LLM handling.
+
     """
-    if settings.OLLAMA_ENABLED:
-        from app.shared.services.llm.ollama_provider import OllamaProvider
+    # Delegate to the unified factory
+    from app.core.model_factory import get_chat_model
 
-        if model:
-            provider = OllamaProvider(model=model)
-        elif task_type == "coding":
-            provider = OllamaProvider.for_coding()
-        else:
-            provider = OllamaProvider.for_reasoning()
-
-        logger.info(
-            "llm_provider_selected",
-            provider="ollama",
-            model=provider.model,
-            task_type=task_type,
-        )
-        return provider
-
-    # Cloud provider (existing implementation)
-    from langchain.chat_models import init_chat_model
-
-    # Select model based on task type
-    if model is None:
-        if task_type == "coding":
-            model = "claude-sonnet-4-20250514"
-        elif task_type == "reasoning":
-            model = "gemini-3-flash-preview"
-        else:
-            model = settings.LLM_MODEL
-
-    llm = init_chat_model(
-        model,
-        temperature=0.0,
-        max_retries=settings.LLM_MAX_RETRIES,
-    )
-
-    logger.info(
-        "llm_provider_selected",
-        provider="cloud",
-        model=model,
+    logger.debug(
+        "llm_provider_delegating_to_model_factory",
         task_type=task_type,
+        ollama_enabled=settings.OLLAMA_ENABLED,
     )
-    return llm
+
+    return get_chat_model(task_type=task_type)
 
 
 def get_embedding_provider() -> EmbeddingService | OllamaEmbeddingService:
@@ -123,26 +99,26 @@ def get_embedding_provider() -> EmbeddingService | OllamaEmbeddingService:
     if settings.OLLAMA_ENABLED:
         from app.shared.services.embeddings.ollama_service import OllamaEmbeddingService
 
-        service = OllamaEmbeddingService()
+        ollama_svc = OllamaEmbeddingService()
         logger.info(
             "embedding_provider_selected",
             provider="ollama",
-            model=service.model,
-            dimensions=service.expected_dimensions,
+            model=ollama_svc.model,
+            dimensions=ollama_svc.expected_dimensions,
         )
-        return service
+        return ollama_svc
 
     # Cloud provider (existing OpenAI-based service)
     from app.shared.services.embeddings.service import EmbeddingService
 
-    service = EmbeddingService()
+    openai_svc = EmbeddingService()
     logger.info(
         "embedding_provider_selected",
         provider="openai",
-        model=service.model,
-        dimensions=service.expected_dimensions,
+        model=openai_svc.model,
+        dimensions=openai_svc.expected_dimensions,
     )
-    return service
+    return openai_svc
 
 
 def is_ollama_available() -> bool:

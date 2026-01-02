@@ -1,0 +1,61 @@
+---
+description: React 19 patterns, server components, and modern frontend architecture
+globs: ["frontend/**/*.tsx", "frontend/**/*.ts"]
+alwaysApply: false
+priority: 8
+---
+
+# React Server Components Framework Skill
+
+**Reference**: See `.claude/skills/react-server-components-framework/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/react-server-components-framework/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/react-server-components-framework/SKILL.md` (~500 tokens)
+3. **References**: Read `references/` for specific React 19 patterns
+
+## What This Skill Provides
+
+- React 19 API patterns (useOptimistic, useFormStatus, use())
+- Server Components patterns
+- Server Actions
+- Streaming SSR
+- Data fetching with Suspense
+- Caching strategies
+
+## Critical 2025 Patterns
+
+- **useOptimistic** - For optimistic UI updates
+- **useFormStatus** - For form submission states
+- **use()** - For Suspense-aware data fetching
+- **startTransition** - For non-urgent updates
+- **Skeleton loading** - NOT spinners for content
+- **Prefetching** - `preload="intent"` on navigation links
+
+## When to Use
+
+- Building React 19 components
+- Implementing optimistic updates
+- Creating form components
+- Setting up data fetching
+- Optimizing loading states
+- Implementing prefetching
+
+## Related Agents
+
+- `frontend-ui-developer` - Primary agent for React development
+
+## MCP Tools
+
+- `context7` - Current React 19 documentation
+
+## Example Usage
+
+**Task**: "Create a form with optimistic updates"
+
+**Approach**:
+1. Read `capabilities.json` to understand React 19 APIs
+2. Read `SKILL.md#react-19-patterns` for useOptimistic/useFormStatus
+3. Check `references/` for form patterns
+4. Use context7 for current React 19 docs

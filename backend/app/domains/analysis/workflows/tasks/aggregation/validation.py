@@ -58,6 +58,22 @@ def validate_and_parse_findings(
             )
             continue
 
+        # Issue #610: Handle agents skipped due to circuit breaker open
+        if finding.get("status") == "skipped":
+            logger.info(
+                "aggregation_agent_skipped",
+                agent_type=agent_type,
+                skipped_reason=finding.get("skipped_reason", "Circuit breaker open"),
+                action="including_as_skipped",
+            )
+            # Include in validated_findings with empty findings to mark as skipped
+            finding_dict = dict(finding)
+            finding_dict["findings"] = {}  # Empty findings for skipped agents
+            validated_findings.append(finding_dict)
+            agent_types.append(agent_type)
+            confidence_scores[agent_type] = 0.0
+            continue
+
         findings_data = finding.get("findings", {})
         if not findings_data:
             logger.warning(

@@ -24,6 +24,8 @@ from app.db.session import get_db
 from app.schemas.library import LibraryFilters, LibraryListResponse, LibrarySearchResult
 from app.shared.services.embeddings.service import EmbeddingService
 
+# Note: db parameter is reserved for future SearchService integration if needed
+
 router = APIRouter(tags=["library"])
 logger = get_logger(__name__)
 
@@ -106,6 +108,7 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
 
     Args:
         repo: Library repository dependency
+        repo: Library repository for search operations
         query: Optional search query string
         content_type: Optional filter by content type (article, video, repo)
         status: Optional filter by analysis status (pending, complete, failed)
@@ -144,26 +147,24 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                 offset=offset,
             )
 
-            # Initialize embedding service for semantic/hybrid search
+            # Generate query embedding for hybrid/semantic search modes
+            query_embedding: list[float] | None = None
             embedding_service: EmbeddingService | None = None
-            query_embedding: list[float] = []
 
-            # Generate embedding if needed for semantic or hybrid search
-            if search_mode in (SearchMode.semantic, SearchMode.hybrid):
+            if search_mode in (SearchMode.hybrid, SearchMode.semantic):
                 try:
                     embedding_service = EmbeddingService()
                     query_embedding = await embedding_service.generate_embedding(query.strip())
                 except Exception as e:
                     logger.warning(
-                        "library_embedding_failed",
+                        "library_embedding_generation_failed",
                         query=query,
                         search_mode=search_mode.value,
                         error=str(e),
                         fallback_to_fulltext=True,
                     )
-                    # Fallback to full-text search if embedding fails
+                    # Fallback to full-text search if embedding generation fails
                     if search_mode == SearchMode.hybrid:
-                        # For hybrid, fallback to fulltext
                         search_mode = SearchMode.fulltext
                     else:
                         # For semantic-only, raise error
@@ -177,6 +178,11 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
 
             # Execute search based on mode
             if search_mode == SearchMode.hybrid:
+                if query_embedding is None:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Query embedding required for hybrid search",
+                    )
                 results = await repo.hybrid_search(
                     query=query,
                     embedding=query_embedding,
@@ -190,6 +196,11 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                     offset=offset,
                 )
             elif search_mode == SearchMode.semantic:
+                if query_embedding is None:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Query embedding required for semantic search",
+                    )
                 # For semantic search, don't apply offset at repository level
                 # (vector search doesn't support offset well)
                 all_results = await repo.search_by_vector(
@@ -224,12 +235,24 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                             error=str(e),
                         )
 
+                # Get title with fallback to extraction_metadata (Fix for "Untitled" issue)
+                title: str | None = None
+                if analysis.title:
+                    title = str(analysis.title)
+                elif analysis.extraction_metadata and isinstance(
+                    analysis.extraction_metadata, dict
+                ):
+                    # Fallback to extraction_metadata.title if analysis.title is null
+                    metadata_title = analysis.extraction_metadata.get("title")
+                    if isinstance(metadata_title, str) and metadata_title.strip():
+                        title = metadata_title.strip()
+
                 # Type casts needed: SQLAlchemy Column types to Python types
                 items.append(
                     LibrarySearchResult(
                         analysis_id=str(analysis.id),
                         url=str(analysis.url),
-                        title=str(analysis.title) if analysis.title else None,
+                        title=title,
                         content_type=str(analysis.content_type),
                         status=str(analysis.status),
                         snippet=snippet,
@@ -237,6 +260,9 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                         created_at=analysis.created_at.isoformat() if analysis.created_at else "",
                         # Error tracking fields (Issue #441)
                         error_code=str(analysis.error_code) if analysis.error_code else None,
+                        error_message=str(analysis.error_message)
+                        if analysis.error_message
+                        else None,
                         failed_at_stage=(
                             str(analysis.failed_at_stage) if analysis.failed_at_stage else None
                         ),
@@ -287,22 +313,36 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
 
         # Build response items
         # Type casts needed: SQLAlchemy Column types to Python types
-        items = [
-            LibrarySearchResult(
-                analysis_id=str(analysis.id),
-                url=str(analysis.url),
-                title=str(analysis.title) if analysis.title else None,
-                content_type=str(analysis.content_type),
-                status=str(analysis.status),
-                snippet=None,  # No snippet in listing mode
-                rank=0.0,  # No ranking in listing mode
-                created_at=analysis.created_at.isoformat() if analysis.created_at else "",
-                # Error tracking fields (Issue #441)
-                error_code=str(analysis.error_code) if analysis.error_code else None,
-                failed_at_stage=str(analysis.failed_at_stage) if analysis.failed_at_stage else None,
+        items = []
+        for analysis in analyses:
+            # Get title with fallback to extraction_metadata (Fix for "Untitled" issue)
+            title: str | None = None
+            if analysis.title:
+                title = str(analysis.title)
+            elif analysis.extraction_metadata and isinstance(analysis.extraction_metadata, dict):
+                # Fallback to extraction_metadata.title if analysis.title is null
+                metadata_title = analysis.extraction_metadata.get("title")
+                if isinstance(metadata_title, str) and metadata_title.strip():
+                    title = metadata_title.strip()
+
+            items.append(
+                LibrarySearchResult(
+                    analysis_id=str(analysis.id),
+                    url=str(analysis.url),
+                    title=title,
+                    content_type=str(analysis.content_type),
+                    status=str(analysis.status),
+                    snippet=None,  # No snippet in listing mode
+                    rank=0.0,  # No ranking in listing mode
+                    created_at=analysis.created_at.isoformat() if analysis.created_at else "",
+                    # Error tracking fields (Issue #441)
+                    error_code=str(analysis.error_code) if analysis.error_code else None,
+                    error_message=str(analysis.error_message) if analysis.error_message else None,
+                    failed_at_stage=str(analysis.failed_at_stage)
+                    if analysis.failed_at_stage
+                    else None,
+                )
             )
-            for analysis in analyses
-        ]
 
         logger.info(
             "library_list_complete",

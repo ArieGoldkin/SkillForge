@@ -37,6 +37,7 @@ interface ReconciliationResult {
   isReconciling: boolean
   reconciledStatus: 'complete' | 'failed' | 'running' | null
   reconciledArtifactId: string | null
+  reconciledErrorCode: string | null
 }
 
 /**
@@ -146,6 +147,7 @@ export function useStatusReconciliation({
     'complete' | 'failed' | 'running' | null
   >(null)
   const [reconciledArtifactId, setReconciledArtifactId] = useState<string | null>(null)
+  const [reconciledErrorCode, setReconciledErrorCode] = useState<string | null>(null)
 
   // Refs for cleanup and preventing stale closures
   const verificationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -195,6 +197,11 @@ export function useStatusReconciliation({
 
       // FIX: Check if still mounted before updating state
       if (!isMountedRef.current) return
+
+      // Extract error code from REST response
+      if (status.error_code && isMountedRef.current) {
+        setReconciledErrorCode(status.error_code)
+      }
 
       // Handle the verification result (extracted for reduced complexity)
       handleVerificationResult(status, analysisId, {
@@ -249,6 +256,7 @@ export function useStatusReconciliation({
     hasVerifiedRef.current = false
     setReconciledStatus(null)
     setReconciledArtifactId(null)
+    setReconciledErrorCode(null)
 
     // FIX: Clear pending verification when analysis ID changes
     if (verificationTimeoutRef.current) {
@@ -261,5 +269,6 @@ export function useStatusReconciliation({
     isReconciling,
     reconciledStatus,
     reconciledArtifactId,
+    reconciledErrorCode,
   }
 }

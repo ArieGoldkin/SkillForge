@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Context7 Tracker - Logs library documentation lookups
 # Hook: PostToolUse (mcp__context7__*)
 

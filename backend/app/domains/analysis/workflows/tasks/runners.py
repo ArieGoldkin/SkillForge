@@ -187,6 +187,18 @@ async def _load_content_from_artifact(
 
         loaded = await store.load(uri=uri, section=section, max_chars=max_chars)
 
+        # Validate loaded content is not empty (Issue C2: Empty Content Fallback)
+        if not loaded or len(loaded.strip()) == 0:
+            logger.warning(
+                "artifact_load_empty",
+                agent_type=agent_type,
+                uri=uri,
+                section=section.value,
+                fallback="using_raw_content",
+                analysis_id=state.get("analysis_id"),
+            )
+            return fallback_content
+
         logger.info(
             "artifact_content_loaded",
             agent_type=agent_type,

@@ -1,0 +1,55 @@
+---
+description: Test generation, coverage analysis, and mocking strategies
+globs: ["tests/**", "backend/tests/**", "frontend/src/**/*.test.*"]
+alwaysApply: false
+priority: 7
+---
+
+# Test Generator
+
+**Reference**: See `.claude/agents/test-generator.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use test-generator patterns when:
+- Generating unit tests for new code
+- Increasing test coverage to 80%+
+- Creating MSW handlers for API mocking
+- Setting up VCR cassettes for external APIs
+- Adding edge case tests
+- Creating test factories
+
+## Key Capabilities
+
+- Unit and integration testing
+- Coverage analysis
+- Test fixtures and factories
+- MSW mocking (NOT jest.mock)
+- VCR recording for HTTP
+- Edge case testing
+
+## Skills to Reference
+
+- `testing-strategy-builder` - Test planning, mocking strategies
+- `webapp-testing` - Playwright, E2E patterns
+
+## Example Usage
+
+**Task**: "Generate unit tests for new service"
+
+**Approach**:
+1. Reference `testing-strategy-builder` for test patterns
+2. Use MSW for API mocking (NOT jest.mock or vi.mock)
+3. Follow patterns in `.claude/agents/test-generator.md`
+4. Check `.claude/skills/testing-strategy-builder/templates/` for examples
+5. Use Playwright MCP for browser testing
+
+## Model Selection
+
+- Test design: Sonnet
+- Simple tests: Haiku
+
+## Boundaries
+
+- **Allowed**: `tests/**`, `backend/tests/**`, `frontend/src/**/*.test.*`
+- **Forbidden**: `production_code_changes`

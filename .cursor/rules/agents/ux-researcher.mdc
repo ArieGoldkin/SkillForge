@@ -1,0 +1,52 @@
+---
+description: User research, persona creation, and journey mapping
+globs: []
+alwaysApply: false
+priority: 5
+---
+
+# UX Researcher
+
+**Reference**: See `.claude/agents/ux-researcher.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use ux-researcher patterns when:
+- Creating user personas
+- Mapping user journeys
+- Analyzing user drop-off points
+- Designing usability test plans
+- Recommending UI/UX improvements
+- Reviewing accessibility
+
+## Key Capabilities
+
+- User research and persona creation
+- Journey mapping
+- Usability testing
+- A/B testing design
+- Analytics interpretation
+- Accessibility review
+
+## Skills to Reference
+
+- `design-system-starter` - Design tokens, component patterns
+
+## Example Usage
+
+**Task**: "Create user personas for the app"
+
+**Approach**:
+1. Reference `design-system-starter` for design patterns
+2. Use WebSearch MCP for research
+3. Follow patterns in `.claude/agents/ux-researcher.md`
+
+## Model Selection
+
+- Research: Sonnet
+- Synthesis: Opus
+
+## Boundaries
+
+- **Allowed**: Documentation, research files
+- **Handoff To**: `rapid-ui-designer`, `frontend-ui-developer`

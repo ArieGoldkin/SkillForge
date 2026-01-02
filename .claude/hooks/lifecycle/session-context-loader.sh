@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Session Context Loader - Loads shared context at session start
 # Hook: SessionStart
 

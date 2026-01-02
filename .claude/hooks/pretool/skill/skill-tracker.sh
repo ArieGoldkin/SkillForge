@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Skill Tracker - Logs Skill tool invocations
 # Hook: PreToolUse (Skill)
 

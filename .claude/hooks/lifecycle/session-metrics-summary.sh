@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Session Metrics Summary - Shows summary at session end
 # Hook: SessionEnd
 

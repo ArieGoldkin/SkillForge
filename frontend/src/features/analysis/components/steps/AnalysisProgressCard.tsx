@@ -48,7 +48,7 @@ const STAGE_BADGE_CONFIG: Record<AnalysisStage, { variant: BadgeVariant; label: 
 
 const getStageConfig = (stage: AnalysisStage, hasFailures = false) => {
   if (stage === 'complete' && hasFailures) {
-    return { variant: 'destructive' as const, label: 'Complete with Errors' }
+    return { variant: 'destructive' as const, label: 'Completed with Errors' }
   }
   return STAGE_BADGE_CONFIG[stage]
 }

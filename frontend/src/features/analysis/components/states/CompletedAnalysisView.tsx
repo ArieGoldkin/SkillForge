@@ -28,6 +28,7 @@ import type { AnalysisMode } from '../../types/accordion'
 import { CompactGroupCard } from '../accordion/CompactGroupCard'
 import { HeroSummaryCard } from '../accordion/HeroSummaryCard'
 import { AnalysisHeader } from '../steps/AnalysisHeader'
+import { AnalysisProgressCardErrorSummary } from '../steps/AnalysisProgressCardErrorSummary'
 
 interface CompletedAnalysisViewProps {
   /** Used for header URL display only */
@@ -36,6 +37,7 @@ interface CompletedAnalysisViewProps {
   steps: ProgressStep[]
   hasFailedStages: boolean
   failedStagesCount: number
+  failedStageErrorCodes?: string[]
   analysisMetadata?: {
     title?: string
     contentType?: 'article' | 'video' | 'repo'
@@ -82,6 +84,8 @@ interface CompletedAnalysisViewProps {
 export const CompletedAnalysisView = memo(function CompletedAnalysisView({
   analysisId,
   hasFailedStages,
+  failedStagesCount,
+  failedStageErrorCodes = [],
   analysisMetadata,
   stageStatuses,
 }: CompletedAnalysisViewProps) {
@@ -133,6 +137,16 @@ export const CompletedAnalysisView = memo(function CompletedAnalysisView({
         hasErrors={hasFailedStages}
         className="mt-6"
       />
+
+      {/* Error Summary - Show when analysis completed with errors */}
+      {hasFailedStages && failedStageErrorCodes.length > 0 && (
+        <div className="mt-6">
+          <AnalysisProgressCardErrorSummary
+            failedStagesCount={failedStagesCount}
+            failedStageErrorCodes={failedStageErrorCodes}
+          />
+        </div>
+      )}
 
       {/* Active Groups Grid - Only groups with progress > 0 */}
       {activeGroups.length > 0 && (

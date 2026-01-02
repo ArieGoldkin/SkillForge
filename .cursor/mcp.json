@@ -1,40 +1,189 @@
 {
   "$schema": "https://modelcontextprotocol.io/schema.json",
-  "_comment": "MCP Server Configuration for SkillForge Project",
-  "_naming_convention": "Project-specific servers use 'skillforge-*' prefix. Generic tools keep their original names.",
   "mcpServers": {
+    "memory": {
+      "command": "/Users/yonatangross/coding/SkillForge/.cursor/mcp-npx-wrapper.sh",
+      "args": [
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
     "sequential-thinking": {
-      "_comment": "Generic tool - reasoning and problem-solving",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-    },
-    "skillforge-postgres-dev": {
-      "_comment": "Project-specific: Development database (localhost:5437/skillforge)",
-      "command": "./scripts/mcp/run-postgres-mcp.sh",
-      "args": ["dev"]
-    },
-    "playwright": {
-      "_comment": "Generic tool - E2E testing automation",
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "command": "/Users/yonatangross/coding/SkillForge/.cursor/mcp-npx-wrapper.sh",
+      "args": [
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
     },
     "context7": {
-      "_comment": "Generic tool - library/documentation lookup",
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
+      "command": "/Users/yonatangross/coding/SkillForge/.cursor/mcp-npx-wrapper.sh",
+      "args": [
+        "@upstash/context7-mcp@latest"
+      ]
     },
-    "memory": {
-      "_comment": "Generic tool - project state tracking",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    "pg-aiguide": {
+      "type": "http",
+      "url": "https://mcp.tigerdata.com/docs"
     },
-    "skillforge-langsmith": {
-      "_comment": "Project-specific: LangGraph observability for SkillForge project",
-      "command": "./scripts/mcp/run-langsmith-mcp.sh",
-      "env": {
-        "LANGSMITH_ENDPOINT": "https://api.smith.langchain.com",
-        "LANGSMITH_PROJECT": "skillforge-backend"
+    "postgres-mcp": {
+      "command": "/Users/yonatangross/coding/SkillForge/.cursor/mcp-npx-wrapper.sh",
+      "args": [
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://dev:devpass@localhost:5437/skillforge"
+      ]
+    },
+    "playwright": {
+      "command": "/Users/yonatangross/coding/SkillForge/.cursor/mcp-npx-wrapper.sh",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
+    },
+    "langfuse-docs": {
+      "type": "http",
+      "url": "http://localhost:3000/api/mcp"
+    }
+  },
+  "mcp_usage_guide": {
+    "always_available": [
+      {
+        "server": "memory",
+        "purpose": "Store decisions and context across sessions",
+        "tools": [
+          "memory_create_entities",
+          "memory_search_nodes"
+        ]
+      },
+      {
+        "server": "sequential-thinking",
+        "purpose": "Complex reasoning for architecture decisions",
+        "tools": [
+          "sequentialthinking"
+        ]
+      },
+      {
+        "server": "context7",
+        "purpose": "Current library documentation (use instead of embedding docs)",
+        "tools": [
+          "resolve-library-id",
+          "get-library-docs"
+        ]
       }
+    ],
+    "on_demand": [
+      {
+        "server": "postgres-mcp",
+        "purpose": "Database queries, schema inspection, query testing",
+        "when": "Database work, migrations, query optimization",
+        "tools": [
+          "query",
+          "list_tables",
+          "describe_table"
+        ]
+      },
+      {
+        "server": "playwright",
+        "purpose": "E2E testing, browser automation, UI verification",
+        "when": "Frontend testing, UI validation",
+        "tools": [
+          "browser_navigate",
+          "browser_snapshot",
+          "browser_click"
+        ]
+      },
+      {
+        "server": "langfuse-docs",
+        "purpose": "LLM tracing, cost tracking, prompt management",
+        "when": "Working with LLM integrations, workflow observability",
+        "tools": [
+          "langfuse_get_trace",
+          "langfuse_list_traces"
+        ]
+      },
+      {
+        "server": "pg-aiguide",
+        "purpose": "PostgreSQL expertise and best practices",
+        "when": "Database design, query optimization questions",
+        "tools": [
+          "http-based documentation"
+        ]
+      }
+    ]
+  },
+  "agent_mcp_mapping": {
+    "backend-system-architect": {
+      "primary": [
+        "context7",
+        "postgres-mcp"
+      ],
+      "optional": [
+        "pg-aiguide"
+      ]
+    },
+    "frontend-ui-developer": {
+      "primary": [
+        "context7",
+        "playwright"
+      ],
+      "optional": []
+    },
+    "data-pipeline-engineer": {
+      "primary": [
+        "postgres-mcp",
+        "context7"
+      ],
+      "optional": [
+        "pg-aiguide"
+      ]
+    },
+    "llm-integrator": {
+      "primary": [
+        "langfuse-docs",
+        "context7"
+      ],
+      "optional": [
+        "memory"
+      ]
+    },
+    "workflow-architect": {
+      "primary": [
+        "sequential-thinking",
+        "memory",
+        "context7"
+      ],
+      "optional": [
+        "langfuse-docs"
+      ]
+    },
+    "code-quality-reviewer": {
+      "primary": [
+        "context7"
+      ],
+      "optional": [
+        "playwright"
+      ]
+    },
+    "database-engineer": {
+      "primary": [
+        "postgres-mcp",
+        "pg-aiguide"
+      ],
+      "optional": [
+        "context7"
+      ]
+    },
+    "test-generator": {
+      "primary": [
+        "playwright",
+        "context7"
+      ],
+      "optional": []
+    },
+    "debug-investigator": {
+      "primary": [
+        "sequential-thinking",
+        "memory"
+      ],
+      "optional": [
+        "postgres-mcp"
+      ]
     }
   }
 }

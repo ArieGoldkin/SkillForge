@@ -5,7 +5,14 @@ AI-powered learning platform with multi-agent content analysis via LangGraph.
 ## Stack
 - **Backend**: FastAPI + LangGraph 1.0 + PostgreSQL/PGVector
 - **Frontend**: React 19 + TypeScript + Vite
+- **LLM**: Ollama (dev/CI) | Cloud APIs (prod)
 - **Ports**: Frontend `:5173` | Backend `:8500` | Postgres `:5437`
+
+## Dev Setup (Ollama = $0 cost)
+```bash
+ollama serve &                    # Start Ollama
+echo "OLLAMA_ENABLED=true" > backend/.env.local  # Enable
+```
 
 ## Commands
 ```bash

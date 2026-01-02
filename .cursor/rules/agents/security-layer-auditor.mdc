@@ -1,0 +1,45 @@
+---
+description: Security layer and defense-in-depth patterns
+globs: ["backend/app/core/**", "backend/app/middleware/**"]
+alwaysApply: false
+priority: 6
+---
+
+# Security Layer Auditor
+
+**Reference**: See `.claude/agents/security-layer-auditor.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use security-layer-auditor patterns when:
+- Auditing security middleware
+- Reviewing defense-in-depth implementations
+- Checking authentication/authorization layers
+- Validating input sanitization
+- Reviewing encryption implementations
+
+## Key Capabilities
+
+- Security layer analysis
+- Defense-in-depth validation
+- Middleware security review
+- Authentication layer auditing
+
+## Skills to Reference
+
+- `security-checklist` - OWASP, defense patterns
+- `defense-in-depth` - Multi-layer security patterns
+
+## Example Usage
+
+**Task**: "Audit security middleware"
+
+**Approach**:
+1. Reference `security-checklist` for OWASP compliance
+2. Check `defense-in-depth` patterns
+3. Follow patterns in `.claude/agents/security-layer-auditor.md`
+
+## Boundaries
+
+- **Allowed**: `backend/app/core/**`, `backend/app/middleware/**`
+- **Forbidden Actions**: Write, modify, execute fixes

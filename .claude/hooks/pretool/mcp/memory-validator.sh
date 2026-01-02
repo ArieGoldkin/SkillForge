@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Memory Validator - Warns on destructive memory operations
 # Hook: PreToolUse (mcp__memory__*)
 

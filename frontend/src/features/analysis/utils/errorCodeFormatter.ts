@@ -4,44 +4,21 @@
  * Converts backend error codes to human-readable messages for UI display.
  */
 
+import {
+  DEFAULT_UNKNOWN_EXPLANATION,
+  ERROR_EXPLANATIONS,
+  type ErrorExplanation,
+} from './errorExplanations/index'
+
+// Re-export the type for consumers
+export type { ErrorExplanation }
+
 /**
- * Maps backend error codes to human-readable messages
+ * Maps backend error codes to human-readable messages (backward compatibility)
  */
-const ERROR_CODE_MAP: Record<string, string> = {
-  // Extraction errors
-  HTTP_404: 'Page Not Found',
-  HTTP_5XX: 'Server Error',
-  TIMEOUT: 'Request Timeout',
-  ERROR_PAGE: 'Error Page Detected',
-  REDIRECT_LOOP: 'Redirect Loop',
-  NETWORK_ERROR: 'Network Error',
-  EXTRACTION_FAILED: 'Extraction Failed',
-  EXTRACTION_ERROR: 'Extraction Error',
-  // Embedding errors
-  EMBEDDING_FAILED: 'Embedding Generation Failed',
-  EMBEDDING_ERROR: 'Embedding Error',
-  // Analysis errors
-  ANALYSIS_FAILED: 'Analysis Failed',
-  QUALITY_GATE_FAILED: 'Quality Gate Failed',
-  QUALITY_VALIDATION_FAILED: 'Quality Validation Failed',
-  // Agent errors
-  TECH_COMPARATOR_FAILED: 'Tech Comparison Failed',
-  SECURITY_AUDITOR_FAILED: 'Security Audit Failed',
-  IMPLEMENTATION_PLANNER_FAILED: 'Implementation Planning Failed',
-  PERFORMANCE_ANALYST_FAILED: 'Performance Analysis Failed',
-  CODE_QUALITY_CRITIC_FAILED: 'Code Quality Review Failed',
-  TREND_VALIDATOR_FAILED: 'Trend Analysis Failed',
-  DEPENDENCY_MAPPER_FAILED: 'Dependency Mapping Failed',
-  INTEGRATION_FEASIBILITY_FAILED: 'Integration Feasibility Check Failed',
-  // Aggregation errors
-  AGGREGATION_FAILED: 'Aggregation Failed',
-  // Artifact errors
-  ARTIFACT_FAILED: 'Artifact Generation Failed',
-  ARTIFACT_GENERATION_FAILED: 'Artifact Generation Failed',
-  // Generic
-  UNKNOWN: 'Unknown Error',
-  WORKFLOW_FAILED: 'Workflow Failed',
-}
+const ERROR_CODE_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(ERROR_EXPLANATIONS).map(([code, explanation]) => [code, explanation.title])
+)
 
 /**
  * Format error code to human-readable message
@@ -76,9 +53,6 @@ export function formatErrorCode(errorCode: string | undefined | null): string {
 
 /**
  * Get error code badge variant based on error type
- *
- * @param errorCode - Backend error code
- * @returns Badge variant for error display
  */
 export function getErrorCodeBadgeVariant(
   errorCode: string | undefined | null
@@ -87,18 +61,51 @@ export function getErrorCodeBadgeVariant(
     return 'secondary'
   }
 
-  // Critical errors get destructive variant
-  const criticalErrors = [
-    'EXTRACTION_FAILED',
-    'ANALYSIS_FAILED',
-    'ARTIFACT_FAILED',
-    'QUALITY_GATE_FAILED',
-    'WORKFLOW_FAILED',
-  ]
+  const explanation = getErrorExplanation(errorCode)
+  return explanation.severity === 'critical' ? 'destructive' : 'default'
+}
 
-  if (criticalErrors.includes(errorCode)) {
-    return 'destructive'
+/**
+ * Get full error explanation with user-friendly details
+ */
+export function getErrorExplanation(errorCode: string | undefined | null): ErrorExplanation {
+  if (!errorCode) {
+    return DEFAULT_UNKNOWN_EXPLANATION
   }
 
-  return 'default'
+  const explanation = ERROR_EXPLANATIONS[errorCode]
+  if (explanation) {
+    return explanation
+  }
+
+  // Fallback for unmapped error codes
+  return {
+    title: formatErrorCode(errorCode),
+    reason: 'An error occurred during this stage',
+    action: 'Try retrying the analysis',
+    retryable: true,
+    severity: 'non-critical',
+  }
+}
+
+/**
+ * Check if error is retryable
+ */
+export function isErrorRetryable(errorCode: string | undefined | null): boolean {
+  if (!errorCode) {
+    return true
+  }
+
+  return getErrorExplanation(errorCode).retryable
+}
+
+/**
+ * Check if error is critical
+ */
+export function isErrorCritical(errorCode: string | undefined | null): boolean {
+  if (!errorCode) {
+    return true
+  }
+
+  return getErrorExplanation(errorCode).severity === 'critical'
 }

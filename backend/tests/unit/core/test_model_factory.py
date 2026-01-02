@@ -100,6 +100,7 @@ def test_should_strip_provider_prefix_unknown():
 def test_get_chat_model_with_openai(mock_settings, mock_init_chat_model):
     """Test get_chat_model with OpenAI provider."""
     # Setup mock settings
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -134,6 +135,7 @@ def test_get_chat_model_with_openai(mock_settings, mock_init_chat_model):
 def test_get_chat_model_with_anthropic(mock_settings, mock_get_redis_cache, mock_chat_anthropic):
     """Test get_chat_model with Anthropic provider uses ChatAnthropic directly."""
     # Setup mock settings
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "claude-sonnet-4"
     mock_settings.resolved_llm_provider = MagicMock(return_value="anthropic")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="claude-sonnet-4")
@@ -169,6 +171,7 @@ def test_get_chat_model_with_anthropic(mock_settings, mock_get_redis_cache, mock
 def test_get_chat_model_with_xai(mock_settings, mock_init_chat_model):
     """Test get_chat_model with xAI provider (uses OpenAI-compatible API with custom base_url)."""
     # Setup mock settings
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "xai:grok-3-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="xai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="grok-3-mini")
@@ -202,6 +205,7 @@ def test_get_chat_model_with_xai(mock_settings, mock_init_chat_model):
 def test_get_chat_model_with_deepseek(mock_settings, mock_init_chat_model):
     """Test get_chat_model with DeepSeek provider (custom provider, no prefix stripping)."""
     # Setup mock settings
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "deepseek-v3:deepseek-chat"
     mock_settings.resolved_llm_provider = MagicMock(return_value="deepseek")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="deepseek-chat")
@@ -233,6 +237,7 @@ def test_get_chat_model_with_deepseek(mock_settings, mock_init_chat_model):
 def test_get_chat_model_with_google_genai(mock_settings, mock_init_chat_model):
     """Test get_chat_model with Google GenAI provider."""
     # Setup mock settings
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gemini-2.0-flash"
     mock_settings.resolved_llm_provider = MagicMock(return_value="google_genai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gemini-2.0-flash")
@@ -263,6 +268,7 @@ def test_get_chat_model_with_google_genai(mock_settings, mock_init_chat_model):
 def test_get_chat_model_without_provider(mock_settings, mock_init_chat_model):
     """Test get_chat_model with auto-detected provider (None)."""
     # Setup mock settings
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "some-model"
     mock_settings.resolved_llm_provider = MagicMock(return_value=None)
     mock_settings.resolved_llm_model_name = MagicMock(return_value="some-model")
@@ -293,6 +299,7 @@ def test_get_chat_model_without_provider(mock_settings, mock_init_chat_model):
 def test_get_chat_model_strips_whitespace(mock_settings, mock_init_chat_model):
     """Test get_chat_model strips whitespace from LLM_MODEL."""
     # Setup mock settings with whitespace in model name
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "  gpt-5-mini  "
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -325,6 +332,7 @@ def test_get_chat_model_strips_whitespace(mock_settings, mock_init_chat_model):
 def test_get_chat_model_with_missing_api_key(mock_settings, mock_init_chat_model):
     """Test get_chat_model when API key is not set (should raise error)."""
     # Setup mock settings with OpenAI but no API key
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -356,6 +364,7 @@ def test_get_chat_model_with_missing_api_key(mock_settings, mock_init_chat_model
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_with_temperature(mock_settings, mock_init_chat_model):
     """Test get_chat_model passes temperature parameter when configured."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -386,6 +395,7 @@ def test_get_chat_model_with_temperature(mock_settings, mock_init_chat_model):
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_with_max_tokens(mock_settings, mock_init_chat_model):
     """Test get_chat_model passes max_tokens parameter when configured."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -416,6 +426,7 @@ def test_get_chat_model_with_max_tokens(mock_settings, mock_init_chat_model):
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_with_timeout(mock_settings, mock_init_chat_model):
     """Test get_chat_model passes timeout parameter when configured."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -446,6 +457,7 @@ def test_get_chat_model_with_timeout(mock_settings, mock_init_chat_model):
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_with_all_parameters(mock_settings, mock_init_chat_model):
     """Test get_chat_model passes all model parameters when configured."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -505,6 +517,7 @@ def test_get_chat_model_with_task_routing_supervisor(
 ):
     """Test get_chat_model routes supervisor task to Claude Haiku."""
     # Setup mock settings (default is Anthropic Sonnet)
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "claude-sonnet-4"
     mock_settings.resolved_llm_provider = MagicMock(return_value="anthropic")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="claude-sonnet-4")
@@ -542,6 +555,7 @@ def test_get_chat_model_with_task_routing_g_eval(
 ):
     """Test get_chat_model routes g_eval task to Gemini Flash."""
     # Setup mock settings (default is Anthropic Sonnet)
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "claude-sonnet-4"
     mock_settings.resolved_llm_provider = MagicMock(return_value="anthropic")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="claude-sonnet-4")
@@ -578,6 +592,7 @@ def test_get_chat_model_without_task_routing(
     mock_settings, mock_get_redis_cache, mock_init_chat_model
 ):
     """Test get_chat_model uses default model when no task_type provided."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -611,6 +626,7 @@ def test_get_chat_model_unknown_task_type_uses_default(
     mock_settings, mock_get_redis_cache, mock_init_chat_model
 ):
     """Test get_chat_model uses default model for unknown task_type."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -669,6 +685,7 @@ def test_get_redis_cache_for_model_failure_returns_none(mock_get_semantic_cache)
 @patch("app.core.model_factory.settings")
 def test_get_chat_model_with_redis_cache(mock_settings, mock_get_redis_cache, mock_init_chat_model):
     """Test get_chat_model includes Redis cache when available."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -704,6 +721,7 @@ def test_get_chat_model_without_redis_cache(
     mock_settings, mock_get_redis_cache, mock_init_chat_model
 ):
     """Test get_chat_model works without Redis cache."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "gpt-5-mini"
     mock_settings.resolved_llm_provider = MagicMock(return_value="openai")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="gpt-5-mini")
@@ -743,6 +761,7 @@ def test_get_chat_model_anthropic_with_5m_cache(
     mock_settings, mock_get_redis_cache, mock_chat_anthropic
 ):
     """Test Anthropic model with default 5m cache TTL (no beta header)."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "claude-sonnet-4"
     mock_settings.resolved_llm_provider = MagicMock(return_value="anthropic")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="claude-sonnet-4")
@@ -778,6 +797,7 @@ def test_get_chat_model_anthropic_with_1h_cache(
     mock_settings, mock_get_redis_cache, mock_chat_anthropic
 ):
     """Test Anthropic model with 1h extended cache TTL (requires beta header)."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "claude-sonnet-4"
     mock_settings.resolved_llm_provider = MagicMock(return_value="anthropic")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="claude-sonnet-4")
@@ -813,6 +833,7 @@ def test_get_chat_model_anthropic_uses_chat_anthropic_class(
     mock_settings, mock_get_redis_cache, mock_chat_anthropic
 ):
     """Test that Anthropic provider uses ChatAnthropic class directly."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "claude-sonnet-4"
     mock_settings.resolved_llm_provider = MagicMock(return_value="anthropic")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="claude-sonnet-4")
@@ -852,6 +873,7 @@ def test_get_chat_model_anthropic_with_redis_cache(
     mock_settings, mock_get_redis_cache, mock_chat_anthropic
 ):
     """Test Anthropic model includes Redis cache when available."""
+    mock_settings.OLLAMA_ENABLED = False  # Disable Ollama for cloud provider test
     mock_settings.LLM_MODEL = "claude-sonnet-4"
     mock_settings.resolved_llm_provider = MagicMock(return_value="anthropic")
     mock_settings.resolved_llm_model_name = MagicMock(return_value="claude-sonnet-4")

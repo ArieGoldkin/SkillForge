@@ -7,6 +7,7 @@ import { Card, CardContent } from '@shared/components/ui/card'
 
 import { cn } from '@lib/utils'
 
+import { FailedStageDetails } from './SkillCard/FailedStageDetails'
 import { SkillCardMetadata } from './SkillCard/SkillCardMetadata'
 import { SkillCardProgress } from './SkillCard/SkillCardProgress'
 import { SkillCardTags } from './SkillCard/SkillCardTags'
@@ -34,6 +35,11 @@ export interface SkillCardProps {
   onSelect: (id: string) => void
   onDelete?: (id: string) => void
   className?: string
+  // Error tracking fields (for failed analyses)
+  errorCode?: string | null
+  errorMessage?: string | null
+  failedAtStage?: string | null
+  onRetry?: (analysisId: string, stage?: string) => void
 }
 
 /**
@@ -49,6 +55,27 @@ const formatStatus = (status: SkillStatus): string => {
   return labels[status]
 }
 
+interface DeleteButtonProps {
+  id: string
+  onDelete: (id: string) => void
+}
+
+function DeleteButton({ id, onDelete }: DeleteButtonProps): React.ReactNode {
+  return (
+    <button
+      type="button"
+      className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
+      onClick={(event) => {
+        event.stopPropagation()
+        onDelete(id)
+      }}
+      aria-label="Delete analysis"
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  )
+}
+
 function SkillCardBody({
   id,
   title,
@@ -60,22 +87,16 @@ function SkillCardBody({
   thumbnail,
   progress,
   onDelete,
+  errorCode,
+  errorMessage,
+  failedAtStage,
+  onRetry,
 }: SkillCardProps): React.ReactNode {
+  const isFailed = status === 'failed'
+
   return (
     <CardContent className="p-0 relative">
-      {onDelete && (
-        <button
-          type="button"
-          className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
-          onClick={(event) => {
-            event.stopPropagation()
-            onDelete(id)
-          }}
-          aria-label="Delete analysis"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      )}
+      {onDelete && <DeleteButton id={id} onDelete={onDelete} />}
       <SkillCardThumbnail title={title} thumbnail={thumbnail} />
 
       <div className="p-6 space-y-4">
@@ -88,6 +109,18 @@ function SkillCardBody({
         <SkillCardMetadata difficulty={difficulty} duration={duration} status={status} />
 
         <SkillCardProgress status={status} progress={progress} />
+
+        {/* Show error details for failed analyses */}
+        {isFailed && (errorCode || errorMessage || failedAtStage) && (
+          <FailedStageDetails
+            errorCode={errorCode}
+            errorMessage={errorMessage}
+            failedAtStage={failedAtStage}
+            analysisId={id}
+            onRetry={onRetry}
+            defaultExpanded={false}
+          />
+        )}
 
         <SkillCardTags tags={tags} />
       </div>
@@ -112,6 +145,10 @@ export function SkillCard({
   onSelect,
   onDelete,
   className,
+  errorCode,
+  errorMessage,
+  failedAtStage,
+  onRetry,
 }: SkillCardProps): React.ReactNode {
   const { prefetchAnalysis } = usePrefetch()
 
@@ -163,6 +200,10 @@ export function SkillCard({
         progress={progress}
         onSelect={onSelect}
         onDelete={onDelete}
+        errorCode={errorCode}
+        errorMessage={errorMessage}
+        failedAtStage={failedAtStage}
+        onRetry={onRetry}
       />
     </Card>
   )

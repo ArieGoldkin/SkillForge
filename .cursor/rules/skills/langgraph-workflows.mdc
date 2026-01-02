@@ -1,0 +1,57 @@
+---
+description: LangGraph workflow patterns and best practices
+globs: ["backend/app/workflows/**", "**/*workflow*.py"]
+alwaysApply: false
+priority: 7
+---
+
+# LangGraph Workflows Skill
+
+**Reference**: See `.claude/skills/langgraph-workflows/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/langgraph-workflows/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/langgraph-workflows/SKILL.md` (~600 tokens)
+3. **Implementation**: Read specific files from `references/` or `templates/` as needed
+
+## What This Skill Provides
+
+- State management patterns (TypedDict vs Pydantic)
+- Supervisor-worker patterns
+- Conditional routing based on state
+- Checkpoint persistence for fault tolerance
+- Multi-agent coordination
+- Map-reduce parallel execution
+- Human-in-the-loop approval points
+- Retry logic with backoff
+
+## When to Use
+
+- Building LangGraph workflows
+- Implementing multi-agent systems
+- Designing state machines
+- Adding checkpointing for fault tolerance
+- Creating parallel agent execution
+- Adding retry logic to workflows
+
+## Related Agents
+
+- `workflow-architect` - Primary agent for LangGraph design
+- `llm-integrator` - For LLM integration in workflows
+- `data-pipeline-engineer` - For data processing in workflows
+
+## MCP Tools
+
+- `context7` - Current LangGraph API documentation
+- `sequential-thinking` - Complex workflow reasoning
+
+## Example Usage
+
+**Task**: "Design a multi-agent analysis pipeline"
+
+**Approach**:
+1. Read `capabilities.json` to understand available patterns
+2. Read `SKILL.md#supervisor-worker-pattern` for orchestration
+3. Check `references/semantic-routing.md` if routing needed
+4. Use `templates/parallel-agent-fanout.py` for parallel execution

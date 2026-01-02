@@ -72,4 +72,6 @@ class TestExtractionErrorCode:
 
     def test_error_code_enum_count(self):
         """Verify expected number of error codes."""
-        assert len(ExtractionErrorCode) == 7, "Expected 7 error codes"
+        # 10 error codes: HTTP_404, HTTP_5XX, TIMEOUT, ERROR_PAGE, REDIRECT_LOOP,
+        # NETWORK_ERROR, INVALID_URL, TRANSCRIPT_DISABLED, NO_TRANSCRIPT, UNKNOWN
+        assert len(ExtractionErrorCode) == 10, "Expected 10 error codes"

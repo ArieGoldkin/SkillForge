@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Auto-Save Context - Saves session context before stop
 # Hook: Stop
 

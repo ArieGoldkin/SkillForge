@@ -95,6 +95,92 @@ class TestValidateAndParseFindings:
         assert confidence_scores["tech_comparator"] == 0.85
         assert confidence_scores["security_auditor"] == 0.90
 
+    def test_validate_skipped_agent_included(self):
+        """Test that agents skipped due to circuit breaker are included.
+
+        Issue #610: Skipped agents should be included in validated_findings
+        with empty findings and skipped status.
+        """
+        findings = [
+            {
+                "agent_type": "tech_comparator",
+                "status": "skipped",
+                "skipped_reason": "Circuit breaker is OPEN - LLM API unavailable",
+            },
+            {
+                "agent_type": "security_auditor",
+                "findings": {"security_risks": []},
+                "confidence_score": 0.90,
+            },
+        ]
+
+        validated, agent_types, confidence_scores = validate_and_parse_findings(findings)
+
+        assert len(validated) == 2
+        assert len(agent_types) == 2
+
+        # Find skipped agent
+        skipped_agent = next(f for f in validated if f.get("agent_type") == "tech_comparator")
+        assert skipped_agent["status"] == "skipped"
+        assert skipped_agent["findings"] == {}  # Empty findings for skipped agents
+        assert skipped_agent.get("skipped_reason") == "Circuit breaker is OPEN - LLM API unavailable"
+
+        # Find normal agent
+        normal_agent = next(f for f in validated if f.get("agent_type") == "security_auditor")
+        assert "status" not in normal_agent or normal_agent.get("status") != "skipped"
+        assert normal_agent["findings"] == {"security_risks": []}
+
+        # Confidence scores
+        assert confidence_scores["tech_comparator"] == 0.0  # Skipped agents have 0 confidence
+        assert confidence_scores["security_auditor"] == 0.90
+
+    @pytest.mark.asyncio
+    async def test_build_agent_statuses_marks_skipped_agents(self):
+        """Test that _build_agent_statuses correctly marks skipped agents.
+
+        Issue #610: Agents skipped due to circuit breaker should be marked
+        as "skipped" in agent_statuses, separate from "no_data" or "failed".
+        """
+        from app.core.types import AnalysisID
+        from app.domains.analysis.workflows.tasks.aggregate_findings import _build_agent_statuses
+
+        analysis_id = AnalysisID("00000000-0000-0000-0000-000000000001")
+        selected_agents = ["tech_comparator", "security_auditor", "performance_analyst"]
+
+        # Validated findings include one skipped agent
+        validated_findings = [
+            {
+                "agent_type": "tech_comparator",
+                "status": "skipped",
+                "skipped_reason": "Circuit breaker is OPEN - LLM API unavailable",
+                "findings": {},
+            },
+            {
+                "agent_type": "security_auditor",
+                "findings": {"security_risks": []},
+                "confidence_score": 0.90,
+            },
+            # performance_analyst is selected but not in validated_findings = failed
+        ]
+
+        agent_types = ["tech_comparator", "security_auditor"]
+
+        statuses = await _build_agent_statuses(
+            analysis_id=analysis_id,
+            selected_agents=selected_agents,
+            agent_types=agent_types,
+            validated_findings=validated_findings,
+        )
+
+        # tech_comparator should be marked as "skipped"
+        assert statuses["tech_comparator"] == "skipped"
+
+        # security_auditor should be marked as "success"
+        assert statuses["security_auditor"] == "success"
+
+        # performance_analyst should be marked as "failed" (selected but no findings)
+        assert statuses["performance_analyst"] == "failed"
+
     def test_validate_empty_findings(self):
         """Test validation with empty findings list."""
         validated, agent_types, confidence_scores = validate_and_parse_findings([])

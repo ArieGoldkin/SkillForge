@@ -70,6 +70,10 @@ export const AnalyzeResponseSchema = z.object({
 export const AnalysisStatusResponseSchema = z.object({
   status: AnalysisStatusSchema,
   artifact_id: z.string().uuid().nullable().optional(),
+  // Error tracking fields (Issue #441) - matches backend AnalyzeStatusResponse
+  error_code: z.string().nullable().optional(),
+  error_message: z.string().nullable().optional(),
+  failed_at_stage: z.string().nullable().optional(),
 })
 
 /**
@@ -170,6 +174,10 @@ export const LibrarySearchResultSchema = z.object({
   snippet: z.string().nullable(),
   rank: z.number(),
   created_at: z.string(),
+  // Error tracking fields (Issue #441)
+  error_code: z.string().nullable().optional(),
+  error_message: z.string().nullable().optional(),
+  failed_at_stage: z.string().nullable().optional(),
 })
 
 /**

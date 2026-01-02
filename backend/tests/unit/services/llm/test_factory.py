@@ -12,82 +12,67 @@ from unittest.mock import MagicMock, patch
 class TestGetLLMProvider:
     """Tests for get_llm_provider factory function."""
 
-    @patch("app.shared.services.llm.factory.settings")
-    @patch("app.shared.services.llm.ollama_provider.OllamaProvider")
+    @patch("app.core.model_factory.get_chat_model")
     def test_returns_ollama_when_enabled(
         self,
-        mock_provider_class: MagicMock,
-        mock_settings: MagicMock,
+        mock_get_chat_model: MagicMock,
     ) -> None:
-        """Test returns OllamaProvider when OLLAMA_ENABLED=true."""
-        mock_settings.OLLAMA_ENABLED = True
-        mock_settings.OLLAMA_MODEL_REASONING = "deepseek-r1:70b"
-        mock_settings.OLLAMA_MODEL_CODING = "qwen2.5-coder:32b"
-        mock_settings.OLLAMA_HOST = "http://localhost:11434"
-        mock_settings.OLLAMA_NUM_CTX = 32768
-        mock_settings.OLLAMA_TIMEOUT = 300.0
+        """Test delegates to get_chat_model for reasoning task.
 
-        mock_instance = MagicMock()
-        mock_instance.model = "deepseek-r1:70b"
-        mock_provider_class.for_reasoning.return_value = mock_instance
+        Issue #602: get_llm_provider now delegates to get_chat_model().
+        We test the delegation contract, not the internal implementation.
+        """
+        mock_model = MagicMock()
+        mock_model.model = "deepseek-r1:70b"
+        mock_get_chat_model.return_value = mock_model
 
         from app.shared.services.llm.factory import get_llm_provider
 
         result = get_llm_provider(task_type="reasoning")
 
-        mock_provider_class.for_reasoning.assert_called_once()
-        assert result.model == "deepseek-r1:70b"
+        mock_get_chat_model.assert_called_once_with(task_type="reasoning")
+        assert result == mock_model
 
-    @patch("app.shared.services.llm.factory.settings")
-    @patch("app.shared.services.llm.ollama_provider.OllamaProvider")
+    @patch("app.core.model_factory.get_chat_model")
     def test_returns_coding_model(
         self,
-        mock_provider_class: MagicMock,
-        mock_settings: MagicMock,
+        mock_get_chat_model: MagicMock,
     ) -> None:
-        """Test returns coding model for coding task type."""
-        mock_settings.OLLAMA_ENABLED = True
-        mock_settings.OLLAMA_MODEL_CODING = "qwen2.5-coder:32b"
-        mock_settings.OLLAMA_HOST = "http://localhost:11434"
-        mock_settings.OLLAMA_NUM_CTX = 32768
-        mock_settings.OLLAMA_TIMEOUT = 300.0
+        """Test delegates to get_chat_model for coding task.
 
-        mock_instance = MagicMock()
-        mock_instance.model = "qwen2.5-coder:32b"
-        mock_provider_class.for_coding.return_value = mock_instance
+        Issue #602: get_llm_provider now delegates to get_chat_model().
+        We test the delegation contract, not the internal implementation.
+        """
+        mock_model = MagicMock()
+        mock_model.model = "qwen2.5-coder:32b"
+        mock_get_chat_model.return_value = mock_model
 
         from app.shared.services.llm.factory import get_llm_provider
 
         result = get_llm_provider(task_type="coding")
 
-        mock_provider_class.for_coding.assert_called_once()
-        assert result.model == "qwen2.5-coder:32b"
+        mock_get_chat_model.assert_called_once_with(task_type="coding")
+        assert result == mock_model
 
-    @patch("app.shared.services.llm.factory.settings")
-    @patch("langchain.chat_models.init_chat_model")
+    @patch("app.core.model_factory.get_chat_model")
     def test_returns_cloud_when_disabled(
         self,
-        mock_init_chat_model: MagicMock,
-        mock_settings: MagicMock,
+        mock_get_chat_model: MagicMock,
     ) -> None:
-        """Test returns cloud model when OLLAMA_ENABLED=false."""
-        mock_settings.OLLAMA_ENABLED = False
-        mock_settings.LLM_MODEL = "gemini-3-flash-preview"
-        mock_settings.LLM_MAX_RETRIES = 3
+        """Test delegates to get_chat_model for general task.
 
-        mock_llm = MagicMock()
-        mock_init_chat_model.return_value = mock_llm
+        Issue #602: get_llm_provider now delegates to get_chat_model().
+        Cloud vs Ollama routing is handled by get_chat_model internally.
+        """
+        mock_model = MagicMock()
+        mock_get_chat_model.return_value = mock_model
 
         from app.shared.services.llm.factory import get_llm_provider
 
-        result = get_llm_provider(task_type="reasoning")
+        result = get_llm_provider(task_type="general")
 
-        mock_init_chat_model.assert_called_once_with(
-            "gemini-3-flash-preview",
-            temperature=0.0,
-            max_retries=3,
-        )
-        assert result == mock_llm
+        mock_get_chat_model.assert_called_once_with(task_type="general")
+        assert result == mock_model
 
 
 class TestGetEmbeddingProvider:

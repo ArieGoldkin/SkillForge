@@ -1,0 +1,118 @@
+---
+description: MCP server troubleshooting guide for Cursor IDE
+globs: []
+alwaysApply: false
+priority: 8
+---
+
+# MCP Server Troubleshooting
+
+## Common Errors
+
+### "Error - Show Output" Status
+
+If MCP servers show errors in Cursor IDE:
+
+1. **Check server installation**: Ensure `pnpm` can access the packages
+   ```bash
+   pnpm dlx @modelcontextprotocol/server-memory --version
+   ```
+
+2. **pnpm vs npx**: Cursor IDE uses `pnpm`, so use `pnpm dlx` not `npx -y`
+   - ✅ Correct: `"command": "pnpm", "args": ["dlx", "package"]`
+   - ❌ Wrong: `"command": "npx", "args": ["-y", "package"]`
+
+2. **Verify Node.js**: MCP servers require Node.js
+   ```bash
+   node --version  # Should be v18+
+   ```
+
+3. **Check network access**: Some servers need internet access
+   ```bash
+   curl https://registry.npmjs.org/@modelcontextprotocol/server-memory
+   ```
+
+4. **Restart Cursor IDE**: After changing `.mcp.json`, restart Cursor
+
+### Specific Server Issues
+
+#### context7
+- **Error**: Package not found or network issue
+- **Fix**: Ensure internet connection, try `npx -y @upstash/context7-mcp@latest` manually
+
+#### memory
+- **Error**: Storage permission or initialization issue
+- **Fix**: Check file system permissions, ensure `.mcp.json` is valid JSON
+
+#### sequential-thinking
+- **Error**: Package installation issue
+- **Fix**: Clear npm cache: `npm cache clean --force`
+
+#### playwright
+- **Error**: Browser dependencies missing
+- **Fix**: Install Playwright browsers: `npx playwright install`
+
+#### postgres-mcp
+- **Error**: Connection string invalid or database not running
+- **Fix**: 
+  - Verify database is running: `docker ps | grep postgres`
+  - Check connection string in `.mcp.json`
+  - Test connection: `psql postgresql://dev:devpass@localhost:5437/skillforge`
+
+#### langfuse
+- **Error**: Missing API keys or Langfuse not running
+- **Fix**:
+  - Ensure Langfuse is running: `docker ps | grep langfuse`
+  - Set `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` in `.mcp.json`
+  - Get keys from http://localhost:3000/settings
+
+## Configuration Best Practices
+
+1. **Use actual values, not env vars**: Cursor IDE may not expand `${VAR}` syntax
+2. **Keep it simple**: Remove unsupported fields like `alwaysAllow`, `requireConfirmation`
+3. **Test individually**: Enable one server at a time to isolate issues
+4. **Check logs**: Use "Show Output" in Cursor IDE to see error details
+
+## Minimal Working Configuration
+
+For testing, start with this minimal `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  }
+}
+```
+
+If this works, add servers one at a time.
+
+## Environment Variables
+
+For servers requiring environment variables (postgres-mcp, langfuse):
+
+1. **Use `.mcp.env` file** (recommended):
+   - Copy `.mcp.env.example` to `.mcp.env`
+   - Fill in your actual values
+   - Cursor IDE automatically loads `.mcp.env` when starting MCP servers
+   - `.mcp.env` is in `.gitignore` - never commit secrets
+
+2. **Verify variables are loaded**:
+   - Check that `.mcp.env` exists
+   - Ensure variable names match those in `.mcp.json` (e.g., `${POSTGRES_CONNECTION_STRING}`)
+   - Restart Cursor IDE after changing `.mcp.env`
+
+3. **Common issues**:
+   - Variables not loading: Ensure `.mcp.env` is in project root (same directory as `.mcp.json`)
+   - Wrong values: Check `.mcp.env` has correct connection strings/keys
+   - Still using old values: Restart Cursor IDE completely
+
+## Getting Help
+
+1. Check Cursor IDE MCP documentation
+2. Review server-specific npm package README
+3. Check `.mcp.json` syntax against MCP schema
+4. Verify Node.js and npm versions

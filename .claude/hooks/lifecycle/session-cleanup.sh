@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Session Cleanup - Cleans up temporary files at session end
 # Hook: SessionEnd
 
@@ -25,6 +26,15 @@ fi
 # Clean up old session archives (keep last 20)
 if [[ -d "$ARCHIVE_DIR" ]]; then
   cd "$ARCHIVE_DIR" && ls -t | tail -n +21 | xargs rm -f 2>/dev/null
+fi
+
+# Clean up old rotated log files (keep last 5, already handled by rotation, but ensure cleanup)
+LOG_DIR="$CLAUDE_PROJECT_DIR/.claude/logs"
+if [[ -d "$LOG_DIR" ]]; then
+  # Clean old rotated hooks.log files (keep last 5)
+  ls -t "$LOG_DIR"/hooks.log.old* 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
+  # Clean old rotated audit.log files (keep last 5)
+  ls -t "$LOG_DIR"/audit.log.old* 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
 fi
 
 exit 0

@@ -103,8 +103,7 @@ jobs:
               # Get most recent commit message
               RECENT_COMMIT=$(git log --since="$SIX_MONTHS_AGO" --all --oneline --grep="#$ISSUE_NUM" | head -1 | cut -c1-80)
 
-              OPEN_ISSUES="${OPEN_ISSUES}| #$ISSUE_NUM | $TITLE | $COMMIT_COUNT | $UPDATED | @$ASSIGNEE | $LABELS |
-"
+              OPEN_ISSUES="${OPEN_ISSUES}| #$ISSUE_NUM | $TITLE | $COMMIT_COUNT | $UPDATED | @$ASSIGNEE | $LABELS |"$'\n'
             else
               ((CLOSED_ISSUES++))
             fi

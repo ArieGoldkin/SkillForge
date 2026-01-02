@@ -1,0 +1,105 @@
+---
+description: Agent selection decision tree and semantic discovery
+globs: []
+alwaysApply: true
+priority: 10
+---
+
+# Agent Delegation Guide
+
+**Reference**: See `.claude/agent-registry.json` for full agent catalog.
+
+## Semantic Agent Discovery
+
+Before assigning work, use semantic matching:
+
+1. **Reference** `.claude/agent-registry.json` structure (you already have access to agent capabilities via the registry)
+2. Match user intent against `agent.capabilities` and `agent.can_solve_examples` from the registry
+3. Score confidence (0-1) based on semantic similarity
+4. Select agent with confidence > 0.7
+5. Check for pre-composed workflows in `.claude/workflows/`
+
+**Note**: You don't need to explicitly read agent-registry.json - agent information is available through the rules system. Only read it if you need detailed skill mappings.
+
+## Agent Selection Decision Tree
+
+```
+User Intent
+    │
+    ├─► Backend API/Database → backend-system-architect
+    ├─► Frontend Component/UI → frontend-ui-developer
+    ├─► Code Review/Quality → code-quality-reviewer
+    ├─► Security Audit → security-auditor
+    ├─► LangGraph Workflow → workflow-architect
+    ├─► LLM Integration → llm-integrator
+    ├─► Embeddings/Vector → data-pipeline-engineer
+    ├─► Database Schema → database-engineer
+    ├─► Test Generation → test-generator
+    ├─► Bug Investigation → debug-investigator
+    ├─► UX Research → ux-researcher
+    ├─► UI Design → rapid-ui-designer
+    └─► System Design Review → system-design-reviewer
+```
+
+## Multi-Agent Coordination
+
+For complex tasks, coordinate multiple agents:
+
+**Example**: Full-stack feature
+1. `backend-system-architect` - Design API
+2. `frontend-ui-developer` - Build UI
+3. `test-generator` - Create tests
+4. `code-quality-reviewer` - Validate quality
+
+**Example**: AI integration
+1. `workflow-architect` - Design workflow
+2. `llm-integrator` - Integrate LLM
+3. `data-pipeline-engineer` - Handle embeddings
+4. `code-quality-reviewer` - Review implementation
+
+## Agent Boundaries
+
+Respect agent boundaries from `.claude/agent-registry.json`:
+
+- **Allowed paths**: Check `agent.boundaries.allowed`
+- **Forbidden paths**: Check `agent.boundaries.forbidden`
+- **Handoff patterns**: Check `agent.handoff_to`
+
+## Model Selection
+
+Use model preferences from agent registry:
+
+- **Simple tasks**: Haiku (cost-effective)
+- **Standard tasks**: Sonnet (balanced)
+- **Complex tasks**: Opus (highest quality)
+
+## Workflow Composition
+
+Before creating ad-hoc coordination:
+
+1. Check `.claude/workflows/` for pre-composed solutions
+2. Use composed workflows (60-80% token savings)
+3. Record new workflows for future use
+
+## MCP Tool Usage
+
+Each agent has recommended MCP tools (see `.mcp.json` agent_mcp_mapping):
+
+- **backend-system-architect**: context7, postgres-mcp, pg-aiguide
+- **frontend-ui-developer**: context7, playwright
+- **workflow-architect**: sequential-thinking, memory, context7
+- **llm-integrator**: langfuse, context7, memory
+
+**See**: `.cursor/rules/mcp-usage.mdc` for detailed MCP usage guide.
+
+## Example: Agent Selection
+
+**User**: "Create a user registration endpoint"
+
+**Process**:
+1. Intent: Backend API endpoint
+2. Match: `backend-system-architect` (confidence: 0.95)
+3. Skills needed: `api-design-framework`, `security-checklist`
+4. MCPs needed: context7 (for FastAPI docs), postgres-mcp (for schema)
+5. Check workflow: `secure-api-endpoint` exists!
+6. Use workflow instead of ad-hoc coordination

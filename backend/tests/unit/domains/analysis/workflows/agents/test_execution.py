@@ -8,7 +8,12 @@ import pytest
 
 from app.core.exceptions import AgentError
 from app.core.types import AnalysisID
-from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.execution import (
+    AgentExecutionConfig,
+    AgentExecutionParams,
+    _execute_agent_retry_loop,
+    run_agent_with_tracking,
+)
 
 
 @pytest.mark.unit
@@ -353,3 +358,251 @@ async def test_agent_execution_handles_timeouterror(
 
         with pytest.raises(TimeoutError, match="exceeded timeout"):
             await _run_agent_with_tracking_impl(params=params, config=config)
+
+
+@pytest.mark.asyncio
+@patch("app.core.agent_config.get_stage_name", return_value="trends_analysis")
+@patch(
+    "app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock
+)
+@patch(
+    "app.domains.analysis.workflows.agents.result_processing.save_agent_finding",
+    new_callable=AsyncMock,
+)
+@patch("app.domains.analysis.workflows.agents.execution.get_min_agent_findings", return_value=1)
+async def test_trend_validator_empty_trends_but_has_insights_passes_validation(
+    mock_min_findings,
+    mock_save_finding,
+    mock_emit_progress,
+    mock_get_stage_name,
+    mock_session,
+):
+    """Test that trend_validator with empty trends but other insights passes validation.
+
+    This test verifies the fix for issue where trend_validator correctly returns
+    empty trend_assessments for meta-content articles but validation incorrectly fails.
+    When other insights (future_outlook, recommendation) exist, validation should pass
+    and findings should be marked with status='no_data'.
+    """
+    from app.domains.analysis.workflows.agents.execution import (
+        AgentExecutionConfig,
+        AgentExecutionParams,
+        _execute_agent_retry_loop,
+    )
+    from langchain_core.messages import AIMessage
+
+    analysis_id = AnalysisID(str(uuid4()))
+    mock_agent = MagicMock()
+    mock_agent.astream = None  # Use ainvoke path
+
+    # Mock agent to return findings with empty trends but other insights
+    findings_with_other_insights = {
+        "trend_assessments": [],  # Empty - no technologies to validate
+        "modern_alternatives": [],
+        "future_outlook": "This article discusses development practices, not specific technologies.",
+        "recommendation": "Use key_insights agent for meta-content analysis.",
+        "confidence_score": 0.85,
+    }
+
+    # Mock invoke_agent to return structured response
+    with patch(
+        "app.domains.analysis.workflows.agents.execution.invoke_agent", new_callable=AsyncMock
+    ) as mock_invoke, patch(
+        "app.domains.analysis.workflows.agents.execution.extract_structured_response",
+        return_value=findings_with_other_insights,
+    ), patch(
+        "app.domains.analysis.workflows.agents.execution.validate_specificity_score",
+        return_value=type(
+            "ValidationCheckResult",
+            (),
+            {"passed": True, "should_retry": False, "should_fail": False},
+        )(),
+    ), patch(
+        "app.domains.analysis.workflows.agents.execution.run_self_correction_loop",
+        new_callable=AsyncMock,
+        return_value=type(
+            "CorrectionResult",
+            (),
+            {
+                "should_continue_loop": False,
+                "updated_messages": None,
+                "final_output": findings_with_other_insights,
+            },
+        )(),
+    ):
+        mock_invoke.return_value = {
+            "structured_response": AIMessage(content="mock response"),
+        }
+
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="Meta-content article about development practices",
+            content_type="article",
+            analysis_id=analysis_id,
+            agent_type="trend_validator",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
+        # Mock input messages
+        input_messages = {"messages": [{"role": "user", "content": "test"}]}
+
+        # Execute agent retry loop
+        result_findings = await _execute_agent_retry_loop(
+            params=params,
+            config=config,
+            input_messages=input_messages,
+            max_retries=1,
+            min_score=0.70,
+            min_findings=1,
+            self_correction_ctx=type("Context", (), {})(),
+            validator=None,
+            use_compact_prompts=False,
+        )
+
+        # Verify findings contain the other insights
+        assert result_findings.get("future_outlook") == "This article discusses development practices, not specific technologies."
+        assert result_findings.get("recommendation") == "Use key_insights agent for meta-content analysis."
+        
+        # With improved counting, insights_count should be 2 (future_outlook + recommendation)
+        # So validation passes normally without needing the special case
+        # The status='no_data' is only added in the special case when insights_count=0
+        # In normal flow, status is set during aggregation based on agent_statuses
+        # Verify the findings are returned successfully (validation passed)
+        assert "trend_assessments" in result_findings
+        assert result_findings["trend_assessments"] == []
+
+
+@pytest.mark.asyncio
+@patch("app.core.agent_config.get_stage_name", return_value="trends_analysis")
+@patch(
+    "app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock
+)
+@patch("app.domains.analysis.workflows.agents.execution.get_min_agent_findings", return_value=1)
+async def test_trend_validator_empty_trends_no_other_insights_fails_validation(
+    mock_min_findings,
+    mock_emit_progress,
+    mock_get_stage_name,
+    mock_session,
+):
+    """Test that trend_validator with completely empty findings still fails validation.
+
+    This ensures we only allow empty trends when other insights exist.
+    """
+    from app.domains.analysis.workflows.agents.execution import (
+        AgentExecutionConfig,
+        AgentExecutionParams,
+        _execute_agent_retry_loop,
+    )
+    from langchain_core.messages import AIMessage
+
+    analysis_id = AnalysisID(str(uuid4()))
+    mock_agent = MagicMock()
+    mock_agent.astream = None
+
+    # Mock agent to return completely empty findings
+    empty_findings = {
+        "trend_assessments": [],
+        "modern_alternatives": [],
+        "future_outlook": "",
+        "recommendation": "",
+        "confidence_score": 0.50,
+    }
+
+    with patch(
+        "app.domains.analysis.workflows.agents.execution.invoke_agent", new_callable=AsyncMock
+    ) as mock_invoke, patch(
+        "app.domains.analysis.workflows.agents.execution.extract_structured_response",
+        return_value=empty_findings,
+    ):
+        mock_invoke.return_value = {
+            "structured_response": AIMessage(content="mock response"),
+        }
+
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="Test content",
+            content_type="article",
+            analysis_id=analysis_id,
+            agent_type="trend_validator",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
+        input_messages = {"messages": [{"role": "user", "content": "test"}]}
+
+        # Should raise ValueError after retries exhausted
+        with pytest.raises(ValueError) as exc_info:
+            await _execute_agent_retry_loop(
+                params=params,
+                config=config,
+                input_messages=input_messages,
+                max_retries=1,
+                min_score=0.70,
+                min_findings=1,
+                self_correction_ctx=type("Context", (), {})(),
+                validator=None,
+                use_compact_prompts=False,
+            )
+
+        # Verify error message indicates insufficient findings
+        assert "findings" in str(exc_info.value).lower()
+
+
+@pytest.mark.asyncio
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch(
+    "app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock
+)
+async def test_execute_agent_retry_loop_handles_skipped_status(
+    mock_emit_progress,
+    mock_get_stage_name,
+    mock_session,
+):
+    """Test that _execute_agent_retry_loop handles skipped status from circuit breaker.
+
+    Issue #610: When invoke_agent returns skipped status due to circuit breaker,
+    the retry loop should return early without trying to parse or validate.
+    """
+    analysis_id = AnalysisID(str(uuid4()))
+    mock_agent = MagicMock()
+
+    # Mock invoke_agent to return skipped status (circuit breaker open)
+    skipped_result = {
+        "status": "skipped",
+        "agent_type": "tech_comparator",
+        "skipped_reason": "Circuit breaker is OPEN - LLM API unavailable",
+    }
+
+    with patch(
+        "app.domains.analysis.workflows.agents.execution._invoke_agent_with_timeout",
+        new_callable=AsyncMock,
+        return_value=skipped_result,
+    ):
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="Test content",
+            content_type="article",
+            analysis_id=analysis_id,
+            agent_type="tech_comparator",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
+        input_messages = {"messages": [{"role": "user", "content": "test"}]}
+
+        # Execute retry loop - should return skipped result immediately
+        result = await _execute_agent_retry_loop(
+            params=params,
+            config=config,
+            input_messages=input_messages,
+            max_retries=1,
+            min_score=0.70,
+            min_findings=1,
+            self_correction_ctx=type("Context", (), {})(),
+            validator=None,
+            use_compact_prompts=False,
+        )
+
+        # Should return skipped status dict without validation
+        assert isinstance(result, dict)
+        assert result["status"] == "skipped"
+        assert result["agent_type"] == "tech_comparator"
+        assert "skipped_reason" in result

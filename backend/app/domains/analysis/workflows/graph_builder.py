@@ -70,6 +70,7 @@ from app.domains.analysis.workflows.tier_types import (
     TIER_3_AGENTS,
 )
 from app.shared.services.extraction.jina_reader import _is_error_page
+from app.shared.services.extraction.quality_validator import LOG_TITLE_MAX_LEN
 
 logger = get_logger(__name__)
 
@@ -278,6 +279,32 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
         content=raw_content,
         content_type=content_type,
     )
+
+    # Update analysis.title from extraction_metadata (Fix for "Untitled" issue)
+    # Title exists in extraction_metadata but wasn't being persisted to analysis.title
+    if title:
+        # Clean title: strip "Title:" prefix and whitespace (common extraction artifact)
+        import re
+
+        cleaned_title = re.sub(r"^title:\s*", "", title, flags=re.IGNORECASE).strip()
+
+        # Only save if title is meaningful (not empty after cleaning)
+        if cleaned_title and cleaned_title.lower() != "untitled" and analysis_id:
+            session_factory = get_session_factory()
+            async with session_factory() as session:
+                repo = AnalysisRepository(session)
+                analysis = await repo.get_by_id(uuid.UUID(str(analysis_id)), validate=False)
+                if analysis and not analysis.title:
+                    # Only update if title is currently null
+                    analysis.title = cleaned_title
+                    await session.commit()
+                    logger.info(
+                        "analysis_title_updated",
+                        analysis_id=str(analysis_id),
+                        title=cleaned_title[:LOG_TITLE_MAX_LEN]
+                        if len(cleaned_title) > LOG_TITLE_MAX_LEN
+                        else cleaned_title,
+                    )
 
     # Return only updated fields, not entire state
     return {

@@ -39,6 +39,10 @@ tiktoken = "^0.12.0"
 jinja2 = "^3.1.0"
 # PDF extraction for research papers (Issue #299-304)
 pypdf = "^6.5.0"
+# Content extraction - 2026 improvements
+youtube-transcript-api = "^0.6.2"
+PyGithub = "^2.3.0"
+trafilatura = "^1.6.3"
 # Langfuse observability (replaces LangSmith - Issue #372)
 langfuse = "3.11.2"
 orjson = "^3.11.5"
@@ -72,6 +76,7 @@ pytest-vcr = "^1.0.2"
 vcrpy = "^8.1.0"
 pytest-httpx = "^0.36.0"
 pip-audit = "^2.10.0"
+types-cachetools = "^6.2.0.20251022"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

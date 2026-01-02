@@ -1,0 +1,57 @@
+---
+description: Database schema design, migrations, and query optimization
+globs: ["backend/alembic/**", "backend/app/models/**"]
+alwaysApply: false
+priority: 7
+---
+
+# Database Schema Designer Skill
+
+**Reference**: See `.claude/skills/database-schema-designer/` for full skill definition.
+
+## Progressive Loading
+
+1. **Discovery**: Read `.claude/skills/database-schema-designer/capabilities.json` (~100 tokens)
+2. **Overview**: Read `.claude/skills/database-schema-designer/SKILL.md` (~500 tokens)
+3. **Templates**: Use `templates/` for migration patterns
+
+## What This Skill Provides
+
+- Schema design patterns
+- Normalization strategies
+- Indexing strategies (B-tree, HNSW for vectors)
+- Alembic migration patterns (always reversible)
+- Query optimization techniques
+
+## When to Use
+
+- Designing database schemas
+- Creating Alembic migrations
+- Optimizing slow queries
+- Adding indexes
+- Planning schema changes
+
+## Critical Requirements
+
+- **Always reversible migrations** - Both `upgrade()` and `downgrade()` must be implemented
+- **Index naming**: `ix_<table>_<column>` for indexes, `uq_<table>_<column>` for unique
+
+## Related Agents
+
+- `database-engineer` - Primary agent for database work
+- `backend-system-architect` - For schema design in API context
+
+## MCP Tools
+
+- `pg-aiguide` - PostgreSQL expertise
+- `postgres-mcp` - Database query testing
+
+## Example Usage
+
+**Task**: "Create migration for new table"
+
+**Approach**:
+1. Read `capabilities.json` to understand migration patterns
+2. Read `SKILL.md#migration-patterns` for reversible migrations
+3. Use `templates/` for migration structure
+4. **CRITICAL**: Implement both upgrade and downgrade

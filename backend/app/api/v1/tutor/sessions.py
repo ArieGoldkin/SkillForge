@@ -2,10 +2,10 @@
 
 import asyncio
 import uuid
-from typing import Annotated
+from typing import Annotated, Any, ClassVar
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 
 from app.api.schemas.errors import ErrorResponse
 from app.core.logging import get_logger
@@ -17,10 +17,36 @@ from app.domains.tutor.schemas.api import (
     UpdateSessionRequest,
 )
 from app.domains.tutor.services.state_service import build_tutor_state
-from app.domains.tutor.workflows.graph_builder import tutor_workflow
+from app.domains.tutor.workflows.graph_builder import create_tutor_workflow
 
 router = APIRouter()
 logger = get_logger(__name__)
+
+
+class TutorWorkflowCache:
+    """Cache for tutor workflow instances keyed by checkpointer type.
+
+    Issue #602: Support checkpointer injection from FastAPI app.state.
+    """
+
+    _instances: ClassVar[dict[str, Any]] = {}
+
+    @classmethod
+    def get_or_create(cls, checkpointer: Any = None) -> Any:
+        """Get cached workflow instance or create new one."""
+        key = type(checkpointer).__name__ if checkpointer else "default"
+        if key not in cls._instances:
+            cls._instances[key] = create_tutor_workflow(checkpointer=checkpointer)
+        return cls._instances[key]
+
+
+def get_tutor_workflow(request: Request) -> Any:
+    """Get tutor workflow with checkpointer from app.state.
+
+    Issue #602: Injects checkpointer from app.state for AsyncPostgresSaver.
+    """
+    checkpointer = getattr(request.app.state, "checkpointer", None)
+    return TutorWorkflowCache.get_or_create(checkpointer=checkpointer)
 
 
 def _format_messages(messages: list) -> list[dict[str, object]]:
@@ -46,6 +72,7 @@ def _format_messages(messages: list) -> list[dict[str, object]]:
 )
 async def create_session(
     request: CreateSessionRequest,
+    fastapi_request: Request,
     repo: Annotated[ITutorRepository, Depends(get_tutor_repository)],
 ) -> CreateSessionResponse:
     """Create a new tutoring session.
@@ -55,6 +82,7 @@ async def create_session(
 
     Args:
         request: CreateSessionRequest with optional analysis_id and user_level
+        fastapi_request: FastAPI Request to access app.state.checkpointer
         repo: Tutor repository dependency
 
     Returns:
@@ -85,8 +113,10 @@ async def create_session(
         )
 
         # Start workflow asynchronously (syllabus generation)
+        # Issue #602: Get workflow with checkpointer from app.state
+        workflow = get_tutor_workflow(fastapi_request)
         config = {"configurable": {"thread_id": str(session.id)}}
-        task = asyncio.create_task(tutor_workflow.ainvoke(initial_state, config=config))
+        task = asyncio.create_task(workflow.ainvoke(initial_state, config=config))
         # Store task reference to prevent garbage collection (RUF006)
         _ = task  # Task will complete naturally
 

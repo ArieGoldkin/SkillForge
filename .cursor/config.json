@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Cursor IDE configuration mapping to Claude agents and skills",
+  "version": "1.0.0",
+  "last_updated": "2025-12-31",
+  
+  "agent_mapping": {
+    "backend": {
+      "primary_agent": "backend-system-architect",
+      "rule_file": ".cursor/rules/agents/backend-system-architect.mdc",
+      "full_definition": ".claude/agents/backend-system-architect.md",
+      "capabilities": [
+        "api-design",
+        "database-schema",
+        "authentication",
+        "authorization",
+        "rate-limiting"
+      ]
+    },
+    "frontend": {
+      "primary_agent": "frontend-ui-developer",
+      "rule_file": ".cursor/rules/agents/frontend-ui-developer.mdc",
+      "full_definition": ".claude/agents/frontend-ui-developer.md",
+      "capabilities": [
+        "react-components",
+        "typescript-frontend",
+        "state-management",
+        "accessibility"
+      ]
+    },
+    "testing": {
+      "primary_agent": "test-generator",
+      "rule_file": ".cursor/rules/agents/test-generator.mdc",
+      "full_definition": ".claude/agents/test-generator.md",
+      "capabilities": [
+        "unit-testing",
+        "integration-testing",
+        "coverage-analysis"
+      ]
+    },
+    "quality": {
+      "primary_agent": "code-quality-reviewer",
+      "rule_file": ".cursor/rules/agents/code-quality-reviewer.mdc",
+      "full_definition": ".claude/agents/code-quality-reviewer.md",
+      "capabilities": [
+        "code-review",
+        "security-audit",
+        "linting",
+        "test-coverage"
+      ]
+    },
+    "workflow": {
+      "primary_agent": "workflow-architect",
+      "rule_file": ".cursor/rules/agents/workflow-architect.mdc",
+      "full_definition": ".claude/agents/workflow-architect.md",
+      "capabilities": [
+        "langgraph",
+        "multi-agent",
+        "state-management",
+        "checkpointing"
+      ]
+    }
+  },
+  
+  "skill_mapping": {
+    "api_design": {
+      "skill": "api-design-framework",
+      "rule_file": ".cursor/rules/skills/api-design-framework.mdc",
+      "path": ".claude/skills/api-design-framework",
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/"
+      }
+    },
+    "langgraph": {
+      "skill": "langgraph-workflows",
+      "rule_file": ".cursor/rules/skills/langgraph-workflows.mdc",
+      "path": ".claude/skills/langgraph-workflows",
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/"
+      }
+    },
+    "testing": {
+      "skill": "testing-strategy-builder",
+      "rule_file": ".cursor/rules/skills/testing-strategy-builder.mdc",
+      "path": ".claude/skills/testing-strategy-builder",
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "references": "references/",
+        "templates": "templates/"
+      }
+    },
+    "security": {
+      "skill": "security-checklist",
+      "rule_file": ".cursor/rules/skills/security-checklist.mdc",
+      "path": ".claude/skills/security-checklist",
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "checklists": "checklists/",
+        "references": "references/"
+      }
+    },
+    "type_safety": {
+      "skill": "type-safety-validation",
+      "rule_file": ".cursor/rules/skills/type-safety-validation.mdc",
+      "path": ".claude/skills/type-safety-validation",
+      "progressive_load": {
+        "discovery": "capabilities.json",
+        "overview": "SKILL.md",
+        "templates": "templates/"
+      }
+    }
+  },
+  
+  "quick_reference": {
+    "agent_registry": ".claude/agent-registry.json",
+    "delegation_guide": ".cursor/rules/agent-delegation.mdc",
+    "skill_usage_guide": ".cursor/rules/skill-usage.mdc",
+    "mcp_usage_guide": ".cursor/rules/mcp-usage.mdc",
+    "rules_readme": ".cursor/rules/README.md",
+    "workflows": ".claude/workflows/",
+    "mcp_config": ".mcp.json"
+  },
+  
+  "mcp_servers": {
+    "always_available": [
+      "memory",
+      "sequential-thinking",
+      "context7"
+    ],
+    "on_demand": [
+      "postgres-mcp",
+      "playwright",
+      "langfuse",
+      "pg-aiguide"
+    ],
+    "config_file": ".mcp.json"
+  },
+  
+  "workflow_examples": {
+    "secure_api": {
+      "workflow": "secure-api-endpoint",
+      "description": "Create a secure API endpoint with authentication, validation, and tests",
+      "primary_agent": "backend-system-architect",
+      "validation_agent": "code-quality-reviewer",
+      "skills": [
+        "api-design-framework",
+        "security-checklist",
+        "testing-strategy-builder"
+      ]
+    },
+    "full_stack": {
+      "workflow": "full-stack-feature",
+      "description": "Build a complete feature with backend API and frontend UI",
+      "agents": [
+        "backend-system-architect",
+        "frontend-ui-developer"
+      ],
+      "skills": [
+        "api-design-framework",
+        "react-server-components-framework",
+        "type-safety-validation"
+      ]
+    },
+    "ai_integration": {
+      "workflow": "ai-integration",
+      "description": "Add AI/LLM capabilities to the application",
+      "agents": [
+        "workflow-architect",
+        "llm-integrator",
+        "data-pipeline-engineer"
+      ],
+      "validation_agent": "code-quality-reviewer",
+      "skills": [
+        "ai-native-development",
+        "streaming-api-patterns",
+        "observability-monitoring"
+      ]
+    }
+  }
+}

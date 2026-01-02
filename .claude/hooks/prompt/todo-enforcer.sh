@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Todo Enforcer - Reminds about todo tracking for complex tasks
 # Hook: UserPromptSubmit
 

@@ -44,9 +44,51 @@ if _env_file.exists():
 # DEBUG: Check if Langfuse is configured for tracing
 if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
     print(f"✓ Langfuse configured (host: {os.getenv('LANGFUSE_HOST', 'default')})")
+    _LANGFUSE_AVAILABLE = True
 else:
     print("✗ Langfuse credentials not set - traces will not be sent")
     print("  Set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY in .env to enable tracing")
+    _LANGFUSE_AVAILABLE = False
+
+
+# ============================================================================
+# Langfuse Trace Context Fixture
+# ============================================================================
+
+
+@pytest.fixture(autouse=True)
+def langfuse_trace_context(request):
+    """Create a Langfuse trace context for each integration test.
+
+    This fixture ensures that all LLM calls made during integration tests
+    have an active trace span, eliminating the "No active span in current context"
+    warning. Each test gets its own trace with the test name as the trace name.
+
+    The trace is automatically created before the test and flushed after.
+    """
+    if not _LANGFUSE_AVAILABLE:
+        yield  # No-op if Langfuse not configured
+        return
+
+    try:
+        from langfuse import Langfuse
+
+        langfuse = Langfuse()
+        # Create a trace for this test
+        trace = langfuse.trace(
+            name=f"test:{request.node.name}",
+            metadata={
+                "test_module": request.node.module.__name__ if request.node.module else "unknown",
+                "test_file": str(request.node.fspath),
+            },
+            tags=["integration-test"],
+        )
+        yield trace
+        # Flush traces after test completes
+        langfuse.flush()
+    except Exception:
+        # If Langfuse fails, don't break tests
+        yield
 
 
 # ============================================================================

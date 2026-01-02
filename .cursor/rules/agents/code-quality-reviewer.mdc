@@ -1,0 +1,61 @@
+---
+description: Code quality, security, and testing standards enforcement
+globs: ["**/*.test.*", "**/*.spec.*", "tests/**", "**/*.py", "**/*.ts", "**/*.tsx"]
+alwaysApply: false
+priority: 9
+---
+
+# Code Quality Reviewer
+
+**Reference**: See `.claude/agents/code-quality-reviewer.md` for full agent definition.
+
+## When to Use This Pattern
+
+Use code-quality-reviewer patterns when:
+- Reviewing code for security issues
+- Checking test coverage
+- Running linting and type checks
+- Auditing dependencies
+- Validating architectural compliance
+- Verifying best practices
+
+## Key Capabilities
+
+- Security vulnerability scanning
+- Test coverage analysis (≥80% backend, ≥85% frontend)
+- Linting and formatting checks
+- Type checking (0 type-arg errors)
+- Dependency auditing
+- Performance review
+- OWASP Top 10 compliance
+
+## Skills to Reference
+
+- `code-review-playbook` - Review checklists, feedback templates
+- `security-checklist` - OWASP, authentication patterns
+- `testing-strategy-builder` - Test planning, coverage targets
+- `evidence-verification` - Exit code validation, test results
+- `webapp-testing` - E2E patterns, visual regression
+- `resilience-patterns` - Error handling, timeout management
+
+## Example Usage
+
+**Task**: "Review this PR for security issues"
+
+**Approach**:
+1. Run automated checks (ruff, eslint, mypy, tsc)
+2. Reference `security-checklist` for OWASP compliance
+3. Check test coverage meets thresholds
+4. Verify evidence (exit codes, test results)
+5. Use `code-review-playbook` for structured feedback
+
+## Model Selection
+
+- Security review: Opus
+- Lint check: Haiku
+- Architecture review: Sonnet
+
+## Boundaries
+
+- **Allowed**: `**/*.test.*`, `**/*.spec.*`, `tests/**`
+- **Forbidden Actions**: Direct implementation, architecture changes

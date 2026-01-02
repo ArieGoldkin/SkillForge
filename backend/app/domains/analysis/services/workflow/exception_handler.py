@@ -10,6 +10,7 @@ from app.core.logging import get_logger
 from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.events import WorkflowEventEmitter
 from app.domains.analysis.services.persistence import StatusUpdater
+from app.domains.analysis.services.persistence.error_recorder import error_recorder
 
 logger = get_logger(__name__)
 
@@ -100,6 +101,42 @@ async def handle_workflow_exception(
             )
         # Re-raise to propagate (explicit re-raise for ruff PLE0704)
         raise exc
+    # Handle TimeoutError explicitly (H1: TimeoutError not wrapped for SSE)
+    # Issue #602: TimeoutError should emit SSE error event with timeout context
+    if isinstance(exc, TimeoutError):
+        logger.error(
+            "workflow_task_timeout",
+            analysis_id=str(analysis_id),
+            error=str(exc),
+            error_type="TimeoutError",
+            context="workflow_task_runner",
+            note="Workflow timed out - check timeout configuration or LLM response times",
+        )
+        # Update status
+        status_updater = StatusUpdater()
+        await status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
+
+        # Record error to database (H2: Error details not persisted)
+        try:
+            await error_recorder.record(
+                analysis_id=str(analysis_id),
+                error_code="TIMEOUT",
+                error_message=f"Workflow timed out: {exc!s}",
+                stage="workflow",
+            )
+        except Exception as recording_error:  # noqa: BLE001 - Graceful degradation
+            logger.debug(
+                "error_recorder_unavailable",
+                analysis_id=str(analysis_id),
+                error=str(recording_error),
+            )
+
+        # Emit SSE error event for TimeoutError
+        event_emitter = WorkflowEventEmitter()
+        await event_emitter.emit_timeout_error(analysis_id, exc)
+        # Don't re-raise - workflow completed with timeout error
+        return
+
     # Other exception - handle as error
     logger.error(
         "workflow_task_failed",

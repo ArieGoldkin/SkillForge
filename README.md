@@ -130,10 +130,10 @@ git clone https://github.com/ArieGoldkin/SkillForge.git
 cd SkillForge
 
 # 2. Start services with Docker Compose
-docker-compose up -d
+docker compose --env-file backend/.env up -d
 
 # 3. Verify services are running
-docker-compose ps
+docker compose --env-file backend/.env ps
 
 # 4. Open browser
 # Backend API: http://localhost:8500/docs
@@ -148,7 +148,7 @@ git clone https://github.com/ArieGoldkin/SkillForge.git
 cd SkillForge
 
 # 2. Start PostgreSQL with Docker Compose
-docker-compose up -d postgres
+docker compose --env-file backend/.env up -d postgres
 
 # 3. Start backend (in backend directory)
 cd backend
