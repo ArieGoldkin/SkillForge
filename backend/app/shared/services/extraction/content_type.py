@@ -81,9 +81,9 @@ def is_youtube_url(url: str) -> bool:
         True if URL matches YouTube patterns
 
     """
-    from app.shared.services.extraction.youtube_extractor import extract_video_id
+    from app.shared.services.extraction.youtube_extractor import extract_youtube_video_id
 
-    return extract_video_id(url) is not None
+    return extract_youtube_video_id(url) is not None
 
 
 def is_github_url(url: str) -> bool:
@@ -96,6 +96,6 @@ def is_github_url(url: str) -> bool:
         True if URL matches GitHub patterns
 
     """
-    from app.shared.services.extraction.github_extractor import extract_repo_info
+    from app.shared.services.extraction.github_extractor import extract_github_repo_info
 
-    return extract_repo_info(url) is not None
+    return extract_github_repo_info(url) is not None

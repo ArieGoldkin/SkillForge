@@ -12,10 +12,10 @@ try:
     from github.Repository import Repository
 except ImportError:
     # Fallback if PyGithub is not installed
-    Github = None
-    GithubException = Exception
-    ContentFile = None
-    Repository = None
+    Github = None  # type: ignore[assignment, misc]
+    GithubException = Exception  # type: ignore[assignment, misc]
+    ContentFile = None  # type: ignore[assignment, misc]
+    Repository = None  # type: ignore[assignment, misc]
 
 from app.core.config import settings
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
@@ -23,6 +23,9 @@ from app.core.logging import get_logger
 from app.core.types import ExtractionResult
 
 logger = get_logger(__name__)
+
+# HTTP status codes
+HTTP_NOT_FOUND = 404
 
 # GitHub URL pattern
 GITHUB_URL_PATTERN = re.compile(
@@ -75,7 +78,8 @@ class GitHubExtractor:
     def __init__(self) -> None:
         """Initialize GitHub extractor."""
         if Github is None:
-            raise ImportError("PyGithub is not installed. Install it with: poetry add PyGithub")
+            msg = "PyGithub is not installed. Install it with: poetry add PyGithub"
+            raise ImportError(msg)
 
         # Use GitHub token if available (increases rate limits)
         github_token = getattr(settings, "GITHUB_TOKEN", None)
@@ -134,7 +138,7 @@ class GitHubExtractor:
                     readme_length=len(readme_content),
                 )
             except GithubException as e:
-                if e.status == 404:
+                if e.status == HTTP_NOT_FOUND:
                     logger.warning(
                         "github_no_readme",
                         owner=owner,
@@ -187,7 +191,7 @@ class GitHubExtractor:
             }
 
         except GithubException as e:
-            if e.status == 404:
+            if e.status == HTTP_NOT_FOUND:
                 error_msg = f"Repository not found: {url}"
                 logger.exception(
                     "github_repo_not_found",

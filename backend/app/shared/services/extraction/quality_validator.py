@@ -18,6 +18,20 @@ MAX_WORD_COUNT = 500000  # Maximum words (detect if we got whole site)
 MIN_TITLE_LENGTH = 5
 MAX_TITLE_LENGTH = 200
 
+# Quality score thresholds
+TITLE_VALID_THRESHOLD = 0.7  # Minimum score for valid title
+LENGTH_VALID_THRESHOLD = 0.5  # Minimum length score
+STRUCTURE_VALID_THRESHOLD = 0.6  # Minimum structure score
+COMPLETENESS_THRESHOLD = 0.8  # Minimum completeness score
+OVERALL_QUALITY_THRESHOLD = 0.8  # 80% overall threshold
+INCOMPLETE_CONTENT_SCORE = 0.7  # Score for potentially truncated content
+LOG_TITLE_MAX_LEN = 100  # Max title length for logging
+
+# Content structure thresholds
+MIN_LINES_FOR_ARTICLE = 3  # Minimum lines for valid article
+MIN_PARAGRAPH_BREAKS = 2  # Minimum blank lines for paragraph structure
+MIN_CONTENT_LENGTH_FOR_TRUNCATION = 500  # Min length to check for truncation
+
 # Error page indicators
 ERROR_PAGE_INDICATORS = [
     "404",
@@ -110,13 +124,13 @@ def validate_content_structure(content: str) -> float:
         return 0.0
 
     lines = content.split("\n")
-    if len(lines) < 3:
+    if len(lines) < MIN_LINES_FOR_ARTICLE:
         # Too few lines - likely incomplete
         return 0.3
 
     # Check for paragraph structure (blank lines)
     blank_lines = sum(1 for line in lines if not line.strip())
-    if blank_lines < 2:
+    if blank_lines < MIN_PARAGRAPH_BREAKS:
         # No paragraph breaks - might be single block
         return 0.6
 
@@ -144,7 +158,6 @@ def validate_content_relevance(content: str, url: str) -> float:
         return 0.5  # Can't validate
 
     content_lower = content.lower()
-    url_lower = url.lower()
 
     # Extract domain from URL
     try:
@@ -162,8 +175,8 @@ def validate_content_relevance(content: str, url: str) -> float:
             if main_domain and main_domain in content_lower:
                 return 1.0
 
-    except Exception:  # noqa: BLE001 - Graceful degradation
-        pass
+    except Exception:  # noqa: BLE001 - Graceful degradation for URL parsing
+        logger.debug("url_parsing_failed_for_relevance_check", url=url)
 
     # Check for common error page patterns
     error_patterns = [
@@ -206,9 +219,9 @@ def validate_extraction_completeness(content: str) -> float:
     # Look for sentence-ending punctuation
     has_ending = any(last_part.rstrip().endswith(punct) for punct in [".", "!", "?"])
 
-    if not has_ending and len(content_stripped) > 500:
+    if not has_ending and len(content_stripped) > MIN_CONTENT_LENGTH_FOR_TRUNCATION:
         # Long content without sentence ending - might be truncated
-        return 0.7
+        return INCOMPLETE_CONTENT_SCORE
 
     # Content appears complete
     return 1.0
@@ -228,9 +241,13 @@ def calculate_quality_score(
         Dictionary with quality scores and flags
 
     """
-    title = result.get("title")
-    content = result.get("content", "")
-    word_count = result.get("word_count", 0)
+    # Extract and type-narrow values from result dict
+    title_raw = result.get("title")
+    title = str(title_raw) if title_raw is not None else None
+    content_raw = result.get("content", "")
+    content = str(content_raw) if content_raw else ""
+    word_count_raw = result.get("word_count", 0)
+    word_count = int(word_count_raw) if isinstance(word_count_raw, (int, float)) else 0
 
     # Calculate individual scores
     title_score = validate_title_quality(title)
@@ -250,9 +267,11 @@ def calculate_quality_score(
     )
 
     # Quality flags
-    title_valid = title_score >= 0.7
-    content_valid = length_score >= 0.5 and structure_score >= 0.6
-    is_complete = completeness_score >= 0.8
+    title_valid = title_score >= TITLE_VALID_THRESHOLD
+    content_valid = (
+        length_score >= LENGTH_VALID_THRESHOLD and structure_score >= STRUCTURE_VALID_THRESHOLD
+    )
+    is_complete = completeness_score >= COMPLETENESS_THRESHOLD
 
     return {
         "overall_score": round(overall_score, 3),
@@ -264,7 +283,7 @@ def calculate_quality_score(
         "title_valid": title_valid,
         "content_valid": content_valid,
         "is_complete": is_complete,
-        "passes_threshold": overall_score >= 0.8,  # 80% threshold
+        "passes_threshold": overall_score >= OVERALL_QUALITY_THRESHOLD,
     }
 
 
@@ -285,6 +304,11 @@ def is_acceptable_quality(
 
     """
     quality = calculate_quality_score(result, url)
-    is_acceptable = quality["overall_score"] >= min_score and quality["passes_threshold"]
+    overall_score = quality.get("overall_score", 0.0)
+    passes_threshold = quality.get("passes_threshold", False)
+    # Ensure we compare floats properly
+    score_value = float(overall_score) if isinstance(overall_score, (int, float)) else 0.0
+    threshold_passed = bool(passes_threshold)
+    is_acceptable = score_value >= min_score and threshold_passed
 
     return is_acceptable, quality

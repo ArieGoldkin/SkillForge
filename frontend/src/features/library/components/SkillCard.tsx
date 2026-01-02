@@ -7,11 +7,11 @@ import { Card, CardContent } from '@shared/components/ui/card'
 
 import { cn } from '@lib/utils'
 
+import { FailedStageDetails } from './SkillCard/FailedStageDetails'
 import { SkillCardMetadata } from './SkillCard/SkillCardMetadata'
 import { SkillCardProgress } from './SkillCard/SkillCardProgress'
 import { SkillCardTags } from './SkillCard/SkillCardTags'
 import { SkillCardThumbnail } from './SkillCard/SkillCardThumbnail'
-import { FailedStageDetails } from './SkillCard/FailedStageDetails'
 import type { SkillDifficulty, SkillStatus } from './SkillCard/types'
 
 /**
@@ -55,6 +55,27 @@ const formatStatus = (status: SkillStatus): string => {
   return labels[status]
 }
 
+interface DeleteButtonProps {
+  id: string
+  onDelete: (id: string) => void
+}
+
+function DeleteButton({ id, onDelete }: DeleteButtonProps): React.ReactNode {
+  return (
+    <button
+      type="button"
+      className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
+      onClick={(event) => {
+        event.stopPropagation()
+        onDelete(id)
+      }}
+      aria-label="Delete analysis"
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  )
+}
+
 function SkillCardBody({
   id,
   title,
@@ -75,19 +96,7 @@ function SkillCardBody({
 
   return (
     <CardContent className="p-0 relative">
-      {onDelete && (
-        <button
-          type="button"
-          className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-2 text-muted-foreground shadow-sm transition hover:text-destructive hover:bg-destructive/10"
-          onClick={(event) => {
-            event.stopPropagation()
-            onDelete(id)
-          }}
-          aria-label="Delete analysis"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      )}
+      {onDelete && <DeleteButton id={id} onDelete={onDelete} />}
       <SkillCardThumbnail title={title} thumbnail={thumbnail} />
 
       <div className="p-6 space-y-4">

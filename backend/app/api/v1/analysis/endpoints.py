@@ -162,7 +162,8 @@ def _handle_task_completion(
                             await session.commit()
 
                 # Schedule the status update as a background task
-                asyncio.create_task(mark_failed_on_exception())
+                _task = asyncio.create_task(mark_failed_on_exception())
+                del _task  # Fire-and-forget, reference not needed
 
 
 @router.get(
@@ -191,7 +192,7 @@ async def stream_analysis_progress_endpoint(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def create_analysis(
+async def create_analysis(  # noqa: PLR0915 - Complex workflow orchestration
     request: AnalyzeRequest,
     fastapi_request: Request,
     response: Response,
@@ -345,7 +346,6 @@ async def create_analysis(
             orchestrator = get_orchestrator(fastapi_request)
 
             # Wrap workflow execution with timeout to prevent stuck analyses
-            # Issue #XXX: Workflows hanging without timeout detection
             async def run_with_timeout() -> None:
                 from app.core.timeout_config import WORKFLOW_TIMEOUT
 
@@ -353,7 +353,7 @@ async def create_analysis(
                     async with asyncio.timeout(WORKFLOW_TIMEOUT):
                         await orchestrator.run(
                             analysis_uuid, url_str, request.skill_level, request.analysis_mode
-                        )  # type: ignore[arg-type]
+                        )
                 except TimeoutError:
                     # Workflow exceeded timeout - mark as failed
                     logger.exception(
@@ -416,7 +416,8 @@ async def create_analysis(
                     await session.commit()
 
             # Schedule the status update as a background task
-            asyncio.create_task(mark_failed())
+            _task = asyncio.create_task(mark_failed())
+            del _task  # Fire-and-forget, reference not needed
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_uuid}/stream"
@@ -698,7 +699,7 @@ async def rerun_analysis(
                         "intermediate",  # Default skill level for rerun
                         "standard",  # Default analysis mode for rerun
                         start_from_stage="analyzing",  # Skip extraction, reuse existing content
-                    )  # type: ignore[arg-type]
+                    )
             except TimeoutError:
                 logger.exception(
                     "workflow_timeout_exceeded",
@@ -760,7 +761,7 @@ async def rerun_analysis(
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def retry_analysis(
+async def retry_analysis(  # noqa: PLR0915 - Complex retry orchestration
     analysis_id: Annotated[AnalysisID, Path(description="Analysis UUID")],
     fastapi_request: Request,
     analysis_repo: Annotated[IAnalysisRepository, Depends(get_analysis_repository)],
@@ -874,7 +875,7 @@ async def retry_analysis(
                         str(analysis.url),
                         "intermediate",  # Default skill level
                         "standard",  # Default analysis mode
-                    )  # type: ignore[arg-type]
+                    )
             except TimeoutError:
                 logger.exception(
                     "workflow_timeout_exceeded",

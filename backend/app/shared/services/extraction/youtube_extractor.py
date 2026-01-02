@@ -14,9 +14,9 @@ try:
     )
 except ImportError:
     # Fallback if youtube-transcript-api is not installed
-    YouTubeTranscriptApi = None
-    NoTranscriptFound = Exception
-    TranscriptsDisabled = Exception
+    YouTubeTranscriptApi = None  # type: ignore[assignment, misc]
+    NoTranscriptFound = Exception  # type: ignore[assignment, misc]
+    TranscriptsDisabled = Exception  # type: ignore[assignment, misc]
 
 from app.core.constants import DEFAULT_TITLE
 from app.core.exceptions import ExtractionErrorCode, JinaReaderError
@@ -74,10 +74,11 @@ class YouTubeExtractor:
     def __init__(self) -> None:
         """Initialize YouTube extractor."""
         if YouTubeTranscriptApi is None:
-            raise ImportError(
+            msg = (
                 "youtube-transcript-api is not installed. "
                 "Install it with: poetry add youtube-transcript-api"
             )
+            raise ImportError(msg)
         self.client = YouTubeTranscriptApi()
 
     async def extract_article(self, url: str) -> ExtractionResult:
@@ -127,13 +128,13 @@ class YouTubeExtractor:
                     if generated_transcripts:
                         transcript = generated_transcripts[0]
                     else:
-                        raise NoTranscriptFound(video_id, ["en"])
+                        raise NoTranscriptFound(video_id, ["en"]) from None  # type: ignore[call-arg]
 
             # Fetch the actual transcript
             transcript_data = transcript.fetch()
 
             # Combine all transcript entries into a single text
-            # Format: [{"text": "...", "start": 0.0, "duration": 2.5}, ...]
+            # Each entry is a dict with keys: text, start, duration
             transcript_text = " ".join(item["text"] for item in transcript_data)
 
             # Try to get video title from transcript metadata (if available)

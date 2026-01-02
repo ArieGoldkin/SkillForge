@@ -407,7 +407,7 @@ def _create_anthropic_model(
     if redis_cache is not None:
         anthropic_kwargs["cache"] = redis_cache
 
-    base_model = ChatAnthropic(**anthropic_kwargs)  # type: ignore[arg-type]
+    base_model = ChatAnthropic(**anthropic_kwargs)
     return _wrap_with_l1_cache(base_model, task_type)
 
 
@@ -468,7 +468,7 @@ def _create_generic_model(  # noqa: PLR0913
         model_identifier_to_use,
         model_kwargs=model_kwargs,
         **init_kwargs,
-    )  # type: ignore[call-overload]
+    )
 
     return _wrap_with_l1_cache(base_model, task_type)
 

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import type { SSEEvent } from '@/schemas/sse'
+
 import {
   collectErrorCodesFromEvents,
   collectErrorCodesFromREST,
   collectErrorCodesFromStages,
 } from '../errorCodeCollection'
-
-import type { SSEEvent } from '@/schemas/sse'
 import type { StageStatusEntry } from '../stageConfig'
 
 describe('errorCodeCollection', () => {
@@ -146,9 +146,15 @@ describe('errorCodeCollection', () => {
       const restErrorCode = 'EXTRACTION_FAILED'
 
       const allCodes = new Set<string>()
-      collectErrorCodesFromStages(stageStatuses).forEach((code) => allCodes.add(code))
-      collectErrorCodesFromEvents(events).forEach((code) => allCodes.add(code))
-      collectErrorCodesFromREST(restErrorCode).forEach((code) => allCodes.add(code))
+      collectErrorCodesFromStages(stageStatuses).forEach((code) => {
+        allCodes.add(code)
+      })
+      collectErrorCodesFromEvents(events).forEach((code) => {
+        allCodes.add(code)
+      })
+      collectErrorCodesFromREST(restErrorCode).forEach((code) => {
+        allCodes.add(code)
+      })
 
       // Should deduplicate - only one instance of EXTRACTION_FAILED
       expect(Array.from(allCodes)).toEqual(['EXTRACTION_FAILED'])
@@ -179,9 +185,15 @@ describe('errorCodeCollection', () => {
       const restErrorCode = 'QUALITY_GATE_FAILED'
 
       const allCodes = new Set<string>()
-      collectErrorCodesFromStages(stageStatuses).forEach((code) => allCodes.add(code))
-      collectErrorCodesFromEvents(events).forEach((code) => allCodes.add(code))
-      collectErrorCodesFromREST(restErrorCode).forEach((code) => allCodes.add(code))
+      collectErrorCodesFromStages(stageStatuses).forEach((code) => {
+        allCodes.add(code)
+      })
+      collectErrorCodesFromEvents(events).forEach((code) => {
+        allCodes.add(code)
+      })
+      collectErrorCodesFromREST(restErrorCode).forEach((code) => {
+        allCodes.add(code)
+      })
 
       expect(Array.from(allCodes).sort()).toEqual([
         'ANALYSIS_FAILED',

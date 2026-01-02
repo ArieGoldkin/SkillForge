@@ -98,7 +98,7 @@ class TrafilaturaExtractor:
             raise JinaReaderError(error_msg) from e
 
     def _extract_sync(self, url: str) -> ExtractionResult:
-        """Synchronous extraction using trafilatura.
+        """Extract content synchronously using trafilatura.
 
         Args:
             url: URL to extract

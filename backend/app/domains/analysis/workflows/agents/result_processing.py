@@ -241,7 +241,7 @@ def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noq
                 else 0
             )
         )
-        return insight_count
+        return insight_count  # noqa: RET504 - Explicit variable aids debugging
 
     if agent_type == "dependency_mapper":
         # Schema uses required_dependencies, optional_dependencies, core_dependencies

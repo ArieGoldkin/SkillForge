@@ -108,7 +108,7 @@ def _track_llm_cost(
             logger.debug("agent_cost_tracking_failed", error=str(e))
 
 
-async def invoke_agent(
+async def invoke_agent(  # noqa: PLR0915 - Complex agent invocation logic
     agent: Runnable,
     input_messages: dict[str, list[dict[str, str]]],
     analysis_id: AnalysisID,
