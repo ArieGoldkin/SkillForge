@@ -134,7 +134,26 @@ jobs:
         run: |
           if ! curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
             echo "Starting Langfuse stack..."
-            cd ${{ github.workspace }} && docker compose up -d langfuse-web langfuse-worker langfuse-db langfuse-clickhouse langfuse-redis langfuse-minio langfuse-minio-setup
+            cd ${{ github.workspace }}
+
+            # Create env file for Langfuse Docker services
+            cat > .env.langfuse << 'EOF'
+          LANGFUSE_POSTGRES_USER=langfuse
+          LANGFUSE_POSTGRES_PASSWORD=langfuse
+          LANGFUSE_POSTGRES_DB=langfuse
+          CLICKHOUSE_USER=default
+          CLICKHOUSE_PASSWORD=langfuse
+          LANGFUSE_REDIS_PASSWORD=redis-dev
+          MINIO_ROOT_USER=minioadmin
+          MINIO_ROOT_PASSWORD=minioadmin
+          NEXTAUTH_SECRET=eval-secret-key
+          NEXTAUTH_SALT=eval-salt
+          LANGFUSE_ENCRYPTION_KEY=eval-encryption-key
+          LANGFUSE_INIT_USER_PASSWORD=test
+          EOF
+
+            docker compose --env-file .env.langfuse up -d langfuse-web langfuse-worker langfuse-db langfuse-clickhouse langfuse-redis langfuse-minio langfuse-minio-setup
+
             echo "Waiting for Langfuse to be healthy..."
             for i in {1..30}; do
               if curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
