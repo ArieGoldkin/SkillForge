@@ -108,24 +108,47 @@ def priority_supervisor(state: WorkflowState) -> WorkflowState:
     return state
 ```
 
-## LLM-Based Supervisor
+## LLM-Based Supervisor (2026 Best Practice)
 
 ```python
+from pydantic import BaseModel, Field
+from typing import Literal
+
+# Define structured output schema
+class SupervisorDecision(BaseModel):
+    """Validated supervisor routing decision."""
+    next_agent: Literal["security", "tech", "implementation", "tutorial", "DONE"]
+    reasoning: str = Field(description="Brief explanation for routing decision")
+
 async def llm_supervisor(state: WorkflowState) -> WorkflowState:
-    """Use LLM to decide next agent."""
-    response = await llm.chat([{
-        "role": "user",
-        "content": f"""Task: {state['input']}
+    """Use LLM with structured output for reliable routing."""
+    available = [a for a in AGENTS if a not in state["agents_completed"]]
 
-Completed agents: {state['agents_completed']}
-Available agents: {list(AGENTS.keys())}
+    # Use structured output (2026 best practice)
+    decision = await llm.with_structured_output(SupervisorDecision).ainvoke(
+        f"""Task: {state['input']}
 
-Which agent should handle this next?
-Respond with just the agent name or 'DONE'."""
-    }])
+Completed: {state['agents_completed']}
+Available: {available}
 
-    next_agent = response.content.strip()
-    state["next"] = next_agent if next_agent != "DONE" else END
+Select the next agent or 'DONE' if all work is complete."""
+    )
+
+    # Validated response - no string parsing needed
+    state["next"] = END if decision.next_agent == "DONE" else decision.next_agent
+    state["routing_reasoning"] = decision.reasoning  # Track decision rationale
+    return state
+
+# Alternative: OpenAI structured output
+async def llm_supervisor_openai(state: WorkflowState) -> WorkflowState:
+    """OpenAI with strict structured output."""
+    response = await client.beta.chat.completions.parse(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        response_format=SupervisorDecision
+    )
+    decision = response.choices[0].message.parsed
+    state["next"] = END if decision.next_agent == "DONE" else decision.next_agent
     return state
 ```
 

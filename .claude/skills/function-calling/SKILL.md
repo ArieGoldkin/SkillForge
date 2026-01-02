@@ -14,15 +14,16 @@ Enable LLMs to use external tools and return structured data.
 - Building AI agents with tool use
 - Reliable JSON output from LLMs
 
-## Basic Tool Definition
+## Basic Tool Definition (2026 Best Practice)
 
 ```python
-# OpenAI format
+# OpenAI format with strict mode (2026 recommended)
 tools = [{
     "type": "function",
     "function": {
         "name": "search_documents",
         "description": "Search the document database for relevant content",
+        "strict": True,  # ← 2026: Enables structured output validation
         "parameters": {
             "type": "object",
             "properties": {
@@ -32,14 +33,19 @@ tools = [{
                 },
                 "limit": {
                     "type": "integer",
-                    "description": "Max results to return",
-                    "default": 5
+                    "description": "Max results to return"
                 }
             },
-            "required": ["query"]
+            "required": ["query", "limit"],  # All props required when strict
+            "additionalProperties": False     # ← 2026: Required for strict mode
         }
     }
 }]
+
+# Note: With strict=True:
+# - All properties must be listed in "required"
+# - additionalProperties must be False
+# - No "default" values (provide via code instead)
 ```
 
 ## Tool Execution Loop
@@ -145,6 +151,17 @@ if response.tool_calls:
     ])
 ```
 
+**⚠️ 2026 Compatibility Note:**
+```python
+# Structured outputs with strict=True may not work with parallel_tool_calls
+# If using strict mode schemas, disable parallel calls:
+response = await llm.chat(
+    messages=messages,
+    tools=tools_with_strict_true,
+    parallel_tool_calls=False  # Required for strict mode reliability
+)
+```
+
 ## Key Decisions
 
 | Decision | Recommendation |
@@ -153,6 +170,9 @@ if response.tool_calls:
 | Description length | 1-2 sentences |
 | Parameter validation | Use Pydantic/Zod |
 | Error handling | Return error as tool result |
+| **Schema mode** | **`strict: true` (2026 best practice)** |
+| Output format | Structured Outputs > JSON mode |
+| Parallel calls | Disable with strict mode |
 
 ## Common Mistakes
 

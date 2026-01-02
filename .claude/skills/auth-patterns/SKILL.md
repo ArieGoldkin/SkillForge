@@ -49,16 +49,18 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 ```
 
-## JWT Tokens
+## JWT Tokens (Access Token)
 
 ```python
 import jwt
 from datetime import datetime, timedelta
 
-def create_token(user_id: str) -> str:
+def create_access_token(user_id: str) -> str:
+    """Short-lived access token (15 min - 1 hour)."""
     payload = {
         'user_id': user_id,
-        'exp': datetime.utcnow() + timedelta(hours=1),
+        'type': 'access',
+        'exp': datetime.utcnow() + timedelta(minutes=15),  # Short-lived
         'iat': datetime.utcnow(),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
@@ -72,6 +74,69 @@ def verify_token(token: str) -> str | None:
     except jwt.InvalidTokenError:
         return None
 ```
+
+## Refresh Token Rotation (2026 Best Practice)
+
+```python
+import secrets
+from datetime import datetime, timedelta
+
+def create_refresh_token(user_id: str, db) -> str:
+    """Long-lived refresh token with rotation."""
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+    # Store hashed token in DB (never store plain tokens)
+    db.execute("""
+        INSERT INTO refresh_tokens (user_id, token_hash, expires_at, version)
+        VALUES (?, ?, ?, ?)
+    """, [user_id, token_hash, datetime.utcnow() + timedelta(days=7), 1])
+
+    return token
+
+def rotate_refresh_token(old_token: str, db) -> tuple[str, str]:
+    """Rotate refresh token on use (security best practice).
+
+    Returns: (new_access_token, new_refresh_token)
+    """
+    old_hash = hashlib.sha256(old_token.encode()).hexdigest()
+
+    # Find and invalidate old token
+    row = db.execute("""
+        SELECT user_id, version FROM refresh_tokens
+        WHERE token_hash = ? AND expires_at > NOW() AND revoked = FALSE
+    """, [old_hash]).fetchone()
+
+    if not row:
+        raise InvalidTokenError("Refresh token invalid or expired")
+
+    user_id, version = row
+
+    # Revoke old token
+    db.execute("UPDATE refresh_tokens SET revoked = TRUE WHERE token_hash = ?", [old_hash])
+
+    # Create new tokens (rotation)
+    new_access = create_access_token(user_id)
+    new_refresh = create_refresh_token(user_id, db)
+
+    return new_access, new_refresh
+
+# API endpoint for token refresh
+@app.route('/auth/refresh', methods=['POST'])
+def refresh_tokens():
+    refresh_token = request.json.get('refresh_token')
+    try:
+        access, refresh = rotate_refresh_token(refresh_token, db)
+        return {"access_token": access, "refresh_token": refresh}
+    except InvalidTokenError:
+        abort(401)
+```
+
+**Token Expiry Guidelines (2026):**
+| Token Type | Expiry | Storage |
+|------------|--------|---------|
+| Access | 15 min - 1 hour | Memory only (no persistence) |
+| Refresh | 7-30 days | HTTPOnly cookie or secure storage |
 
 ## Rate Limiting
 
@@ -126,10 +191,12 @@ def verify_totp(secret: str, code: str) -> bool:
 
 | Decision | Recommendation |
 |----------|----------------|
-| Password hash | Argon2 or bcrypt |
-| Token expiry | 1-24 hours |
-| Session cookie | HTTPOnly, Secure, SameSite |
+| Password hash | **Argon2id** (preferred) > Argon2 > bcrypt (legacy) |
+| Access token expiry | 15 min - 1 hour |
+| Refresh token expiry | 7-30 days with rotation |
+| Session cookie | HTTPOnly, Secure, SameSite=Strict |
 | Rate limit | 5 attempts per 15 min |
+| JWT algorithm | HS256 (symmetric) or RS256 (asymmetric for microservices) |
 
 ## Common Mistakes
 
