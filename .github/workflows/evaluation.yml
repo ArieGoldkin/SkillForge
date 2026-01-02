@@ -69,12 +69,9 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
-      # Langfuse observability for evaluation traces (Issue #602)
-      # Only enable if secrets are configured (graceful fallback for forks/missing secrets)
-      LANGFUSE_ENABLED: ${{ secrets.LANGFUSE_PUBLIC_KEY != '' && 'true' || 'false' }}
-      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
-      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
-      LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+      # Langfuse disabled for eval workflow - self-hosted runners don't have Langfuse
+      # Observability traces are captured in e2e-tests.yml which spins up full Langfuse stack
+      LANGFUSE_ENABLED: "false"
       # Ollama local models for 93% CI cost reduction (Issue #606)
       OLLAMA_ENABLED: "true"
       OLLAMA_HOST: "http://localhost:11434"
