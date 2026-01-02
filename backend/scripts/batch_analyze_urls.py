@@ -13,7 +13,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -162,7 +162,6 @@ async def analyze_url(url_info: dict[str, Any], idx: int, total: int) -> dict[st
     content_type = url_info["type"]
 
     start_time = time.time()
-    analysis_id = str(uuid4())
 
     try:
         # Clean up existing
@@ -195,10 +194,9 @@ async def analyze_url(url_info: dict[str, Any], idx: int, total: int) -> dict[st
             if not raw_content or len(raw_content) < 100:
                 raise ValueError(f"Failed to extract content from {url}")
 
-        # Create analysis record
+        # Create analysis record - DB generates UUIDs via server_default
         async with AsyncSessionLocal() as session:
             analysis = Analysis(
-                id=UUID(analysis_id),
                 url=actual_url,
                 content_type=content_type,
                 status="pending",
@@ -206,6 +204,8 @@ async def analyze_url(url_info: dict[str, Any], idx: int, total: int) -> dict[st
             )
             session.add(analysis)
             await session.commit()
+            await session.refresh(analysis)
+            analysis_id = str(analysis.id)
 
         logger.info(f"[{idx + 1}/{total}] Running workflow for: {title[:50]}")
 

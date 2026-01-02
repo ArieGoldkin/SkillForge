@@ -6,7 +6,6 @@ Implements reactive and proactive recall patterns from Google ADK's Context Engi
 
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, datetime
 from enum import Enum
 
@@ -21,6 +20,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
@@ -68,7 +68,7 @@ class AgentMemory(Base):
 
     __tablename__ = "agent_memories"
 
-    id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()"))
 
     # Optional link to source analysis (some memories are cross-analysis patterns)
     analysis_id = Column(

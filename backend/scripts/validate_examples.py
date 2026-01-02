@@ -38,9 +38,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -106,8 +106,9 @@ def cmd_submit(args: argparse.Namespace) -> int:
     """Submit an annotation."""
     manager = load_manager()
 
+    # Generate UUID for annotation (not a DB record, just in-memory identifier)
     annotation = Annotation(
-        id=str(uuid.uuid4()),
+        id=str(uuid4()),
         annotator_id=args.annotator,
         example_id=args.example,
         chunk_id=args.chunk,

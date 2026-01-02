@@ -1,9 +1,8 @@
 """Progress model for workflow progress tracking."""
 
-import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Column, DateTime, ForeignKey, String, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
 
@@ -19,7 +18,7 @@ class AnalysisProgress(Base):
 
     __tablename__ = "analysis_progress"
 
-    id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()"))
     analysis_id = Column(
         PostgresUUID(as_uuid=True),
         ForeignKey("analyses.id", ondelete="CASCADE"),

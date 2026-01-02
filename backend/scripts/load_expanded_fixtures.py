@@ -28,7 +28,6 @@ import json
 import os
 import sys
 from pathlib import Path
-from uuid import uuid4
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -98,7 +97,6 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
 
     async with AsyncSessionLocal() as session:
         # Create or get analysis record for fixtures
-        analysis_id = uuid4()
         analysis_name = "expanded-fixtures" if expanded else "original-fixtures"
 
         # Check if we should replace existing data
@@ -134,10 +132,8 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
             await session.commit()
             logger.info("Cleared existing fixture data")
 
-        # Create analysis record
-        artifact_id = uuid4()
+        # Create analysis record - DB generates UUIDs via server_default
         analysis = Analysis(
-            id=analysis_id,
             url=f"https://fixtures.skillforge.local/{analysis_name}",
             content_type="fixture_dataset",
             status="complete",
@@ -148,7 +144,7 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
         session.add(analysis)
         await session.flush()
 
-        logger.info(f"Created analysis record: {analysis_id}")
+        logger.info(f"Created analysis record: {analysis.id}")
 
         # Create artifact with sample markdown content for E2E tests
         sample_markdown = """# Context Engineering for AI Agents
@@ -255,8 +251,7 @@ Effective context engineering can improve AI agent performance by 40-60% while r
 """
 
         artifact = Artifact(
-            id=artifact_id,
-            analysis_id=analysis_id,
+            analysis_id=analysis.id,
             markdown_content=sample_markdown,
             version=1,
             artifact_metadata={
@@ -270,7 +265,7 @@ Effective context engineering can improve AI agent performance by 40-60% while r
         session.add(artifact)
         await session.flush()
 
-        logger.info(f"Created artifact record: {artifact_id}")
+        logger.info(f"Created artifact record: {artifact.id}")
 
         # Process each document
         chunks_created = 0
@@ -298,8 +293,7 @@ Effective context engineering can improve AI agent performance by 40-60% while r
 
                 # Create chunk
                 chunk = AnalysisChunk(
-                    id=uuid4(),
-                    analysis_id=analysis_id,
+                    analysis_id=analysis.id,
                     snippet=content,
                     vector=embedding,
                     granularity=section.get("granularity", "coarse"),
@@ -328,12 +322,12 @@ Effective context engineering can improve AI agent performance by 40-60% while r
         # Verify
         result = await session.execute(
             text("SELECT COUNT(*) FROM analysis_chunks WHERE analysis_id = :id"),
-            {"id": str(analysis_id)},
+            {"id": str(analysis.id)},
         )
         count = result.scalar()
 
         logger.info(f"✅ Successfully loaded {count} chunks into database")
-        logger.info(f"   Analysis ID: {analysis_id}")
+        logger.info(f"   Analysis ID: {analysis.id}")
 
         return 0
 

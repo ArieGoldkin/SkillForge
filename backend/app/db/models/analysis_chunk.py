@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
@@ -17,6 +16,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
@@ -72,7 +72,7 @@ class AnalysisChunk(Base):
 
     __tablename__ = "analysis_chunks"
 
-    id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()"))
     analysis_id = Column(
         PostgresUUID(as_uuid=True),
         ForeignKey("analyses.id", ondelete="CASCADE"),

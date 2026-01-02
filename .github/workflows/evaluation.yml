@@ -63,7 +63,7 @@ jobs:
     timeout-minutes: 30
 
     # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
-    # Setup: brew install postgresql@17 pgvector && brew services start postgresql@17
+    # Setup: brew install postgresql@18 pgvector && brew services start postgresql@18
     # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
     # Ollama: brew install ollama && ollama pull nomic-embed-text qwen2.5-coder:32b deepseek-r1:70b
 
@@ -137,7 +137,7 @@ jobs:
         working-directory: backend
         run: |
           # Local PostgreSQL 17 with pgvector on self-hosted runner
-          /usr/local/opt/postgresql@17/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
+          /usr/local/opt/postgresql@18/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
           # Run migrations to set up schema (use python -m to avoid PATH issues with CLI entrypoints)
           poetry run python -m alembic upgrade head
 

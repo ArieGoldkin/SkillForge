@@ -151,7 +151,7 @@ runs:
         PID1=$!
         timeout 120 docker pull node:20-slim &
         PID2=$!
-        timeout 120 docker pull pgvector/pgvector:pg17 &
+        timeout 120 docker pull pgvector/pgvector:pg18-bookworm &
         PID3=$!
         timeout 120 docker pull redis/redis-stack-server:7.4.0-v1 &
         PID4=$!

@@ -15,7 +15,6 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -136,21 +135,18 @@ async def main() -> int:
             tags = doc.get("tags", [])
             sections = doc.get("sections", [])
 
-            analysis_id = uuid4()
-            artifact_id = uuid4()
-
+            # Create analysis record - DB generates UUIDs via server_default
             analysis = Analysis(
-                id=analysis_id,
                 url=source_url,
                 content_type=content_type,
                 status="complete",
                 title=title,
             )
             session.add(analysis)
+            await session.flush()
 
             artifact = Artifact(
-                id=artifact_id,
-                analysis_id=analysis_id,
+                analysis_id=analysis.id,
                 markdown_content=_generate_placeholder_artifact(doc),
                 version=1,
                 artifact_metadata={
@@ -182,8 +178,7 @@ async def main() -> int:
 
                 content_hash = hashlib.sha256(content.encode()).hexdigest()
                 chunk = AnalysisChunk(
-                    id=uuid4(),
-                    analysis_id=analysis_id,
+                    analysis_id=analysis.id,
                     snippet=content,
                     vector=embedding,
                     granularity=section.get("granularity", "coarse"),

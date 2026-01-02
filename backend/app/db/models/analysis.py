@@ -1,10 +1,9 @@
 """Analysis model for content analysis pipeline."""
 
-import uuid
 from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
 from sqlalchemy.orm import relationship
@@ -25,7 +24,7 @@ class Analysis(Base):
 
     __tablename__ = "analyses"
 
-    id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()"))
     url = Column(Text, nullable=False, unique=True, index=True)
     content_type = Column(String(50), nullable=False)  # 'article', 'video', 'repo'
     title = Column(Text)

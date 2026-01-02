@@ -88,17 +88,24 @@ class ArtifactRepository:
         version_value = artifact_data.get("version", 1)
         download_count_value = artifact_data.get("download_count", 0)
         trace_id_value = artifact_data.get("trace_id")
-        artifact = Artifact(
-            id=artifact_data.get("id", uuid.uuid4()),
-            analysis_id=uuid.UUID(str(artifact_data["analysis_id"])),
-            markdown_content=str(artifact_data["markdown_content"]),
-            version=int(version_value) if isinstance(version_value, (int, str)) else 1,
-            artifact_metadata=artifact_data.get("artifact_metadata"),
-            download_count=(
+
+        # Build kwargs, only include id if explicitly provided
+        artifact_kwargs = {
+            "analysis_id": uuid.UUID(str(artifact_data["analysis_id"])),
+            "markdown_content": str(artifact_data["markdown_content"]),
+            "version": int(version_value) if isinstance(version_value, (int, str)) else 1,
+            "artifact_metadata": artifact_data.get("artifact_metadata"),
+            "download_count": (
                 int(download_count_value) if isinstance(download_count_value, (int, str)) else 0
             ),
-            trace_id=str(trace_id_value) if trace_id_value else None,
-        )
+            "trace_id": str(trace_id_value) if trace_id_value else None,
+        }
+
+        # Only set id if explicitly provided (otherwise let DB generate with server_default)
+        if "id" in artifact_data and artifact_data["id"] is not None:
+            artifact_kwargs["id"] = artifact_data["id"]
+
+        artifact = Artifact(**artifact_kwargs)
         self.session.add(artifact)
         await self.session.commit()
         await self.session.refresh(artifact)

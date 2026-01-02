@@ -4,11 +4,10 @@ Stores high-quality agent outputs for few-shot prompting (Phase 1).
 Used by SemanticExampleSelector to improve agent output quality.
 """
 
-import uuid
 from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Boolean, Column, DateTime, Float, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, String, Text, text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
 
@@ -43,7 +42,7 @@ class AgentExample(Base):
     id = Column(
         PostgresUUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        server_default=text("uuidv7()"),
     )
     agent_type = Column(String(50), nullable=False, index=True)
 

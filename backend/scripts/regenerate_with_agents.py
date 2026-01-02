@@ -31,7 +31,6 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -98,7 +97,6 @@ async def create_analysis_record(
     doc: dict[str, Any],
 ) -> Analysis:
     """Create Analysis record for fixture document."""
-    analysis_id = uuid4()
     content_type = doc.get("content_type", "article")
 
     # Create realistic URL based on content type
@@ -108,8 +106,8 @@ async def create_analysis_record(
         "research_paper": "https://papers.skillforge.dev",
     }.get(content_type, "https://content.skillforge.dev")
 
+    # Create analysis record - DB generates UUIDs via server_default
     analysis = Analysis(
-        id=analysis_id,
         url=f"{url_base}/{doc['id']}",
         content_type=content_type,
         status="pending",

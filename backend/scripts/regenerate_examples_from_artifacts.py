@@ -37,7 +37,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+from uuid import UUID
 
 # Add backend to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -668,10 +668,9 @@ async def save_examples_to_database(
                 await session.execute(stmt)
             logger.info("deleted_existing_examples", agent_types=list(agent_types))
 
-        # Insert new examples
+        # Insert new examples - DB generates UUIDs via server_default
         for ex in high_quality:
             example = AgentExample(
-                id=uuid4(),
                 agent_type=ex.agent_type,
                 input_summary=ex.input_summary,
                 input_content_preview=ex.input_content_preview,

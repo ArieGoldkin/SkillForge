@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -25,7 +25,7 @@ class TutoringSession(Base):
 
     # Primary key and foreign keys
     id: Mapped[uuid.UUID] = mapped_column(
-        PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()")
     )
     analysis_id: Mapped[uuid.UUID | None] = mapped_column(
         PostgresUUID(as_uuid=True),
@@ -83,7 +83,7 @@ class TutoringMessage(Base):
     __tablename__ = "tutoring_messages"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        PostgresUUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()")
     )
     session_id: Mapped[uuid.UUID] = mapped_column(
         PostgresUUID(as_uuid=True),

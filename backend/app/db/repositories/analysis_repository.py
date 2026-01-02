@@ -35,13 +35,22 @@ class IAnalysisRepository(Protocol):
     async def create_analysis(
         self,
         *,
-        analysis_id: AnalysisID,
+        analysis_id: AnalysisID | None = None,
         url: str,
         content_type: str,
         status: str,
         title: str | None = None,
     ) -> Analysis:
-        """Create a new analysis record."""
+        """Create a new analysis record.
+
+        Args:
+            analysis_id: Optional ID. If None, DB generates UUID v7 via server_default.
+            url: URL being analyzed.
+            content_type: Content type (article, video, etc.).
+            status: Initial status.
+            title: Optional title.
+
+        """
         ...
 
     async def get_by_url(self, url: str) -> Analysis | None:
@@ -189,20 +198,38 @@ class AnalysisRepository:
     async def create_analysis(
         self,
         *,
-        analysis_id: AnalysisID,
+        analysis_id: AnalysisID | None = None,
         url: str,
         content_type: str,
         status: str,
         title: str | None = None,
     ) -> Analysis:
-        """Create a new analysis record."""
-        analysis = Analysis(
-            id=analysis_id,
-            url=url,
-            content_type=content_type,
-            status=status,
-            title=title,
-        )
+        """Create a new analysis record.
+
+        Args:
+            analysis_id: Optional analysis ID (if None, DB generates UUID v7 via server_default)
+            url: URL being analyzed
+            content_type: Content type (article, video, etc.)
+            status: Initial status
+            title: Optional title
+
+        Returns:
+            Created Analysis with ID populated by DB if not provided
+
+        """
+        # Build kwargs, only include id if explicitly provided
+        analysis_kwargs: dict[str, object] = {
+            "url": url,
+            "content_type": content_type,
+            "status": status,
+            "title": title,
+        }
+
+        # Only set id if explicitly provided (otherwise let DB generate with server_default)
+        if analysis_id is not None:
+            analysis_kwargs["id"] = analysis_id
+
+        analysis = Analysis(**analysis_kwargs)
         self.session.add(analysis)
         await self.session.commit()
         await self.session.refresh(analysis)

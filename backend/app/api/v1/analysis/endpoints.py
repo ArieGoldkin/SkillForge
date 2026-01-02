@@ -3,7 +3,7 @@
 import asyncio
 import os
 import uuid
-from typing import Annotated, Any, ClassVar
+from typing import Annotated, Any, ClassVar, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
 from sqlalchemy.exc import IntegrityError
@@ -258,11 +258,12 @@ async def create_analysis(  # noqa: PLR0915 - Complex workflow orchestration
             existing=True,
         )
 
-    # Generate or normalize analysis_id
+    # Generate or normalize analysis_id (if provided by client)
     # With Annotated types, UUID flows through directly - no conversion needed
+    provided_analysis_id: AnalysisID | None = None
     if request.analysis_id:
         try:
-            analysis_uuid: AnalysisID = normalize_analysis_id_to_uuid(request.analysis_id)
+            provided_analysis_id = normalize_analysis_id_to_uuid(request.analysis_id)
         except Exception as e:
             logger.warning(
                 "analysis_id_normalization_failed",
@@ -273,17 +274,18 @@ async def create_analysis(  # noqa: PLR0915 - Complex workflow orchestration
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Invalid analysis_id format: {e!s}",
             ) from e
-    else:
-        analysis_uuid: AnalysisID = uuid.uuid4()
 
-    # Create Analysis record
+    # Create Analysis record (DB generates UUID v7 via server_default if not provided)
     try:
-        await analysis_repo.create_analysis(
-            analysis_id=analysis_uuid,
+        created_analysis = await analysis_repo.create_analysis(
+            analysis_id=provided_analysis_id,
             url=url_str,
             content_type=content_type,
             status="pending",
         )
+        # cast() is the standard pattern for SQLAlchemy 1.x Column -> value conversion
+        # At runtime, created_analysis.id is a UUID, not a Column descriptor
+        analysis_uuid = cast("AnalysisID", created_analysis.id)
 
         logger.info(
             "analysis_created",
@@ -321,7 +323,7 @@ async def create_analysis(  # noqa: PLR0915 - Complex workflow orchestration
     except Exception as e:
         logger.error(
             "analysis_creation_failed",
-            analysis_id=str(analysis_uuid),
+            analysis_id=str(provided_analysis_id) if provided_analysis_id else "auto-generated",
             url=url_str,
             error=str(e),
             exc_info=True,
