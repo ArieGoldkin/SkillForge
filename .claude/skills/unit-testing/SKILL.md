@@ -101,6 +101,68 @@ class TestCalculateDiscount:
         assert calculate_discount(order) == expected
 ```
 
+## Fixture Scoping (2026 Best Practice)
+
+```python
+import pytest
+
+# Function scope (default): Fresh instance per test - ISOLATED
+@pytest.fixture(scope="function")
+def db_session():
+    """Each test gets clean database state."""
+    session = create_session()
+    yield session
+    session.rollback()  # Cleanup
+
+# Module scope: Shared across all tests in file - EFFICIENT
+@pytest.fixture(scope="module")
+def expensive_model():
+    """Load once per test file (expensive setup)."""
+    return load_large_ml_model()  # 5 seconds to load
+
+# Session scope: Shared across ALL tests - MOST EFFICIENT
+@pytest.fixture(scope="session")
+def db_engine():
+    """Single connection pool for entire test run."""
+    engine = create_engine(TEST_DB_URL)
+    Base.metadata.create_all(engine)
+    yield engine
+    Base.metadata.drop_all(engine)
+```
+
+**When to use each scope:**
+| Scope | Use Case | Example |
+|-------|----------|---------|
+| function | Isolated tests, mutable state | db_session, mock objects |
+| module | Expensive setup, read-only | ML model, compiled regex |
+| session | Very expensive, immutable | DB engine, external service |
+
+## Indirect Parametrization
+
+```python
+# Defer expensive setup from collection to runtime
+@pytest.fixture
+def user(request):
+    """Create user with different roles based on parameter."""
+    role = request.param  # Receives value from parametrize
+    return UserFactory(role=role)
+
+@pytest.mark.parametrize("user", ["admin", "moderator", "viewer"], indirect=True)
+def test_permissions(user):
+    """Test runs 3 times with different user roles."""
+    # user fixture is called with each role
+    assert user.can_access("/dashboard") == (user.role in ["admin", "moderator"])
+
+# Combinatorial testing with stacked decorators
+@pytest.mark.parametrize("role", ["admin", "user"])
+@pytest.mark.parametrize("status", ["active", "suspended"])
+def test_access_matrix(role, status):
+    """Runs 4 tests: admin/active, admin/suspended, user/active, user/suspended"""
+    user = User(role=role, status=status)
+    expected = (role == "admin" and status == "active")
+    assert user.can_modify() == expected
+```
+
 ## Key Decisions
 
 | Decision | Recommendation |

@@ -88,6 +88,63 @@ trivy image myapp:latest --format json > trivy-scan.json
 CRITICAL=$(cat trivy-scan.json | jq '[.Results[].Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length')
 ```
 
+## Pre-commit Hooks (2026 Best Practice)
+
+Shift-left security by catching issues before commit:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  # Secret detection - MUST HAVE
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.0
+    hooks:
+      - id: gitleaks
+
+  # Python security
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml", "-r", "."]
+        exclude: ^tests/
+
+  # Semgrep for SAST
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.52.0
+    hooks:
+      - id: semgrep
+        args: ["--config", "auto", "--error"]
+
+  # Detect AWS credentials, private keys
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+```
+
+```bash
+# Install and setup
+pip install pre-commit
+pre-commit install
+
+# Run on all files (first time)
+pre-commit run --all-files
+
+# Update hooks to latest versions
+pre-commit autoupdate
+```
+
+**Baseline for detect-secrets (ignore false positives):**
+```bash
+# Generate baseline
+detect-secrets scan > .secrets.baseline
+
+# Audit false positives
+detect-secrets audit .secrets.baseline
+```
+
 ## CI Integration
 
 ```yaml
@@ -132,6 +189,8 @@ context.quality_evidence.security_scan = {
 | Python dependencies | pip-audit |
 | Code analysis | Semgrep |
 | Secrets | TruffleHog or Gitleaks |
+| Pre-commit | gitleaks + detect-secrets |
+| Shift-left | Always use pre-commit hooks |
 
 ## Common Mistakes
 

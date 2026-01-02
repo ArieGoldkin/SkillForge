@@ -116,6 +116,82 @@ previous_state = history[1]  # One step back
 app.update_state(config, previous_state.values)
 ```
 
+## Store vs Checkpointer (2026 Best Practice)
+
+```python
+from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.store.postgres import PostgresStore
+
+# Checkpointer = SHORT-TERM memory (thread-scoped)
+# - Conversation history within a session
+# - Workflow state for resume/recovery
+# - Scoped to thread_id
+
+checkpointer = PostgresSaver.from_conn_string(DATABASE_URL)
+
+# Store = LONG-TERM memory (cross-thread)
+# - User preferences across sessions
+# - Learned facts about users
+# - Shared across ALL threads for a user
+
+store = PostgresStore.from_conn_string(DATABASE_URL)
+
+# Compile with BOTH for full memory support
+app = workflow.compile(
+    checkpointer=checkpointer,  # Thread-scoped state
+    store=store                  # Cross-thread memory
+)
+```
+
+## Using Store for Cross-Thread Memory
+
+```python
+from langgraph.store.base import BaseStore
+
+async def agent_with_memory(state: AgentState, *, store: BaseStore):
+    """Agent that remembers across conversations."""
+    user_id = state["user_id"]
+
+    # Read cross-thread memory (user preferences)
+    memories = await store.aget(namespace=("users", user_id), key="preferences")
+
+    # Use memories in agent logic
+    if memories and memories.value.get("prefers_concise"):
+        state["system_prompt"] += "\nBe concise in responses."
+
+    # Update cross-thread memory (learned facts)
+    await store.aput(
+        namespace=("users", user_id),
+        key="last_topic",
+        value={"topic": state["current_topic"], "timestamp": datetime.now().isoformat()}
+    )
+
+    return state
+
+# Register node with store access
+workflow.add_node("agent", agent_with_memory)
+```
+
+## Memory Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    User: alice                               │
+├─────────────────────────────────────────────────────────────┤
+│  Thread 1 (chat-001)    │  Thread 2 (chat-002)              │
+│  ┌─────────────────┐    │  ┌─────────────────┐              │
+│  │ Checkpointer    │    │  │ Checkpointer    │              │
+│  │ - msg history   │    │  │ - msg history   │              │
+│  │ - workflow pos  │    │  │ - workflow pos  │              │
+│  └─────────────────┘    │  └─────────────────┘              │
+├─────────────────────────────────────────────────────────────┤
+│                     Store (cross-thread)                     │
+│  namespace=("users", "alice")                                │
+│  - preferences: {prefers_concise: true}                     │
+│  - last_topic: {topic: "langgraph", timestamp: "..."}       │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ## Key Decisions
 
 | Decision | Recommendation |
@@ -124,6 +200,8 @@ app.update_state(config, previous_state.values)
 | Production | PostgresSaver (shared, durable) |
 | save_every | 1 for expensive nodes, 5 for cheap |
 | Thread ID | Use deterministic ID (workflow_id) |
+| **Short-term memory** | **Checkpointer (thread-scoped)** |
+| **Long-term memory** | **Store (cross-thread, namespaced)** |
 
 ## Common Mistakes
 
@@ -131,6 +209,8 @@ app.update_state(config, previous_state.values)
 - Random thread IDs (can't resume)
 - Not handling missing checkpoints
 - Saving too frequently (overhead)
+- **Using only checkpointer for user preferences (lost across threads)**
+- **Not using namespaces in Store (data collisions)**
 
 ## Related Skills
 

@@ -109,6 +109,66 @@ def fit_context(docs: list, max_tokens: int = 6000) -> list:
 - Reserve tokens for system prompt + response
 - Prioritize highest-relevance documents
 
+## Context Sufficiency Check (2026 Best Practice)
+
+```python
+from pydantic import BaseModel
+
+class SufficiencyCheck(BaseModel):
+    """Pre-generation context validation."""
+    is_sufficient: bool
+    confidence: float  # 0.0-1.0
+    missing_info: str | None = None
+
+async def rag_with_sufficiency(question: str, top_k: int = 5) -> str:
+    """RAG with hallucination prevention via sufficiency check.
+
+    Based on Google Research ICLR 2025: Adding a sufficiency check
+    before generation reduces hallucinations from insufficient context.
+    """
+    docs = await vector_db.search(question, limit=top_k)
+    context = "\n\n".join([f"[{i+1}] {doc.text}" for i, doc in enumerate(docs)])
+
+    # Pre-generation sufficiency check (prevents hallucination)
+    check = await llm.with_structured_output(SufficiencyCheck).ainvoke(
+        f"""Does this context contain sufficient information to answer the question?
+
+Question: {question}
+
+Context:
+{context}
+
+Evaluate:
+- is_sufficient: Can the question be fully answered from context?
+- confidence: How confident are you? (0.0-1.0)
+- missing_info: What's missing if not sufficient?"""
+    )
+
+    # Abstain if context insufficient (high-confidence)
+    if not check.is_sufficient and check.confidence > 0.7:
+        return f"I don't have enough information to answer this question. Missing: {check.missing_info}"
+
+    # Low confidence → retrieve more context
+    if not check.is_sufficient and check.confidence <= 0.7:
+        more_docs = await vector_db.search(question, limit=top_k * 2)
+        context = "\n\n".join([f"[{i+1}] {doc.text}" for i, doc in enumerate(more_docs)])
+
+    # Generate only with sufficient context
+    response = await llm.chat([
+        {"role": "system", "content":
+            "Answer using ONLY the provided context. "
+            "If information is missing, say so rather than guessing."},
+        {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}
+    ])
+
+    return response.content
+```
+
+**Why this matters (Google Research 2025):**
+- RAG paradoxically increases hallucinations when context is insufficient
+- Additional context increases model confidence → more likely to hallucinate
+- Sufficiency check allows abstention when information is missing
+
 ## Key Decisions
 
 | Decision | Recommendation |

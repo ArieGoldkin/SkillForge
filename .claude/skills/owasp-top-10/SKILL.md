@@ -98,6 +98,76 @@ def validate_password(password):
     return None
 ```
 
+## JWT Security (OWASP Best Practices)
+
+```python
+import jwt
+import hashlib
+import secrets
+
+# ❌ Bad: Trust algorithm from header
+payload = jwt.decode(token, SECRET, algorithms=jwt.get_unverified_header(token)['alg'])
+
+# ✅ Good: Hardcode expected algorithm (prevents algorithm confusion attacks)
+def verify_jwt(token: str) -> dict:
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=['HS256'],  # NEVER read from header
+            options={
+                'require': ['exp', 'iat', 'iss', 'aud'],  # Required claims
+            }
+        )
+
+        # Validate issuer and audience
+        if payload['iss'] != EXPECTED_ISSUER:
+            raise jwt.InvalidIssuerError()
+        if payload['aud'] != EXPECTED_AUDIENCE:
+            raise jwt.InvalidAudienceError()
+
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise AuthError("Token expired")
+    except jwt.InvalidTokenError as e:
+        raise AuthError(f"Invalid token: {e}")
+
+# Token sidejacking protection (OWASP recommended)
+def create_protected_token(user_id: str, response) -> str:
+    """Create token with user context to prevent sidejacking."""
+    # Generate random fingerprint
+    fingerprint = secrets.token_urlsafe(32)
+
+    # Store fingerprint hash in token (not raw value)
+    payload = {
+        'user_id': user_id,
+        'fingerprint': hashlib.sha256(fingerprint.encode()).hexdigest(),
+        'exp': datetime.utcnow() + timedelta(minutes=15),
+        'iat': datetime.utcnow(),
+        'iss': ISSUER,
+        'aud': AUDIENCE,
+    }
+
+    # Send raw fingerprint as hardened cookie
+    response.set_cookie(
+        '__Secure-Fgp',  # Cookie prefix for extra security
+        fingerprint,
+        httponly=True,
+        secure=True,
+        samesite='Strict',
+        max_age=900  # 15 min
+    )
+
+    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+```
+
+**JWT Security Checklist:**
+- [ ] Hardcode algorithm (never read from header)
+- [ ] Validate: exp, iat, iss, aud claims
+- [ ] Short expiry (15 min - 1 hour)
+- [ ] Use refresh token rotation for longer sessions
+- [ ] Implement token denylist for logout/revocation
+
 ## 8. Data Integrity Failures
 
 ```html
