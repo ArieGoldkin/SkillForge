@@ -117,6 +117,45 @@ class WorkflowEventEmitter:
             error_code=None,  # Let nodes set specific error codes
         )
 
+    async def emit_timeout_error(
+        self,
+        analysis_id: AnalysisID,
+        error: TimeoutError,
+    ) -> None:
+        """Emit SSE error event specifically for timeout failures.
+
+        Issue #602 H1: TimeoutError was not being wrapped for SSE events.
+        This method handles TimeoutError specifically with appropriate messaging.
+
+        Args:
+            analysis_id: UUID of the analysis
+            error: The TimeoutError exception
+
+        """
+        # Check for recent error events to avoid duplicates
+        has_recent_error = await self._check_recent_error_event(analysis_id)
+        if has_recent_error:
+            logger.debug(
+                "timeout_error_skipped_duplicate",
+                analysis_id=str(analysis_id),
+                message="Recent error event exists, skipping duplicate timeout error emission",
+            )
+            return
+
+        # Emit timeout error with specific error code
+        await emit_error_event(
+            analysis_id=str(analysis_id),
+            stage="workflow",
+            error=f"Analysis timed out: {error!s}",
+            error_code="TIMEOUT",
+        )
+
+        logger.info(
+            "timeout_error_event_emitted",
+            analysis_id=str(analysis_id),
+            error=str(error),
+        )
+
     async def emit_completion(
         self,
         analysis_id: AnalysisID,
