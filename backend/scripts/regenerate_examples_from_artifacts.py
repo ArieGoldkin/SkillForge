@@ -37,16 +37,17 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 # Add backend to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from app.domains.analysis.workflows.agents.research_analyst import RESEARCH_ANALYST_PROMPT
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 from sqlalchemy import delete
 
 from app.core.logging import get_logger
+from app.db.models.agent_example import AgentExample
 from app.db.session import get_session_factory
 from app.domains.analysis.schemas.agents.code_quality_critic import CodeQualityReview
 from app.domains.analysis.schemas.agents.implementation_planner import ImplementationPlan
@@ -66,12 +67,10 @@ from app.domains.analysis.workflows.agents.implementation_planner import (
 )
 from app.domains.analysis.workflows.agents.learning_path import LEARNING_PATH_PROMPT
 from app.domains.analysis.workflows.agents.performance_analyst import PERFORMANCE_ANALYST_PROMPT
-from app.domains.analysis.workflows.agents.research_analyst import RESEARCH_ANALYST_PROMPT
 from app.domains.analysis.workflows.agents.security_auditor import SECURITY_AUDITOR_PROMPT
 
 # Import prompts
 from app.domains.analysis.workflows.agents.tech_comparator import TECH_COMPARATOR_PROMPT
-from app.db.models.agent_example import AgentExample
 from app.shared.services.g_eval import g_eval_score
 from app.shared.services.g_eval.cost_tracker import GEvalCostTracker
 
@@ -156,7 +155,7 @@ AGENT_CONTENT_SIGNALS: dict[str, ContentSignals] = {
 
 
 def check_content_signals(
-    artifact: "GoldenArtifact",
+    artifact: GoldenArtifact,
     agent_type: str,
 ) -> tuple[bool, int, str]:
     """Check if content has signals suitable for the agent.
@@ -170,6 +169,7 @@ def check_content_signals(
 
     Returns:
         Tuple of (is_suitable, match_count, reason)
+
     """
     signals = AGENT_CONTENT_SIGNALS.get(agent_type)
 
@@ -698,14 +698,13 @@ def get_score_bucket(score: float) -> str:
     """Get the score distribution bucket."""
     if score >= 0.9:
         return "0.9-1.0 (excellent)"
-    elif score >= 0.8:
+    if score >= 0.8:
         return "0.8-0.9 (good)"
-    elif score >= 0.7:
+    if score >= 0.7:
         return "0.7-0.8 (acceptable)"
-    elif score >= 0.5:
+    if score >= 0.5:
         return "0.5-0.7 (poor)"
-    else:
-        return "0.0-0.5 (unusable)"
+    return "0.0-0.5 (unusable)"
 
 
 def generate_report(results: list[GeneratedExample]) -> RegenerationReport:

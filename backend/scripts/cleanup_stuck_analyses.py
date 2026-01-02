@@ -8,13 +8,13 @@ Usage:
     poetry run python scripts/cleanup_stuck_analyses.py [--dry-run] [--minutes 10]
 """
 
-import asyncio
 import argparse
+import asyncio
 from datetime import UTC, datetime, timedelta
 
 from app.core.logging import get_logger
-from app.db.session import get_session_factory
 from app.db.repositories.analysis_repository import AnalysisRepository
+from app.db.session import get_session_factory
 
 logger = get_logger(__name__)
 
@@ -25,27 +25,29 @@ async def cleanup_stuck_analyses(dry_run: bool = False, minutes: int = 10) -> No
     Args:
         dry_run: If True, only log what would be done without making changes
         minutes: Number of minutes old to consider an analysis "stuck"
+
     """
     cutoff_time = datetime.now(UTC) - timedelta(minutes=minutes)
-    
+
     session_factory = get_session_factory()
     async with session_factory() as session:
         repo = AnalysisRepository(session)
-        
+
         # Find stuck analyses
-        from sqlalchemy import select, and_, or_
+        from sqlalchemy import and_, or_, select
+
         from app.db.models.analysis import Analysis
-        
+
         query = select(Analysis).where(
             and_(
                 or_(Analysis.status == "analyzing", Analysis.status == "pending"),
                 Analysis.created_at < cutoff_time,
             )
         )
-        
+
         result = await session.execute(query)
         stuck_analyses = result.scalars().all()
-        
+
         count = len(stuck_analyses)
         logger.info(
             "cleanup_stuck_analyses_found",
@@ -53,22 +55,22 @@ async def cleanup_stuck_analyses(dry_run: bool = False, minutes: int = 10) -> No
             minutes=minutes,
             dry_run=dry_run,
         )
-        
+
         if count == 0:
             logger.info("cleanup_stuck_analyses_none_found")
             return
-        
+
         # Group by status for reporting
         by_status = {}
         for analysis in stuck_analyses:
             status = str(analysis.status)
             by_status[status] = by_status.get(status, 0) + 1
-        
+
         logger.info(
             "cleanup_stuck_analyses_by_status",
             status_breakdown=by_status,
         )
-        
+
         if dry_run:
             logger.info(
                 "cleanup_stuck_analyses_dry_run",
@@ -88,7 +90,7 @@ async def cleanup_stuck_analyses(dry_run: bool = False, minutes: int = 10) -> No
                     remaining_count=count - 10,
                 )
             return
-        
+
         # Mark as failed
         updated_count = 0
         for analysis in stuck_analyses:
@@ -110,9 +112,9 @@ async def cleanup_stuck_analyses(dry_run: bool = False, minutes: int = 10) -> No
                     error=str(e),
                     exc_info=True,
                 )
-        
+
         await session.commit()
-        
+
         logger.info(
             "cleanup_stuck_analyses_complete",
             total_found=count,
@@ -123,9 +125,7 @@ async def cleanup_stuck_analyses(dry_run: bool = False, minutes: int = 10) -> No
 
 async def main() -> None:
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Cleanup stuck analyses by marking them as failed"
-    )
+    parser = argparse.ArgumentParser(description="Cleanup stuck analyses by marking them as failed")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -137,9 +137,9 @@ async def main() -> None:
         default=10,
         help="Number of minutes old to consider an analysis 'stuck' (default: 10)",
     )
-    
+
     args = parser.parse_args()
-    
+
     await cleanup_stuck_analyses(dry_run=args.dry_run, minutes=args.minutes)
 
 

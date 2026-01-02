@@ -43,8 +43,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 load_dotenv()
 
 from app.core.logging import get_logger  # noqa: E402
-from app.db.session import get_session_factory  # noqa: E402
 from app.db.models.agent_example import AgentExample  # noqa: E402
+from app.db.session import get_session_factory  # noqa: E402
 from app.shared.services.embeddings.service import EmbeddingService  # noqa: E402
 
 logger = get_logger(__name__)

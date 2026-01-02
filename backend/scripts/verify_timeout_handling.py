@@ -22,8 +22,8 @@ from unittest.mock import MagicMock
 from app.domains.analysis.workflows.tasks.agent_execution import execute_agents
 
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.agents.streaming import stream_agent_response
 
 logger = get_logger(__name__)
@@ -176,9 +176,8 @@ async def main():
     if all(results):
         print("✅ ALL TESTS PASSED - Timeout handling verified!")
         return 0
-    else:
-        print("❌ SOME TESTS FAILED - Review timeout handling")
-        return 1
+    print("❌ SOME TESTS FAILED - Review timeout handling")
+    return 1
 
 
 if __name__ == "__main__":

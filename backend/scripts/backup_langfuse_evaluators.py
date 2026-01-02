@@ -24,7 +24,7 @@ Output:
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -205,7 +205,7 @@ def save_backup(
     """
     backup_data = {
         "metadata": {
-            "backup_timestamp": datetime.now(timezone.utc).isoformat(),
+            "backup_timestamp": datetime.now(UTC).isoformat(),
             "score_config_count": len(score_configs),
             "prompt_count": len(prompts),
             "langfuse_host": os.getenv("LANGFUSE_HOST", "http://localhost:3000"),
@@ -230,7 +230,7 @@ def save_backup(
     print(f"\nBackup saved to {output_path}")
     print(f"  - {len(score_configs)} score configurations")
     print(f"  - {len(prompts)} prompt configurations")
-    print(f"  - Evaluator function documentation")
+    print("  - Evaluator function documentation")
 
     # Show summary of G-Eval configs
     g_eval_configs = [c for c in score_configs if c["name"].startswith("g_eval_")]

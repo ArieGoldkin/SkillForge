@@ -13,7 +13,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -21,14 +21,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from app.services.extraction import JinaReader
 from sqlalchemy import delete, select, update
 
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.models.artifact import Artifact
-from app.services.extraction import JinaReader
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
@@ -92,6 +92,7 @@ async def cleanup_existing(url: str, actual_url: str | None = None) -> None:
     Args:
         url: The original URL (e.g., fixture:context-engineering)
         actual_url: The resolved URL (e.g., https://docs.skillforge.dev/context-engineering)
+
     """
     async with AsyncSessionLocal() as session:
         # Determine the actual URL to clean up
@@ -135,7 +136,7 @@ async def analyze_url(url_info: dict[str, Any], idx: int, total: int) -> dict[st
     content_type = url_info["type"]
 
     start_time = time.time()
-    analysis_id = str(uuid4())
+    analysis_id = str(uuid_utils.uuid7())
 
     try:
         # Clean up existing

@@ -38,7 +38,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -107,7 +106,7 @@ def cmd_submit(args: argparse.Namespace) -> int:
     manager = load_manager()
 
     annotation = Annotation(
-        id=str(uuid.uuid4()),
+        id=str(uuid.uuid_utils.uuid7()),
         annotator_id=args.annotator,
         example_id=args.example,
         chunk_id=args.chunk,

@@ -83,9 +83,10 @@ class AnnotationService:
                 - langfuse_submitted: bool - Whether Langfuse score was submitted
 
         Example:
+            >>> import uuid_utils
             >>> service = AnnotationService(session)
             >>> result = await service.submit_feedback(
-            ...     artifact_id=uuid.uuid4(),
+            ...     artifact_id=uuid_utils.uuid7(),
             ...     trace_id="trace-123",
             ...     feedback="thumbs_down",
             ...     comment="Missing implementation details",
@@ -193,9 +194,10 @@ class AnnotationService:
                 - error: str | None - Error message if failed
 
         Example:
+            >>> import uuid_utils
             >>> service = AnnotationService(session)
             >>> result = await service.queue_low_quality_artifact(
-            ...     artifact_id=uuid.uuid4(),
+            ...     artifact_id=uuid_utils.uuid7(),
             ...     trace_id="trace-456",
             ...     quality_scores={"relevance": 0.5, "depth": 0.4, "coherence": 0.6},
             ... )

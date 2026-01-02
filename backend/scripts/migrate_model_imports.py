@@ -55,7 +55,7 @@ def main():
             updated_count += 1
             print(f"Updated: {file_path.relative_to(backend_dir)}")
 
-    print(f"\n✓ Migration complete!")
+    print("\n✓ Migration complete!")
     print(f"  Files checked: {total_checked}")
     print(f"  Files updated: {updated_count}")
 

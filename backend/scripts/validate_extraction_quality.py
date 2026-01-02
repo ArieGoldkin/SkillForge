@@ -208,7 +208,7 @@ async def validate_extraction(
         )
     except Exception as e:
         result["extraction_failed"] = True
-        result["error"] = f"{type(e).__name__}: {str(e)}"
+        result["error"] = f"{type(e).__name__}: {e!s}"
         result["quality"] = calculate_quality_score(
             extracted_title=None,
             expected_title=expected_title,
@@ -361,9 +361,7 @@ async def main() -> int:
     title_accurate = sum(1 for r in results if r["quality"]["title_match"])
     content_complete = sum(1 for r in results if r["quality"]["content_complete"])
 
-    avg_score = (
-        sum(r["quality"]["overall_score"] for r in results) / total if total > 0 else 0.0
-    )
+    avg_score = sum(r["quality"]["overall_score"] for r in results) / total if total > 0 else 0.0
     avg_title_score = (
         sum(r["quality"]["title_score"] for r in results) / total if total > 0 else 0.0
     )
@@ -427,10 +425,10 @@ async def main() -> int:
     print("EXTRACTION VALIDATION REPORT")
     print("=" * 60)
     print(f"   Total URLs:        {total}")
-    print(f"   Passed (>=80%):    {passed} ({passed/total*100:.1f}%)")
-    print(f"   Failed:            {failed} ({failed/total*100:.1f}%)")
-    print(f"   Title Accuracy:    {title_accurate} ({title_accurate/total*100:.1f}%)")
-    print(f"   Content Complete:  {content_complete} ({content_complete/total*100:.1f}%)")
+    print(f"   Passed (>=80%):    {passed} ({passed / total * 100:.1f}%)")
+    print(f"   Failed:            {failed} ({failed / total * 100:.1f}%)")
+    print(f"   Title Accuracy:    {title_accurate} ({title_accurate / total * 100:.1f}%)")
+    print(f"   Content Complete:  {content_complete} ({content_complete / total * 100:.1f}%)")
     print(f"   Average Score:     {avg_score:.1f}/100")
     print(f"   Avg Title Score:   {avg_title_score:.1f}/100")
     print(f"   Avg Content Score: {avg_content_score:.1f}/100")
@@ -438,8 +436,8 @@ async def main() -> int:
     for extractor, stats in extractor_stats.items():
         print(f"   {extractor}:")
         print(f"      Count:  {stats['count']}")
-        print(f"      Passed: {stats['passed']} ({stats['passed']/stats['count']*100:.1f}%)")
-        print(f"      Failed: {stats['failed']} ({stats['failed']/stats['count']*100:.1f}%)")
+        print(f"      Passed: {stats['passed']} ({stats['passed'] / stats['count'] * 100:.1f}%)")
+        print(f"      Failed: {stats['failed']} ({stats['failed'] / stats['count'] * 100:.1f}%)")
         print(f"      Avg Score: {stats['avg_score']:.1f}/100")
     print("=" * 60)
 

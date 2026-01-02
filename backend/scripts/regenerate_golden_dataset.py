@@ -43,13 +43,13 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from dotenv import load_dotenv
-
 # Import status update helper from workflow runner
 from app.api.v1.analysis.workflow_runner import _update_analysis_status
+from dotenv import load_dotenv
+
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)

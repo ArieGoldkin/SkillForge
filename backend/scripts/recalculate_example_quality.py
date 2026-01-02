@@ -37,8 +37,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy import select, update
 
 from app.core.logging import get_logger
-from app.db.session import get_session_factory
 from app.db.models.agent_example import AgentExample
+from app.db.session import get_session_factory
 from app.shared.services.g_eval import g_eval_score
 from app.shared.services.g_eval.cost_tracker import GEvalCostTracker
 
@@ -146,14 +146,13 @@ def get_score_bucket(score: float) -> str:
     """Get the score distribution bucket."""
     if score >= 0.9:
         return "0.9-1.0 (excellent)"
-    elif score >= 0.8:
+    if score >= 0.8:
         return "0.8-0.9 (good)"
-    elif score >= 0.7:
+    if score >= 0.7:
         return "0.7-0.8 (acceptable)"
-    elif score >= 0.5:
+    if score >= 0.5:
         return "0.5-0.7 (poor)"
-    else:
-        return "0.0-0.5 (unusable)"
+    return "0.0-0.5 (unusable)"
 
 
 def generate_report(results: list[ScoringResult]) -> ScoringReport:

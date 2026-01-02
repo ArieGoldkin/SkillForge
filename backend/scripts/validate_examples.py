@@ -40,7 +40,8 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import uuid4
+
+import uuid_utils
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -108,7 +109,7 @@ def cmd_submit(args: argparse.Namespace) -> int:
 
     # Generate UUID for annotation (not a DB record, just in-memory identifier)
     annotation = Annotation(
-        id=str(uuid4()),
+        id=str(uuid_utils.uuid7()),
         annotator_id=args.annotator,
         example_id=args.example,
         chunk_id=args.chunk,

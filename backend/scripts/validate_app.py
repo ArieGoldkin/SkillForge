@@ -9,7 +9,8 @@ This script validates:
 """
 
 import sys
-from playwright.sync_api import sync_playwright, expect
+
+from playwright.sync_api import sync_playwright
 
 
 def main():

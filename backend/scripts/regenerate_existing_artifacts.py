@@ -31,10 +31,10 @@ load_dotenv()
 from sqlalchemy import delete, select, update
 
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.models.artifact import Artifact
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)

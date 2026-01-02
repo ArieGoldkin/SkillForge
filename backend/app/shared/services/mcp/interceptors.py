@@ -37,8 +37,8 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
-from uuid import uuid4
 
+import uuid_utils
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -274,8 +274,8 @@ class ResultEnrichmentInterceptor:
             Result from handler (unchanged, metadata logged separately)
 
         """
-        # Generate trace ID for correlation
-        trace_id = str(uuid4())
+        # Generate trace ID for correlation (UUID v7 for time-ordering)
+        trace_id = str(uuid_utils.uuid7())
 
         # Record start time
         start_time = time.time()

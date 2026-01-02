@@ -15,7 +15,8 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from uuid import uuid4
+
+import uuid_utils
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -136,8 +137,8 @@ async def main() -> int:
             tags = doc.get("tags", [])
             sections = doc.get("sections", [])
 
-            analysis_id = uuid4()
-            artifact_id = uuid4()
+            analysis_id = uuid_utils.uuid7()
+            artifact_id = uuid_utils.uuid7()
 
             analysis = Analysis(
                 id=analysis_id,
@@ -182,7 +183,7 @@ async def main() -> int:
 
                 content_hash = hashlib.sha256(content.encode()).hexdigest()
                 chunk = AnalysisChunk(
-                    id=uuid4(),
+                    id=uuid_utils.uuid7(),
                     analysis_id=analysis_id,
                     snippet=content,
                     vector=embedding,

@@ -31,11 +31,10 @@ def load_documents(file_path: Path) -> list[dict]:
     # Handle both formats
     if isinstance(data, list):
         return data
-    elif isinstance(data, dict) and "documents" in data:
+    if isinstance(data, dict) and "documents" in data:
         return data["documents"]
-    else:
-        print(f"Warning: Unexpected format in {file_path}")
-        return []
+    print(f"Warning: Unexpected format in {file_path}")
+    return []
 
 
 def validate_document(doc: dict) -> list[str]:

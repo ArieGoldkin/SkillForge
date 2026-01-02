@@ -4,11 +4,11 @@ This script demonstrates the compression module without needing a full workflow 
 """
 
 import asyncio
+
 from app.domains.analysis.workflows.tasks.aggregation.compress_findings import (
     CompressedFinding,
-    build_compression_user_prompt,
-    compress_all_findings,
     _format_findings_for_compression,
+    build_compression_user_prompt,
 )
 
 
@@ -78,7 +78,7 @@ async def main():
         critical_warnings=["SQL injection must be fixed before production"],
         relevant_code_snippets=["app.get('/login', auth_handler)"],
     )
-    print(f"CompressedFinding created successfully:")
+    print("CompressedFinding created successfully:")
     print(f"  - Agent: {compressed.agent_name}")
     print(f"  - Insights: {len(compressed.key_insights)}")
     print(f"  - Confidence: {compressed.confidence}")

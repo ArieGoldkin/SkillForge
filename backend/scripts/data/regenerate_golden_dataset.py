@@ -38,19 +38,19 @@ import argparse
 import asyncio
 import json
 import time
-import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
-from dotenv import load_dotenv
+import uuid_utils
 
 # Import status update helper from workflow runner
 from app.api.v1.analysis.workflow_runner import _update_analysis_status
+from dotenv import load_dotenv
+
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
@@ -122,7 +122,7 @@ def build_extraction_metadata(doc: dict) -> dict[str, Any]:
 
 async def create_analysis_record(doc: dict) -> Analysis:
     """Create a new analysis record in the database."""
-    doc_id = doc.get("id", str(uuid4()))
+    doc_id = doc.get("id", str(uuid_utils.uuid7()))
     title = doc.get("title", "Untitled")
     content_type = doc.get("content_type", "article")
     source_url = doc.get("source_url")
@@ -137,7 +137,7 @@ async def create_analysis_record(doc: dict) -> Analysis:
 
     async with AsyncSessionLocal() as session:
         analysis = Analysis(
-            id=uuid4(),
+            id=uuid_utils.uuid7(),
             url=source_url,
             title=title,
             content_type=content_type,

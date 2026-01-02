@@ -222,9 +222,8 @@ def main():
     if all_passed:
         print("\n🎉 All validations passed!")
         return 0
-    else:
-        print("\n⚠️  Some validations failed")
-        return 1
+    print("\n⚠️  Some validations failed")
+    return 1
 
 
 if __name__ == "__main__":

@@ -520,7 +520,7 @@ def print_validation_result(result: dict[str, Any]) -> None:
     print("=" * 60)
 
     stats = result["stats"]
-    print(f"\nDataset Statistics:")
+    print("\nDataset Statistics:")
     print(f"  Documents: {stats['documents']}")
     print(f"  Queries:   {stats['queries']}")
     print(f"  Sections:  {stats['sections']}")
@@ -645,9 +645,8 @@ async def cmd_check_duplicate(args: argparse.Namespace) -> int:
     if dup:
         print(f"\n🔄 DUPLICATE FOUND: '{dup}'")
         return 1
-    else:
-        print("\n✅ No duplicate found")
-        return 0
+    print("\n✅ No duplicate found")
+    return 0
 
 
 async def cmd_add(args: argparse.Namespace) -> int:
@@ -710,17 +709,16 @@ def main() -> int:
     # Run appropriate command
     if args.command == "validate":
         return asyncio.run(cmd_validate(args))
-    elif args.command == "validate-all":
+    if args.command == "validate-all":
         return asyncio.run(cmd_validate_all(args))
-    elif args.command == "coverage":
+    if args.command == "coverage":
         return asyncio.run(cmd_coverage(args))
-    elif args.command == "check-duplicate":
+    if args.command == "check-duplicate":
         return asyncio.run(cmd_check_duplicate(args))
-    elif args.command == "add":
+    if args.command == "add":
         return asyncio.run(cmd_add(args))
-    else:
-        parser.print_help()
-        return 1
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":

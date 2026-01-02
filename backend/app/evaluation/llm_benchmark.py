@@ -51,13 +51,13 @@ import contextvars
 import subprocess
 import sys
 import time
-import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 import tiktoken
+import uuid_utils
 
 from app.core.config import settings
 from app.core.exceptions import EvaluationError
@@ -703,8 +703,8 @@ class LLMBenchmark:
             """
             content = inputs.get("content", "")
             content_type = inputs.get("content_type", "article")
-            # Generate valid UUID for benchmark runs to satisfy progress persistence
-            analysis_id = inputs.get("analysis_id") or str(uuid.uuid4())
+            # Generate valid UUID v7 for benchmark runs (time-ordered for tracing)
+            analysis_id = inputs.get("analysis_id") or str(uuid_utils.uuid7())
 
             # Use thread-safe context variable to enable benchmark mode
             # This prevents FK constraint violations in progress_persistence
@@ -753,9 +753,9 @@ class LLMBenchmark:
             agent_type = inputs.get("agent_type", "tech_comparator")
             content_type = inputs.get("content_type", "article")
 
-            # Build minimal state for agent (use valid UUID for progress persistence)
+            # Build minimal state for agent (use valid UUID v7 for progress persistence)
             state: AnalysisState = {
-                "analysis_id": str(uuid.uuid4()),
+                "analysis_id": str(uuid_utils.uuid7()),
                 "url": "https://example.com",
                 "content_type": content_type,
                 "skill_level": "intermediate",
@@ -805,9 +805,9 @@ class LLMBenchmark:
             """
             agent_findings = inputs.get("agent_findings", [])
 
-            # Build minimal state (use valid UUID for progress persistence)
+            # Build minimal state (use valid UUID v7 for progress persistence)
             state: AnalysisState = {
-                "analysis_id": str(uuid.uuid4()),
+                "analysis_id": str(uuid_utils.uuid7()),
                 "url": "https://example.com",
                 "content_type": "article",
                 "skill_level": "intermediate",
@@ -956,8 +956,6 @@ class LLMBenchmark:
             Dictionary of aggregated metrics
 
         """
-        from uuid import uuid4
-
         from app.evaluation.types import EvalExample as LSExample
         from app.evaluation.types import EvalRun as LSRun
 
@@ -1001,9 +999,9 @@ class LLMBenchmark:
             example_cost = model_info.estimate_cost(input_tokens, output_tokens)
             total_cost += example_cost
 
-            # Create mock Run and Example for evaluators
-            run_id = uuid4()
-            example_id = uuid4()
+            # Create mock Run and Example for evaluators (UUID v7 for time-ordering)
+            run_id = uuid_utils.uuid7()
+            example_id = uuid_utils.uuid7()
 
             mock_run = LSRun(
                 id=run_id,

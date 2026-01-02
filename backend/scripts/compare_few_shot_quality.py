@@ -63,9 +63,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 load_dotenv()
 
-from app.core.logging import get_logger  # noqa: E402
-from app.db.session import get_session_factory  # noqa: E402
-from app.domains.analysis.workflows.agents.base import create_structured_agent  # noqa: E402
 from app.domains.analysis.workflows.agents.schemas.code_reviewer import (  # noqa: E402
     CodeReview,
 )
@@ -87,7 +84,11 @@ from app.domains.analysis.workflows.agents.schemas.security_auditor import (  # 
 from app.domains.analysis.workflows.agents.schemas.tech_comparator import (  # noqa: E402
     TechComparison,
 )
+
+from app.core.logging import get_logger  # noqa: E402
 from app.db.models.agent_example import AgentExample  # noqa: E402
+from app.db.session import get_session_factory  # noqa: E402
+from app.domains.analysis.workflows.agents.base import create_structured_agent  # noqa: E402
 from app.shared.services.agents.few_shot_factory import create_few_shot_agent  # noqa: E402
 from app.shared.services.embeddings.service import EmbeddingService  # noqa: E402
 from app.shared.services.prompts.chain_of_thought import get_cot_prompt  # noqa: E402
