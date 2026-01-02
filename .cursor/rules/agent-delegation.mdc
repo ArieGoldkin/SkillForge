@@ -13,11 +13,13 @@ priority: 10
 
 Before assigning work, use semantic matching:
 
-1. Read `.claude/agent-registry.json`
-2. Match user intent against `agent.capabilities` and `agent.can_solve_examples`
+1. **Reference** `.claude/agent-registry.json` structure (you already have access to agent capabilities via the registry)
+2. Match user intent against `agent.capabilities` and `agent.can_solve_examples` from the registry
 3. Score confidence (0-1) based on semantic similarity
 4. Select agent with confidence > 0.7
 5. Check for pre-composed workflows in `.claude/workflows/`
+
+**Note**: You don't need to explicitly read agent-registry.json - agent information is available through the rules system. Only read it if you need detailed skill mappings.
 
 ## Agent Selection Decision Tree
 

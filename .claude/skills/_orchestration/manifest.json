@@ -1,0 +1,210 @@
+{
+  "$schema": "./manifest.schema.json",
+  "version": "2.0.0",
+  "description": "Skill orchestration manifest - atomic skills, composites, and pipelines",
+
+  "atomic": {
+    "testing": {
+      "unit-testing-fundamentals": {
+        "path": "_atomic/testing/unit-testing-fundamentals.md",
+        "size": "small",
+        "tags": ["testing", "patterns"]
+      },
+      "unit-testing-python": {
+        "path": "_atomic/testing/unit-testing-python.md",
+        "size": "small",
+        "tags": ["testing", "python", "pytest"]
+      },
+      "unit-testing-typescript": {
+        "path": "_atomic/testing/unit-testing-typescript.md",
+        "size": "small",
+        "tags": ["testing", "typescript", "vitest"]
+      },
+      "api-mocking-msw": {
+        "path": "_atomic/testing/api-mocking-msw.md",
+        "size": "small",
+        "tags": ["testing", "mocking", "frontend"]
+      },
+      "api-mocking-vcr": {
+        "path": "_atomic/testing/api-mocking-vcr.md",
+        "size": "small",
+        "tags": ["testing", "mocking", "python"]
+      },
+      "integration-testing": {
+        "path": "_atomic/testing/integration-testing.md",
+        "size": "small",
+        "tags": ["testing", "integration", "api"]
+      },
+      "e2e-testing": {
+        "path": "_atomic/testing/e2e-testing.md",
+        "size": "small",
+        "tags": ["testing", "e2e", "playwright"]
+      },
+      "ai-llm-testing": {
+        "path": "_atomic/testing/ai-llm-testing.md",
+        "size": "small",
+        "tags": ["testing", "ai", "llm"]
+      }
+    },
+    "security": {
+      "owasp-top10": {
+        "path": "_atomic/security/owasp-top10.md",
+        "size": "small",
+        "tags": ["security", "owasp", "vulnerabilities"]
+      },
+      "auth-patterns": {
+        "path": "_atomic/security/auth-patterns.md",
+        "size": "small",
+        "tags": ["security", "auth", "jwt"]
+      },
+      "secrets-management": {
+        "path": "_atomic/security/secrets-management.md",
+        "size": "small",
+        "tags": ["security", "secrets", "env"]
+      },
+      "input-sanitization": {
+        "path": "_atomic/security/input-sanitization.md",
+        "size": "small",
+        "tags": ["security", "xss", "injection"]
+      },
+      "security-scanning": {
+        "path": "_atomic/security/security-scanning.md",
+        "size": "small",
+        "tags": ["security", "scanning", "audit"]
+      }
+    },
+    "ai-llm": {
+      "caching-hierarchy": {
+        "path": "_atomic/ai-llm/caching-hierarchy.md",
+        "size": "small",
+        "tags": ["ai", "caching", "architecture"]
+      },
+      "caching-semantic": {
+        "path": "_atomic/ai-llm/caching-semantic.md",
+        "size": "small",
+        "tags": ["ai", "caching", "redis", "vectors"]
+      },
+      "caching-prompt": {
+        "path": "_atomic/ai-llm/caching-prompt.md",
+        "size": "small",
+        "tags": ["ai", "caching", "claude"]
+      },
+      "caching-observability": {
+        "path": "_atomic/ai-llm/caching-observability.md",
+        "size": "small",
+        "tags": ["ai", "caching", "langfuse", "monitoring"]
+      }
+    }
+  },
+
+  "composites": {
+    "test-backend": {
+      "path": "_composites/test-backend.md",
+      "includes": [
+        "testing/unit-testing-fundamentals",
+        "testing/unit-testing-python",
+        "testing/api-mocking-vcr",
+        "testing/integration-testing",
+        "testing/ai-llm-testing"
+      ],
+      "trigger": "backend/**/*.py"
+    },
+    "test-frontend": {
+      "path": "_composites/test-frontend.md",
+      "includes": [
+        "testing/unit-testing-fundamentals",
+        "testing/unit-testing-typescript",
+        "testing/api-mocking-msw",
+        "testing/e2e-testing"
+      ],
+      "trigger": "frontend/**/*.{ts,tsx}"
+    },
+    "test-full": {
+      "path": "_composites/test-full.md",
+      "includes": ["test-backend", "test-frontend"],
+      "trigger": "**/*.{py,ts,tsx}"
+    },
+    "security-audit": {
+      "path": "_composites/security-audit.md",
+      "includes": [
+        "security/owasp-top10",
+        "security/auth-patterns",
+        "security/secrets-management",
+        "security/input-sanitization",
+        "security/security-scanning"
+      ]
+    },
+    "llm-caching": {
+      "path": "_composites/llm-caching.md",
+      "includes": [
+        "ai-llm/caching-hierarchy",
+        "ai-llm/caching-semantic",
+        "ai-llm/caching-prompt",
+        "ai-llm/caching-observability"
+      ]
+    }
+  },
+
+  "pipelines": {
+    "implement-feature": {
+      "description": "Full feature implementation pipeline",
+      "steps": [
+        { "skill": "brainstorming", "mode": "sequential" },
+        { "skill": "auto:test-*", "mode": "sequential" },
+        { "skill": "code-review-playbook", "mode": "sequential" },
+        { "skill": "commit", "mode": "sequential" }
+      ]
+    },
+    "verify": {
+      "description": "Parallel verification pipeline",
+      "steps": [
+        {
+          "mode": "parallel",
+          "skills": ["lint", "test-full", "security-audit"]
+        },
+        { "skill": "quality-gates", "mode": "sequential" }
+      ]
+    },
+    "pr-review": {
+      "description": "Pull request review pipeline",
+      "steps": [
+        {
+          "mode": "parallel",
+          "skills": [
+            "code-review-playbook",
+            "security-audit",
+            "test-full"
+          ]
+        }
+      ]
+    }
+  },
+
+  "routing": {
+    "auto-detect": {
+      "backend/**/*.py": "test-backend",
+      "frontend/**/*.{ts,tsx}": "test-frontend",
+      "**/workflows/**/*.py": "llm-caching"
+    }
+  },
+
+  "legacy": {
+    "note": "Remaining skills in root directory not yet decomposed",
+    "skills": [
+      "ai-native-development",
+      "api-design-framework",
+      "architecture-decision-record",
+      "ascii-visualizer",
+      "brainstorming",
+      "code-review-playbook",
+      "database-schema-designer",
+      "devops-deployment",
+      "golden-dataset-*",
+      "langgraph-workflows",
+      "observability-monitoring",
+      "performance-optimization",
+      "pgvector-search",
+      "quality-gates"
+    ]
+  }
+}

@@ -1,8 +1,8 @@
+import * as router from '@tanstack/react-router'
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import { analyzeAPI } from '@/services/api.service'
-import * as router from '@tanstack/react-router'
 
 import { useLibrarySkills } from '../useLibrarySkills'
 
