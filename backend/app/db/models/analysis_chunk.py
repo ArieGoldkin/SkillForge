@@ -1,15 +1,14 @@
 """Chunk-level embeddings for analyses."""
 
-from __future__ import annotations
-
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
-    Column,
     DateTime,
     Float,
     ForeignKey,
@@ -20,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -72,8 +71,10 @@ class AnalysisChunk(Base):
 
     __tablename__ = "analysis_chunks"
 
-    id = Column(PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()"))
-    analysis_id = Column(
+    id: Mapped[uuid.UUID] = mapped_column(
+        PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()")
+    )
+    analysis_id: Mapped[uuid.UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("analyses.id", ondelete="CASCADE"),
         nullable=False,
@@ -81,45 +82,59 @@ class AnalysisChunk(Base):
     )
 
     # Chunking metadata
-    granularity = Column(String(20), nullable=False)  # coarse | fine | summary
-    path = Column(JSONB, nullable=False)  # list[str]
-    section_title = Column(Text)
-    chunk_idx = Column(Integer, nullable=False)
-    chunk_total = Column(Integer, nullable=False)
+    granularity: Mapped[str] = mapped_column(String(20), nullable=False)  # coarse | fine | summary
+    path: Mapped[list[str]] = mapped_column(JSONB, nullable=False)  # list[str]
+    section_title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    chunk_idx: Mapped[int] = mapped_column(Integer, nullable=False)
+    chunk_total: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Content metadata
-    content_type = Column(String(50))  # Denormalized for filtering
-    language = Column(String(20))
+    content_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # Denormalized for filtering
+    language: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Deduplication
-    hash = Column(String(128), nullable=False, index=True)
+    hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
 
     # Embedding metadata
-    model = Column(String(100))
-    model_version = Column(String(50))
+    model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    model_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Content preview
-    snippet = Column(Text)
+    snippet: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Vector embedding
-    vector = Column(Vector(1536), nullable=False)
+    vector: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
 
     # Full-text search vector (auto-populated by database trigger)
-    content_tsvector = Column(TSVECTOR)
+    content_tsvector: Mapped[Any | None] = mapped_column(TSVECTOR, nullable=True)
 
     # Telemetry fields
-    token_count = Column(Integer)  # Token count for cost tracking
-    embedding_latency_ms = Column(Float)  # Embedding generation latency
-    was_truncated = Column(Boolean, default=False)  # Whether content was truncated
+    token_count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )  # Token count for cost tracking
+    embedding_latency_ms: Mapped[float | None] = mapped_column(
+        Float, nullable=True
+    )  # Embedding generation latency
+    was_truncated: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )  # Whether content was truncated
 
     # PII metadata (Issue #220)
     # Note: Only stores detection flags, NEVER actual PII values
-    pii_flag = Column(Boolean, default=False)  # Whether PII was detected
-    pii_types = Column(JSONB)  # List of PII types detected, e.g., ["email", "phone_us"]
+    pii_flag: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )  # Whether PII was detected
+    pii_types: Mapped[list[str] | None] = mapped_column(
+        JSONB, nullable=True
+    )  # List of PII types detected, e.g., ["email", "phone_us"]
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
-    updated_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),

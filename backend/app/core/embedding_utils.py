@@ -11,26 +11,29 @@ and use these utility functions for consistent, safe handling across the codebas
 
 """
 
-from typing import TYPE_CHECKING, Any, Union, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
 
 from app.core.logging import get_logger
-from app.core.types import EmbeddingVector
 
 if TYPE_CHECKING:
     import numpy as np
     from numpy.typing import NDArray
 
+    from app.core.types import EmbeddingVector
+
+    # Type alias for embedding inputs that may be list or numpy array
+    EmbeddingInput = EmbeddingVector | NDArray[np.float64] | None
+
+    # Type alias for values from SQLAlchemy columns (unknown at static analysis time)
+    # has_embedding() handles these safely at runtime
+    EmbeddingLike = EmbeddingInput | Any
+
 logger = get_logger(__name__)
 
-# Type alias for embedding inputs that may be list or numpy array
-EmbeddingInput = Union[EmbeddingVector, "NDArray[np.float64]", None]
 
-# Type alias for values from SQLAlchemy columns (unknown at static analysis time)
-# has_embedding() handles these safely at runtime
-EmbeddingLike = EmbeddingInput | Any
-
-
-def has_embedding(value: EmbeddingLike) -> bool:
+def has_embedding(value: Any) -> bool:
     """Check if an embedding value exists and is non-empty.
 
     Safe for both Python lists and numpy arrays. Handles the numpy
@@ -70,7 +73,7 @@ def has_embedding(value: EmbeddingLike) -> bool:
 
 
 def is_valid_embedding(
-    value: EmbeddingInput,
+    value: EmbeddingVector | NDArray[np.float64] | None,
     expected_dimensions: int = 1536,
 ) -> bool:
     """Check if an embedding is valid (exists and has correct dimensions).
@@ -100,7 +103,7 @@ def is_valid_embedding(
         return False
 
 
-def to_list(value: EmbeddingInput) -> EmbeddingVector | None:
+def to_list(value: EmbeddingVector | NDArray[np.float64] | None) -> EmbeddingVector | None:
     """Convert embedding to Python list, handling numpy arrays.
 
     Args:
@@ -142,7 +145,7 @@ def to_list(value: EmbeddingInput) -> EmbeddingVector | None:
         return None
 
 
-def to_numpy(value: EmbeddingInput) -> "NDArray[np.float64] | None":
+def to_numpy(value: EmbeddingVector | NDArray[np.float64] | None) -> NDArray[np.float64] | None:
     """Convert embedding to numpy array.
 
     Args:
@@ -177,7 +180,9 @@ def to_numpy(value: EmbeddingInput) -> "NDArray[np.float64] | None":
         return None
 
 
-def normalize_embedding(value: EmbeddingInput) -> EmbeddingVector | None:
+def normalize_embedding(
+    value: EmbeddingVector | NDArray[np.float64] | None,
+) -> EmbeddingVector | None:
     """Normalize embedding vector to unit length (L2 norm = 1).
 
     Args:
@@ -217,7 +222,7 @@ def normalize_embedding(value: EmbeddingInput) -> EmbeddingVector | None:
     return (array / magnitude).tolist()
 
 
-def safe_bool_for_logging(value: EmbeddingLike) -> bool:
+def safe_bool_for_logging(value: Any) -> bool:
     """Get a safe boolean representation for logging purposes.
 
     Replacement for `bool(embedding)` in log statements which fails

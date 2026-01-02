@@ -1,11 +1,13 @@
 """Agent finding model for multi-agent analysis results."""
 
+import uuid
 from datetime import UTC, datetime
+from typing import Any
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text, text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -24,23 +26,29 @@ class AgentFinding(Base):
 
     __tablename__ = "agent_findings"
 
-    id = Column(PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()"))
-    analysis_id = Column(
+    id: Mapped[uuid.UUID] = mapped_column(
+        PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()")
+    )
+    analysis_id: Mapped[uuid.UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("analyses.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    agent_type = Column(String(100), nullable=False, index=True)
-    findings = Column(JSONB, nullable=False)  # Structured findings from agent
-    confidence_score = Column(Float)
-    processing_time_ms = Column(Integer)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+    agent_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    findings: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False
+    )  # Structured findings from agent
+    confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    processing_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+    )
 
     # Status tracking columns
-    status = Column(String(20), nullable=False, default="success", index=True)
-    error_code = Column(String(50), nullable=True)
-    error_message = Column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="success", index=True)
+    error_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationship
     analysis = relationship("Analysis", backref="agent_findings")

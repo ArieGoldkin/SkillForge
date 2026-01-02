@@ -4,15 +4,14 @@ Issue #245: Agent Memory Access (RAG)
 Implements reactive and proactive recall patterns from Google ADK's Context Engineering.
 """
 
-from __future__ import annotations
-
+import uuid
 from datetime import UTC, datetime
 from enum import Enum
+from typing import Any
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     CheckConstraint,
-    Column,
     DateTime,
     Float,
     ForeignKey,
@@ -24,7 +23,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -68,10 +67,12 @@ class AgentMemory(Base):
 
     __tablename__ = "agent_memories"
 
-    id = Column(PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()"))
+    id: Mapped[uuid.UUID] = mapped_column(
+        PostgresUUID(as_uuid=True), primary_key=True, server_default=text("uuidv7()")
+    )
 
     # Optional link to source analysis (some memories are cross-analysis patterns)
-    analysis_id = Column(
+    analysis_id: Mapped[uuid.UUID | None] = mapped_column(
         PostgresUUID(as_uuid=True),
         ForeignKey("analyses.id", ondelete="CASCADE"),
         nullable=True,
@@ -79,22 +80,26 @@ class AgentMemory(Base):
     )
 
     # Memory classification
-    memory_type = Column(String(50), nullable=False, index=True)
-    agent_type = Column(String(50), nullable=True)  # Which agent created this
+    memory_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    agent_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # Which agent created this
 
     # Content
-    content = Column(Text, nullable=False)
-    embedding = Column(Vector(1536), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(1536), nullable=False)
 
     # Quality metrics
-    relevance_score = Column(Float, default=1.0)  # For ranking/filtering
-    token_count = Column(Integer)  # Track memory size
+    relevance_score: Mapped[float] = mapped_column(
+        Float, default=1.0, nullable=False
+    )  # For ranking/filtering
+    token_count: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Track memory size
 
     # Flexible metadata (named memory_metadata to avoid SQLAlchemy MetaData conflict)
-    memory_metadata = Column(JSONB, default=dict)
+    memory_metadata: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
 
     # Timestamps
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         nullable=False,
