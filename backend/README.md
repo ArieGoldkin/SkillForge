@@ -51,16 +51,16 @@ The backend service is also available in Docker Compose for easier development:
 
 ```bash
 # From project root, start backend service
-docker-compose up -d backend
+docker compose --env-file backend/.env up -d backend
 
 # View logs
-docker-compose logs -f backend
+docker compose --env-file backend/.env logs -f backend
 
 # Stop backend
-docker-compose stop backend
+docker compose --env-file backend/.env stop backend
 
 # Rebuild after code changes
-docker-compose up -d --build backend
+docker compose --env-file backend/.env up -d --build backend
 ```
 
 The backend service will:

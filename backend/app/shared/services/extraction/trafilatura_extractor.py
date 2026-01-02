@@ -42,7 +42,7 @@ class TrafilaturaExtractor:
             self.trafilatura = trafilatura
         except ImportError:
             msg = "trafilatura not installed. Install with: poetry add trafilatura"
-            logger.error("trafilatura_not_installed", error=msg)
+            logger.exception("trafilatura_not_installed", error=msg)
             raise ImportError(msg) from None
 
     async def extract_article(self, url: str) -> ExtractionResult:

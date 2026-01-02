@@ -64,7 +64,7 @@ services:
       # Langfuse: Override localhost with Docker network hostname
       LANGFUSE_HOST: http://langfuse-web:3000
       # Note: DATABASE_URL and LANGFUSE_HOST are overridden above for container-internal connections
-      # All other variables (API keys, LLM_MODEL, JINA_API_KEY, etc.) are loaded from ./backend/.env via env_file
+      # All other variables (API keys, LLM_MODEL, JINA_API_KEY, Langfuse keys, etc.) are loaded from ./backend/.env via env_file
     ports:
       - "8500:8500"
     depends_on:

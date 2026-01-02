@@ -174,7 +174,7 @@ class YouTubeExtractor:
 
         except TranscriptsDisabled as e:
             error_msg = f"Transcripts are disabled for video: {url}"
-            logger.error(
+            logger.exception(
                 "youtube_transcript_disabled",
                 url=url,
                 video_id=video_id,
@@ -186,7 +186,7 @@ class YouTubeExtractor:
 
         except NoTranscriptFound as e:
             error_msg = f"No transcript found for video: {url}"
-            logger.error(
+            logger.exception(
                 "youtube_no_transcript",
                 url=url,
                 video_id=video_id,

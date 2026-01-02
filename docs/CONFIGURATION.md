@@ -8,6 +8,11 @@
 
 ### Docker Compose (recommended dev setup)
 
+```bash
+# Start all services (uses unified env file)
+docker compose --env-file backend/.env up -d
+```
+
 - **Backend API**: `http://localhost:8500`
   - Swagger UI: `http://localhost:8500/docs`
   - Health: `http://localhost:8500/api/v1/health`
@@ -16,7 +21,7 @@
   - User: `dev`
   - Password: `devpass`
 
-**Source of truth:** `docker-compose.yml`
+**Source of truth:** `docker-compose.yml`, `backend/.env`
 
 ### Frontend dev server
 

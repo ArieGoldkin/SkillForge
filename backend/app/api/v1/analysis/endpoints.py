@@ -356,7 +356,7 @@ async def create_analysis(
                         )  # type: ignore[arg-type]
                 except TimeoutError:
                     # Workflow exceeded timeout - mark as failed
-                    logger.error(
+                    logger.exception(
                         "workflow_timeout_exceeded",
                         analysis_id=str(analysis_uuid),
                         timeout_seconds=WORKFLOW_TIMEOUT,
@@ -700,7 +700,7 @@ async def rerun_analysis(
                         start_from_stage="analyzing",  # Skip extraction, reuse existing content
                     )  # type: ignore[arg-type]
             except TimeoutError:
-                logger.error(
+                logger.exception(
                     "workflow_timeout_exceeded",
                     analysis_id=str(analysis_id),
                     timeout_seconds=WORKFLOW_TIMEOUT,
@@ -876,7 +876,7 @@ async def retry_analysis(
                         "standard",  # Default analysis mode
                     )  # type: ignore[arg-type]
             except TimeoutError:
-                logger.error(
+                logger.exception(
                     "workflow_timeout_exceeded",
                     analysis_id=str(analysis_id),
                     timeout_seconds=WORKFLOW_TIMEOUT,

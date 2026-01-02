@@ -55,13 +55,24 @@ MAIN_CONTENT_INDICATORS = [
 ]
 
 # Patterns for lines that indicate end of main content
+# NOTE: These patterns are intentionally conservative. Trafilatura (our primary extractor)
+# already handles boilerplate detection with F1=0.937. These patterns only catch
+# obvious end-of-article markers that Trafilatura might miss.
+# DO NOT add generic terms like "sidebar" - they cause false positives on TOC entries.
+# See: https://trafilatura.readthedocs.io/en/latest/evaluation.html
 END_CONTENT_INDICATORS = [
-    r"^#{1,3}\s*(?:related|more|recommended|popular|trending)",
-    r"^#{1,3}\s*(?:comments?|discussion|replies)",
-    r"^#{1,3}\s*(?:about the author|author bio|written by)",
-    r"^#{1,3}\s*(?:share this|spread the word)",
-    r"^#{1,3}\s*(?:newsletter|subscribe|sign up)",
-    r"^#{1,3}\s*(?:footer|sidebar|widget)",
+    # Only match standalone "Related Posts/Articles" sections, not inline references
+    r"^#{1,3}\s+(?:related\s+(?:posts?|articles?|stories|reads?)|more\s+(?:from|like\s+this)|you\s+(?:may|might)\s+(?:also\s+)?like)\s*$",
+    # Comment sections at end of articles
+    r"^#{1,3}\s+(?:comments?|discussion|leave\s+a\s+(?:comment|reply)|reader\s+(?:comments?|responses?))\s*$",
+    # Author bio sections (distinct from inline author mentions)
+    r"^#{1,3}\s+(?:about\s+the\s+author|author\s+bio|written\s+by|posted\s+by)\s*$",
+    # Social sharing CTAs
+    r"^#{1,3}\s+(?:share\s+this|spread\s+the\s+word|share\s+on)\s*$",
+    # Newsletter signup sections
+    r"^#{1,3}\s+(?:newsletter|subscribe|sign\s+up|join\s+our)\s*$",
+    # Footer markers only - NOT sidebar (sidebar is often legitimate content)
+    r"^#{1,3}\s+(?:footer|site\s+footer)\s*$",
 ]
 
 

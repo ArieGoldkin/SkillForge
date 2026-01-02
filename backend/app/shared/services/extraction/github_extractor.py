@@ -189,7 +189,7 @@ class GitHubExtractor:
         except GithubException as e:
             if e.status == 404:
                 error_msg = f"Repository not found: {url}"
-                logger.error(
+                logger.exception(
                     "github_repo_not_found",
                     url=url,
                     owner=owner,
@@ -199,7 +199,7 @@ class GitHubExtractor:
                 raise JinaReaderError(error_msg, error_code=ExtractionErrorCode.HTTP_404) from e
 
             error_msg = f"GitHub API error ({e.status}): {url}"
-            logger.error(
+            logger.exception(
                 "github_api_error",
                 url=url,
                 owner=owner,

@@ -54,11 +54,12 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Determine which Docker Compose command to use
+# Note: Uses --env-file backend/.env for unified environment configuration
 DOCKER_COMPOSE_CMD=""
 if command -v docker-compose &> /dev/null; then
-    DOCKER_COMPOSE_CMD="docker-compose"
+    DOCKER_COMPOSE_CMD="docker-compose --env-file backend/.env"
 elif docker compose version &> /dev/null; then
-    DOCKER_COMPOSE_CMD="docker compose"
+    DOCKER_COMPOSE_CMD="docker compose --env-file backend/.env"
 else
     error "Docker Compose not found. Please install Docker Compose."
     exit 1
