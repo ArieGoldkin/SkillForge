@@ -66,9 +66,8 @@ jobs:
 
     env:
       DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
-      # Langfuse observability for evaluation traces (Issue #602)
-      # Only enable if secrets are configured (graceful fallback for forks/missing secrets)
-      LANGFUSE_ENABLED: ${{ secrets.LANGFUSE_PUBLIC_KEY != '' && 'true' || 'false' }}
+      # Langfuse observability - enabled at runtime only if service is available
+      # Step-level override in evaluation steps uses runtime availability check
       LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
       LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
       LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
@@ -130,40 +129,16 @@ jobs:
           fi
           poetry install --no-interaction --no-root
 
-      - name: Ensure Langfuse running
+      - name: Check Langfuse availability
+        id: langfuse
         run: |
-          if ! curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
-            echo "Starting Langfuse stack..."
-            cd ${{ github.workspace }}
-
-            # Create env file for Langfuse Docker services
-            cat > .env.langfuse << 'EOF'
-          LANGFUSE_POSTGRES_USER=langfuse
-          LANGFUSE_POSTGRES_PASSWORD=langfuse
-          LANGFUSE_POSTGRES_DB=langfuse
-          CLICKHOUSE_USER=default
-          CLICKHOUSE_PASSWORD=langfuse
-          LANGFUSE_REDIS_PASSWORD=redis-dev
-          MINIO_ROOT_USER=minioadmin
-          MINIO_ROOT_PASSWORD=minioadmin
-          NEXTAUTH_SECRET=eval-secret-key
-          NEXTAUTH_SALT=eval-salt
-          LANGFUSE_ENCRYPTION_KEY=eval-encryption-key
-          LANGFUSE_INIT_USER_PASSWORD=test
-          EOF
-
-            docker compose --env-file .env.langfuse up -d langfuse-web langfuse-worker langfuse-db langfuse-clickhouse langfuse-redis langfuse-minio langfuse-minio-setup
-
-            echo "Waiting for Langfuse to be healthy..."
-            for i in {1..30}; do
-              if curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
-                echo "Langfuse is ready"
-                break
-              fi
-              sleep 2
-            done
+          # Check if Langfuse is already running on self-hosted runner
+          if curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
+            echo "✅ Langfuse is available"
+            echo "available=true" >> $GITHUB_OUTPUT
           else
-            echo "Langfuse already running"
+            echo "⚠️ Langfuse not available - evaluation will run without tracing"
+            echo "available=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup database
@@ -195,6 +170,8 @@ jobs:
         env:
           # Use Ollama embeddings instead of deterministic (Issue #606)
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
+          # Override Langfuse based on runtime availability check
+          LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
         run: |
           # Load fixture data with Ollama embeddings for evaluation
           poetry run python scripts/load_expanded_fixtures.py --expanded --replace
@@ -206,6 +183,8 @@ jobs:
         env:
           # Use Ollama local models for evaluation (Issue #606)
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
+          # Override Langfuse based on runtime availability check
+          LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
         run: |
           # Run evaluation with local Ollama models (93% cost savings)
           poetry run python scripts/run_evaluation.py \
