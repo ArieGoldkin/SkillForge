@@ -14,6 +14,32 @@ Validate critical user journeys end-to-end.
 - Visual regression testing
 - Full stack validation
 
+## Semantic Locators (2026 Best Practice)
+
+```typescript
+// ✅ PREFERRED: Role-based locators (most resilient)
+await page.getByRole('button', { name: 'Add to cart' }).click();
+await page.getByRole('link', { name: 'Checkout' }).click();
+await page.getByRole('heading', { name: 'Order Summary' });
+
+// ✅ GOOD: Label-based for form controls
+await page.getByLabel('Email').fill('test@example.com');
+await page.getByLabel('Card number').fill('4242424242424242');
+
+// ✅ ACCEPTABLE: Test IDs for stable anchors
+await page.getByTestId('checkout-button').click();
+
+// ❌ AVOID: CSS selectors and XPath (fragile)
+// await page.click('[data-testid="add-to-cart"]');  // Use getByTestId instead
+// await page.locator('.confirmation');              // Use getByRole instead
+```
+
+**Locator Priority (2026):**
+1. `getByRole()` - Matches how users/assistive tech see the page
+2. `getByLabel()` - For form inputs with labels
+3. `getByPlaceholder()` - For inputs with placeholders
+4. `getByTestId()` - When semantic locators aren't possible
+
 ## Basic Playwright Test
 
 ```typescript
@@ -23,21 +49,21 @@ test('user can complete checkout flow', async ({ page }) => {
   // Navigate
   await page.goto('/products');
 
-  // Add to cart
-  await page.click('[data-testid="add-to-cart"]');
+  // Add to cart (semantic locator)
+  await page.getByRole('button', { name: 'Add to cart' }).click();
 
   // Go to checkout
-  await page.click('[data-testid="checkout-button"]');
+  await page.getByRole('link', { name: 'Checkout' }).click();
 
-  // Fill form
-  await page.fill('[name="email"]', 'test@example.com');
-  await page.fill('[name="card"]', '4242424242424242');
+  // Fill form (label-based locators)
+  await page.getByLabel('Email').fill('test@example.com');
+  await page.getByLabel('Card number').fill('4242424242424242');
 
   // Submit
-  await page.click('button[type="submit"]');
+  await page.getByRole('button', { name: 'Submit' }).click();
 
   // Verify
-  await expect(page.locator('.confirmation')).toContainText('Order confirmed');
+  await expect(page.getByRole('heading', { name: 'Order confirmed' })).toBeVisible();
 });
 ```
 
@@ -136,10 +162,12 @@ Focus E2E tests on business-critical paths:
 
 | Decision | Recommendation |
 |----------|----------------|
+| Locators | `getByRole` > `getByLabel` > `getByTestId` |
 | Browser | Chromium default, Firefox/WebKit for compat |
 | Execution | 5-30s per test |
 | Parallelism | Use test sharding |
 | Screenshots | On failure only |
+| CSS/XPath | Avoid (fragile, breaks on layout changes) |
 
 ## Common Mistakes
 

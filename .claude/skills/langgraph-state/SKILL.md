@@ -27,6 +27,32 @@ class WorkflowState(TypedDict):
     metadata: dict
 ```
 
+## MessagesState Pattern (2026 Best Practice)
+
+```python
+from langgraph.graph import MessagesState
+from langgraph.graph.message import add_messages
+from typing import Annotated
+
+# Option 1: Use built-in MessagesState (recommended)
+class AgentState(MessagesState):
+    """Extends MessagesState with custom fields."""
+    user_id: str
+    context: dict
+
+# Option 2: Define messages manually with add_messages reducer
+class CustomState(TypedDict):
+    messages: Annotated[list, add_messages]  # Smart append/update by ID
+    metadata: dict
+```
+
+**Why `add_messages` matters:**
+- Appends new messages (doesn't overwrite)
+- Updates existing messages by ID
+- Handles message deduplication automatically
+
+> **Note**: `MessageGraph` is deprecated in LangGraph v1.0.0. Use `StateGraph` with a `messages` key instead.
+
 ## Pydantic Approach (Validation)
 
 ```python
@@ -103,10 +129,13 @@ def node(state: WorkflowState) -> WorkflowState:
 
 | Decision | Recommendation |
 |----------|----------------|
-| TypedDict vs Pydantic | TypedDict for simple, Pydantic for validation |
+| TypedDict vs Pydantic | TypedDict for internal state, Pydantic at boundaries |
+| Messages state | Use `MessagesState` or `add_messages` reducer |
 | Accumulators | Always use `Annotated[list, add]` for multi-agent |
 | Nesting | Keep state flat (easier debugging) |
 | Immutability | Return new state, don't mutate |
+
+**2026 Guidance**: Use TypedDict inside the graph (lightweight, no runtime overhead). Use Pydantic at boundaries (inputs/outputs, user-facing data) for validation.
 
 ## Common Mistakes
 
