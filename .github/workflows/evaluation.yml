@@ -62,10 +62,7 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 30
 
-    # NOTE: Docker services removed - self-hosted macOS runners use local PostgreSQL 17
-    # Setup: brew install postgresql@18 pgvector && brew services start postgresql@18
-    # Database: createdb skillforge_test && psql -d skillforge_test -c "CREATE EXTENSION vector;"
-    # Ollama: brew install ollama && ollama pull nomic-embed-text qwen2.5-coder:32b deepseek-r1:70b
+    # Self-hosted macOS runners provide: PostgreSQL 18, Ollama, Langfuse (Docker)
 
     env:
       DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
@@ -133,12 +130,28 @@ jobs:
           fi
           poetry install --no-interaction --no-root
 
+      - name: Ensure Langfuse running
+        run: |
+          if ! curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
+            echo "Starting Langfuse stack..."
+            cd ${{ github.workspace }} && docker compose up -d langfuse-web langfuse-worker langfuse-db langfuse-clickhouse langfuse-redis langfuse-minio langfuse-minio-setup
+            echo "Waiting for Langfuse to be healthy..."
+            for i in {1..30}; do
+              if curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
+                echo "Langfuse is ready"
+                break
+              fi
+              sleep 2
+            done
+          else
+            echo "Langfuse already running"
+          fi
+
       - name: Setup database
         working-directory: backend
         run: |
-          # Local PostgreSQL 17 with pgvector on self-hosted runner
-          /usr/local/opt/postgresql@18/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
-          # Run migrations to set up schema (use python -m to avoid PATH issues with CLI entrypoints)
+          # PostgreSQL 18 with pgvector on self-hosted runner
+          /opt/homebrew/opt/postgresql@18/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
           poetry run python -m alembic upgrade head
 
       - name: Ensure Ollama models ready
