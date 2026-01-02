@@ -74,6 +74,56 @@
       }
     },
     "ai-llm": {
+      "embeddings": {
+        "path": "_atomic/ai-llm/embeddings.md",
+        "size": "small",
+        "tags": ["ai", "embeddings", "vectors", "similarity"]
+      },
+      "vector-databases": {
+        "path": "_atomic/ai-llm/vector-databases.md",
+        "size": "small",
+        "tags": ["ai", "vector-database", "pinecone", "pgvector"]
+      },
+      "rag-patterns": {
+        "path": "_atomic/ai-llm/rag-patterns.md",
+        "size": "small",
+        "tags": ["ai", "rag", "retrieval", "hyde"]
+      },
+      "function-calling": {
+        "path": "_atomic/ai-llm/function-calling.md",
+        "size": "small",
+        "tags": ["ai", "function-calling", "tools"]
+      },
+      "agentic-workflows": {
+        "path": "_atomic/ai-llm/agentic-workflows.md",
+        "size": "small",
+        "tags": ["ai", "agents", "react", "autonomous"]
+      },
+      "multi-agent-orchestration": {
+        "path": "_atomic/ai-llm/multi-agent-orchestration.md",
+        "size": "small",
+        "tags": ["ai", "multi-agent", "orchestration", "supervisor"]
+      },
+      "multi-agent-synthesis": {
+        "path": "_atomic/ai-llm/multi-agent-synthesis.md",
+        "size": "small",
+        "tags": ["ai", "multi-agent", "synthesis", "llm-as-judge"]
+      },
+      "streaming-responses": {
+        "path": "_atomic/ai-llm/streaming-responses.md",
+        "size": "small",
+        "tags": ["ai", "streaming", "sse", "realtime"]
+      },
+      "cost-optimization": {
+        "path": "_atomic/ai-llm/cost-optimization.md",
+        "size": "small",
+        "tags": ["ai", "cost", "optimization", "caching"]
+      },
+      "ollama-local-inference": {
+        "path": "_atomic/ai-llm/ollama-local-inference.md",
+        "size": "small",
+        "tags": ["ai", "ollama", "local", "langchain"]
+      },
       "caching-hierarchy": {
         "path": "_atomic/ai-llm/caching-hierarchy.md",
         "size": "small",
@@ -142,6 +192,44 @@
         "ai-llm/caching-prompt",
         "ai-llm/caching-observability"
       ]
+    },
+    "ai-rag-pipeline": {
+      "path": "_composites/ai-rag-pipeline.md",
+      "includes": [
+        "ai-llm/embeddings",
+        "ai-llm/vector-databases",
+        "ai-llm/rag-patterns"
+      ],
+      "trigger": "**/rag/**/*.py"
+    },
+    "ai-agent-workflow": {
+      "path": "_composites/ai-agent-workflow.md",
+      "includes": [
+        "ai-llm/agentic-workflows",
+        "ai-llm/multi-agent-orchestration",
+        "ai-llm/multi-agent-synthesis",
+        "ai-llm/function-calling"
+      ],
+      "trigger": "**/workflows/**/*.py"
+    },
+    "ai-native-full": {
+      "path": "_composites/ai-native-full.md",
+      "includes": [
+        "ai-rag-pipeline",
+        "ai-agent-workflow",
+        "ai-llm/streaming-responses",
+        "ai-llm/cost-optimization",
+        "llm-caching"
+      ],
+      "trigger": "**/ai/**/*.py"
+    },
+    "ai-local-dev": {
+      "path": "_composites/ai-local-dev.md",
+      "includes": [
+        "ai-llm/ollama-local-inference",
+        "ai-llm/cost-optimization"
+      ],
+      "trigger": "OLLAMA_ENABLED=true"
     }
   },
 
@@ -191,7 +279,6 @@
   "legacy": {
     "note": "Remaining skills in root directory not yet decomposed",
     "skills": [
-      "ai-native-development",
       "api-design-framework",
       "architecture-decision-record",
       "ascii-visualizer",
