@@ -359,6 +359,18 @@ async def _execute_agent_retry_loop(  # noqa: PLR0913
     while attempts <= max_retries:
         # Invoke agent
         final_result = await _invoke_agent_with_timeout(params, config, current_messages)
+
+        # Issue #610: Handle circuit breaker open - agent was skipped
+        if isinstance(final_result, dict) and final_result.get("status") == "skipped":
+            logger.info(
+                "agent_skipped_due_to_circuit_breaker",
+                agent_type=params.agent_type,
+                analysis_id=str(params.analysis_id),
+                skipped_reason=final_result.get("skipped_reason", "Circuit breaker open"),
+            )
+            # Return findings with skipped status - will be handled by aggregation
+            return final_result
+
         findings = extract_structured_response(
             final_result, params.agent_type, analysis_id=str(params.analysis_id)
         )
@@ -406,7 +418,9 @@ async def _execute_agent_retry_loop(  # noqa: PLR0913
                 )
                 # Mark findings as "no_data" for aggregation processing
                 findings["status"] = "no_data"
-                findings["no_data_reason"] = "No technologies to validate (expected for meta-content)"
+                findings["no_data_reason"] = (
+                    "No technologies to validate (expected for meta-content)"
+                )
 
         if findings_check.should_fail:
             raise ValueError(findings_check.error_message)

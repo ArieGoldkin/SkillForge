@@ -47,6 +47,42 @@ function isFailedStatus(status: AnalysisStatus): boolean {
   )
 }
 
+/**
+ * Calculate progress percentage from analysis status.
+ *
+ * For completed analyses: 100%
+ * For running/analyzing analyses: Estimated 50-75% based on typical workflow
+ * For failed analyses: undefined (no progress to show)
+ * For pending analyses: 0% (not started)
+ *
+ * TODO: Enhance this with actual stage completion data from analysis status API
+ * when available for more accurate progress tracking.
+ */
+function calculateProgress(status: AnalysisStatus): number | undefined {
+  if (isFailedStatus(status)) {
+    return undefined
+  }
+
+  switch (status) {
+    case 'complete':
+      return 100
+    case 'extracting':
+      // Early stage - extraction typically fast
+      return 20
+    case 'analyzing':
+      // Mid stage - most time spent here
+      return 65
+    case 'generating_artifact':
+      // Late stage - almost done
+      return 85
+    case 'pending':
+      return 0
+    default:
+      // Default to showing some progress for unknown states
+      return 0
+  }
+}
+
 function transformItemToSkill(
   item: SearchResultItem & {
     error_code?: string | null
@@ -57,7 +93,6 @@ function transformItemToSkill(
   onRetry: (analysisId: string, stage?: string) => void
 ) {
   const tags = item.tags?.length ? item.tags : [item.content_type]
-  const isFailed = isFailedStatus(item.status)
   return {
     id: item.analysis_id,
     title: normalizeTitle(item.title),
@@ -69,7 +104,7 @@ function transformItemToSkill(
     duration: 25,
     difficulty: 'intermediate' as const,
     tags,
-    progress: isFailed ? undefined : 0,
+    progress: calculateProgress(item.status),
     status: mapAnalysisStatusToSkillStatus(item.status),
     analysisStatus: item.status,
     // Error tracking fields (for failed analyses)

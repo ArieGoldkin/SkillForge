@@ -69,3 +69,33 @@ def detect_content_type(url: str) -> str:
 
     # Default to article
     return CONTENT_TYPE_ARTICLE
+
+
+def is_youtube_url(url: str) -> bool:
+    """Check if URL is a YouTube video URL.
+
+    Args:
+        url: URL to check
+
+    Returns:
+        True if URL matches YouTube patterns
+
+    """
+    from app.shared.services.extraction.youtube_extractor import extract_video_id
+
+    return extract_video_id(url) is not None
+
+
+def is_github_url(url: str) -> bool:
+    """Check if URL is a GitHub repository URL.
+
+    Args:
+        url: URL to check
+
+    Returns:
+        True if URL matches GitHub patterns
+
+    """
+    from app.shared.services.extraction.github_extractor import extract_repo_info
+
+    return extract_repo_info(url) is not None

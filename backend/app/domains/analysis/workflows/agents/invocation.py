@@ -25,6 +25,7 @@ from typing import cast
 
 from langchain_core.runnables import Runnable
 
+from app.core.circuit_breaker import CircuitBreakerOpenError
 from app.core.langfuse_service import get_langfuse_service
 from app.core.logging import get_logger
 from app.core.resilience import get_resilience_manager
@@ -227,6 +228,27 @@ async def invoke_agent(
             )
             # Raise TimeoutError to trigger with_fallbacks() chain
             raise TimeoutError(timeout_msg) from None
+        except CircuitBreakerOpenError:
+            # Issue #610: Circuit breaker is open - return empty findings instead of failing
+            # This prevents cascading failures when LLM API is unavailable
+            duration = time.time() - start_time
+            logger.warning(
+                "agent_invocation_circuit_breaker_open",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                invocation_method="ainvoke",
+                circuit_state=circuit_breaker.state.value,
+                duration_seconds=duration,
+                trace_id=trace_id,
+                message="Circuit breaker is OPEN - returning empty findings (agent skipped)",
+            )
+            # Return empty findings dict with status="skipped" to allow workflow to continue
+            # The aggregation layer will handle skipped agents gracefully
+            return {
+                "status": "skipped",
+                "skipped_reason": "Circuit breaker is OPEN - LLM API unavailable",
+                "agent_type": agent_type,
+            }
         except Exception as e:
             duration = time.time() - start_time
             logger.error(
@@ -245,10 +267,64 @@ async def invoke_agent(
             raise
     else:
         # Sync invoke in thread pool with timeout
+        # Issue #610: Check circuit breaker state before sync invoke
+        if circuit_breaker.is_open:
+            duration = time.time() - start_time
+            logger.warning(
+                "agent_invocation_circuit_breaker_open",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                invocation_method="sync_thread",
+                circuit_state=circuit_breaker.state.value,
+                duration_seconds=duration,
+                trace_id=trace_id,
+                message="Circuit breaker is OPEN - returning empty findings (agent skipped)",
+            )
+            return {
+                "status": "skipped",
+                "skipped_reason": "Circuit breaker is OPEN - LLM API unavailable",
+                "agent_type": agent_type,
+            }
+
         try:
-            async with asyncio.timeout(timeout):
-                result = await asyncio.to_thread(agent.invoke, input_messages)
+
+            async def protected_sync_call() -> dict[str, object]:
+                """Protected sync call wrapped for circuit breaker."""
+                async with asyncio.timeout(timeout):
+                    return cast(
+                        "dict[str, object]", await asyncio.to_thread(agent.invoke, input_messages)
+                    )
+
+            result = await circuit_breaker.call(protected_sync_call)
+            duration = time.time() - start_time
+
+            logger.info(
+                "agent_invocation_success",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                invocation_method="sync_thread",
+                duration_seconds=duration,
+                trace_id=trace_id,
+            )
             return cast("dict[str, object]", result)
+        except CircuitBreakerOpenError:
+            # Issue #610: Circuit breaker opened during sync call
+            duration = time.time() - start_time
+            logger.warning(
+                "agent_invocation_circuit_breaker_open",
+                agent_type=agent_type,
+                analysis_id=analysis_id,
+                invocation_method="sync_thread",
+                circuit_state=circuit_breaker.state.value,
+                duration_seconds=duration,
+                trace_id=trace_id,
+                message="Circuit breaker is OPEN - returning empty findings (agent skipped)",
+            )
+            return {
+                "status": "skipped",
+                "skipped_reason": "Circuit breaker is OPEN - LLM API unavailable",
+                "agent_type": agent_type,
+            }
         except Exception as e:
             duration = time.time() - start_time
             logger.error(

@@ -284,8 +284,9 @@ async def _extract_content_node(state: AnalysisState) -> dict[str, object]:
     if title:
         # Clean title: strip "Title:" prefix and whitespace (common extraction artifact)
         import re
-        cleaned_title = re.sub(r'^title:\s*', '', title, flags=re.IGNORECASE).strip()
-        
+
+        cleaned_title = re.sub(r"^title:\s*", "", title, flags=re.IGNORECASE).strip()
+
         # Only save if title is meaningful (not empty after cleaning)
         if cleaned_title and cleaned_title.lower() != "untitled":
             session_factory = get_session_factory()

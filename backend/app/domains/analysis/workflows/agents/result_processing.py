@@ -230,8 +230,16 @@ def _count_insights(findings: dict[str, object], agent_type: str) -> int:  # noq
         insight_count = (
             trend_count
             + alt_count
-            + (1 if future_outlook and isinstance(future_outlook, str) and future_outlook.strip() else 0)
-            + (1 if recommendation and isinstance(recommendation, str) and recommendation.strip() else 0)
+            + (
+                1
+                if future_outlook and isinstance(future_outlook, str) and future_outlook.strip()
+                else 0
+            )
+            + (
+                1
+                if recommendation and isinstance(recommendation, str) and recommendation.strip()
+                else 0
+            )
         )
         return insight_count
 

@@ -19,7 +19,12 @@ from app.domains.analysis.services.context.artifact_store import ArtifactStore
 from app.domains.analysis.workflows.state import ContentRef
 from app.shared.services.extraction.arxiv_pdf_extractor import ArxivPDFExtractor, is_arxiv_url
 from app.shared.services.extraction.content_type import detect_content_type
+from app.shared.services.extraction.github_extractor import GitHubExtractor, is_github_url
 from app.shared.services.extraction.jina_reader import JinaReader
+from app.shared.services.extraction.youtube_extractor import (
+    YouTubeExtractor,
+    is_youtube_url,
+)
 from app.shared.services.messaging.sse_helpers import emit_error_event, emit_streaming_event
 
 logger = get_logger(__name__)
@@ -39,7 +44,13 @@ logger = get_logger(__name__)
 async def extract_content(  # noqa: PLR0915
     url: str, analysis_id: AnalysisID, analysis_mode: str = "standard"
 ) -> dict:
-    """Extract content from URL using JinaReader.
+    """Extract content from URL using appropriate extractor.
+
+    Routes to specialized extractors based on URL pattern:
+    - arXiv URLs → ArxivPDFExtractor
+    - YouTube URLs → YouTubeExtractor
+    - GitHub URLs → GitHubExtractor
+    - Other URLs → JinaReader
 
     Args:
         url: The URL to extract content from
@@ -78,9 +89,10 @@ async def extract_content(  # noqa: PLR0915
 
     logger.info("workflow_extraction_started", analysis_id=analysis_id, url=url)
 
-    # Issue #299-304: Route arXiv URLs to PDF extractor for full paper content
-    # Standard URLs use Jina Reader (HTML extraction)
-    extractor: ArxivPDFExtractor | JinaReader
+    # Route URLs to appropriate extractors based on content type
+    # Issue #299-304: ArXiv PDF extraction
+    # ROADMAP gap: YouTube and GitHub extractors (now implemented)
+    extractor: ArxivPDFExtractor | YouTubeExtractor | GitHubExtractor | JinaReader
     if is_arxiv_url(url):
         logger.info(
             "workflow_extraction_arxiv_detected",
@@ -88,6 +100,20 @@ async def extract_content(  # noqa: PLR0915
             url=url,
         )
         extractor = ArxivPDFExtractor()
+    elif is_youtube_url(url):
+        logger.info(
+            "workflow_extraction_youtube_detected",
+            analysis_id=analysis_id,
+            url=url,
+        )
+        extractor = YouTubeExtractor()
+    elif is_github_url(url):
+        logger.info(
+            "workflow_extraction_github_detected",
+            analysis_id=analysis_id,
+            url=url,
+        )
+        extractor = GitHubExtractor()
     else:
         extractor = JinaReader()
 

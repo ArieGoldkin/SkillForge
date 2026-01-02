@@ -8,7 +8,12 @@ import pytest
 
 from app.core.exceptions import AgentError
 from app.core.types import AnalysisID
-from app.domains.analysis.workflows.agents.execution import run_agent_with_tracking
+from app.domains.analysis.workflows.agents.execution import (
+    AgentExecutionConfig,
+    AgentExecutionParams,
+    _execute_agent_retry_loop,
+    run_agent_with_tracking,
+)
 
 
 @pytest.mark.unit
@@ -540,3 +545,64 @@ async def test_trend_validator_empty_trends_no_other_insights_fails_validation(
 
         # Verify error message indicates insufficient findings
         assert "findings" in str(exc_info.value).lower()
+
+
+@pytest.mark.asyncio
+@patch("app.core.agent_config.get_stage_name", return_value="test_stage")
+@patch(
+    "app.domains.analysis.workflows.agents.execution.emit_agent_progress", new_callable=AsyncMock
+)
+async def test_execute_agent_retry_loop_handles_skipped_status(
+    mock_emit_progress,
+    mock_get_stage_name,
+    mock_session,
+):
+    """Test that _execute_agent_retry_loop handles skipped status from circuit breaker.
+
+    Issue #610: When invoke_agent returns skipped status due to circuit breaker,
+    the retry loop should return early without trying to parse or validate.
+    """
+    analysis_id = AnalysisID(str(uuid4()))
+    mock_agent = MagicMock()
+
+    # Mock invoke_agent to return skipped status (circuit breaker open)
+    skipped_result = {
+        "status": "skipped",
+        "agent_type": "tech_comparator",
+        "skipped_reason": "Circuit breaker is OPEN - LLM API unavailable",
+    }
+
+    with patch(
+        "app.domains.analysis.workflows.agents.execution._invoke_agent_with_timeout",
+        new_callable=AsyncMock,
+        return_value=skipped_result,
+    ):
+        params = AgentExecutionParams(
+            agent=mock_agent,
+            content="Test content",
+            content_type="article",
+            analysis_id=analysis_id,
+            agent_type="tech_comparator",
+        )
+        config = AgentExecutionConfig(session=mock_session)
+
+        input_messages = {"messages": [{"role": "user", "content": "test"}]}
+
+        # Execute retry loop - should return skipped result immediately
+        result = await _execute_agent_retry_loop(
+            params=params,
+            config=config,
+            input_messages=input_messages,
+            max_retries=1,
+            min_score=0.70,
+            min_findings=1,
+            self_correction_ctx=type("Context", (), {})(),
+            validator=None,
+            use_compact_prompts=False,
+        )
+
+        # Should return skipped status dict without validation
+        assert isinstance(result, dict)
+        assert result["status"] == "skipped"
+        assert result["agent_type"] == "tech_comparator"
+        assert "skipped_reason" in result

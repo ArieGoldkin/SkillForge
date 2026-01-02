@@ -84,7 +84,11 @@ def get_orchestrator(request: Request) -> WorkflowOrchestrator:
     return WorkflowOrchestrator(workflow=workflow)
 
 
-def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Task], analysis_id: AnalysisID | None = None) -> None:
+def _handle_task_completion(
+    task: asyncio.Task,
+    background_tasks: set[asyncio.Task],
+    analysis_id: AnalysisID | None = None,
+) -> None:
     """Handle background task completion and check for exceptions.
 
     This callback checks for exceptions (including GeneratorExit) that occur
@@ -97,7 +101,7 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
     Args:
         task: The completed background task
         background_tasks: Set of active background tasks to update
-        analysis_id: Optional analysis ID to update status on failure (Fix for stuck "pending" status)
+        analysis_id: Optional analysis ID to update status on failure
 
     """
     background_tasks.discard(task)
@@ -136,10 +140,11 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
                 error_message=str(exception),
                 context="background_task_done_callback",
             )
-            # Update analysis status to failed if analysis_id provided (Fix for stuck "pending" status)
+            # Update analysis status to failed if analysis_id provided
             if analysis_id:
-                from app.db.session import get_session_factory
                 import asyncio
+
+                from app.db.session import get_session_factory
 
                 async def mark_failed_on_exception() -> None:
                     session_factory = get_session_factory()
@@ -151,7 +156,7 @@ def _handle_task_completion(task: asyncio.Task, background_tasks: set[asyncio.Ta
                             await repo.mark_failed(
                                 analysis_id=analysis_id,
                                 error_code="WORKFLOW_EXECUTION_FAILED",
-                                error_message=f"Workflow execution failed: {str(exception)}",
+                                error_message=f"Workflow execution failed: {exception!s}",
                                 failed_at_stage="workflow_execution",
                             )
                             await session.commit()
@@ -338,26 +343,65 @@ async def create_analysis(
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
         try:
             orchestrator = get_orchestrator(fastapi_request)
-            task: asyncio.Task[None] = asyncio.create_task(
-                # Issue #436: Pass analysis_mode for tier-based agent filtering
-                orchestrator.run(analysis_uuid, url_str, request.skill_level, request.analysis_mode)  # type: ignore[arg-type]
-            )
+
+            # Wrap workflow execution with timeout to prevent stuck analyses
+            # Issue #XXX: Workflows hanging without timeout detection
+            async def run_with_timeout() -> None:
+                from app.core.timeout_config import WORKFLOW_TIMEOUT
+
+                try:
+                    async with asyncio.timeout(WORKFLOW_TIMEOUT):
+                        await orchestrator.run(
+                            analysis_uuid, url_str, request.skill_level, request.analysis_mode
+                        )  # type: ignore[arg-type]
+                except TimeoutError:
+                    # Workflow exceeded timeout - mark as failed
+                    logger.error(
+                        "workflow_timeout_exceeded",
+                        analysis_id=str(analysis_uuid),
+                        timeout_seconds=WORKFLOW_TIMEOUT,
+                    )
+                    from app.db.session import get_session_factory
+
+                    session_factory = get_session_factory()
+                    async with session_factory() as session:
+                        repo = get_analysis_repository(session)
+                        analysis = await repo.get_by_id(analysis_uuid, validate=False)
+                        if analysis and analysis.status in ("pending", "analyzing", "running"):
+                            await repo.mark_failed(
+                                analysis_id=analysis_uuid,
+                                error_code="WORKFLOW_TIMEOUT",
+                                error_message=f"Workflow exceeded timeout of {WORKFLOW_TIMEOUT}s",
+                                failed_at_stage="workflow_execution",
+                            )
+                            await session.commit()
+                    raise  # Re-raise to trigger task completion handler
+
+            task: asyncio.Task[None] = asyncio.create_task(run_with_timeout())
             background_tasks = fastapi_request.app.state.background_tasks
             background_tasks.add(task)
             # Use functools.partial to bind background_tasks to callback
             from functools import partial
 
-            task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_uuid))
-        except Exception as e:
+            task.add_done_callback(
+                partial(
+                    _handle_task_completion,
+                    background_tasks=background_tasks,
+                    analysis_id=analysis_uuid,
+                )
+            )
+        except Exception as startup_exception:
             # Handle immediate workflow startup failures (Fix for stuck "pending" status)
             logger.error(
                 "workflow_startup_failed",
                 analysis_id=str(analysis_uuid),
-                error=str(e),
+                error=str(startup_exception),
                 exc_info=True,
             )
             # Update analysis status to failed
             from app.db.session import get_session_factory
+
+            error_message = f"Failed to start workflow: {startup_exception!s}"
 
             async def mark_failed() -> None:
                 session_factory = get_session_factory()
@@ -366,14 +410,12 @@ async def create_analysis(
                     await repo.mark_failed(
                         analysis_id=analysis_uuid,
                         error_code="WORKFLOW_STARTUP_FAILED",
-                        error_message=f"Failed to start workflow: {str(e)}",
+                        error_message=error_message,
                         failed_at_stage="workflow_startup",
                     )
                     await session.commit()
 
             # Schedule the status update as a background task
-            import asyncio
-
             asyncio.create_task(mark_failed())
 
     # Build SSE endpoint URL
@@ -594,7 +636,9 @@ async def rerun_analysis(
     if not AnalysisStatus.is_rerunnable(str(analysis.status)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Analysis must be in 'complete' status to rerun. Current status: {analysis.status}",
+            detail=(
+                f"Analysis must be in 'complete' status to rerun. Current status: {analysis.status}"
+            ),
         )
 
     # Get current artifact to archive
@@ -641,21 +685,57 @@ async def rerun_analysis(
     else:
         # Type ignore: mypy strictness - create_task accepts coroutines from async functions
         orchestrator = get_orchestrator(fastapi_request)
-        task: asyncio.Task[None] = asyncio.create_task(
-            orchestrator.run(
-                analysis_id,
-                str(analysis.url),
-                "intermediate",  # Default skill level for rerun
-                "standard",  # Default analysis mode for rerun
-                start_from_stage="analyzing",  # Skip extraction, reuse existing content
-            )  # type: ignore[arg-type]
-        )
+
+        # Wrap workflow execution with timeout to prevent stuck analyses
+        async def run_with_timeout() -> None:
+            from app.core.timeout_config import WORKFLOW_TIMEOUT
+
+            try:
+                async with asyncio.timeout(WORKFLOW_TIMEOUT):
+                    await orchestrator.run(
+                        analysis_id,
+                        str(analysis.url),
+                        "intermediate",  # Default skill level for rerun
+                        "standard",  # Default analysis mode for rerun
+                        start_from_stage="analyzing",  # Skip extraction, reuse existing content
+                    )  # type: ignore[arg-type]
+            except TimeoutError:
+                logger.error(
+                    "workflow_timeout_exceeded",
+                    analysis_id=str(analysis_id),
+                    timeout_seconds=WORKFLOW_TIMEOUT,
+                )
+                from app.db.session import get_session_factory
+
+                session_factory = get_session_factory()
+                async with session_factory() as session:
+                    repo = get_analysis_repository(session)
+                    analysis_check = await repo.get_by_id(analysis_id, validate=False)
+                    if analysis_check and analysis_check.status in (
+                        "pending",
+                        "analyzing",
+                        "running",
+                    ):
+                        await repo.mark_failed(
+                            analysis_id=analysis_id,
+                            error_code="WORKFLOW_TIMEOUT",
+                            error_message=f"Workflow exceeded timeout of {WORKFLOW_TIMEOUT}s",
+                            failed_at_stage="workflow_execution",
+                        )
+                        await session.commit()
+                raise
+
+        task: asyncio.Task[None] = asyncio.create_task(run_with_timeout())
         background_tasks = fastapi_request.app.state.background_tasks
         background_tasks.add(task)
         # Use functools.partial to bind background_tasks to callback
         from functools import partial
 
-        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_id))
+        task.add_done_callback(
+            partial(
+                _handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_id
+            )
+        )
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_id}/stream"
@@ -725,7 +805,10 @@ async def retry_analysis(
     if not AnalysisStatus.is_retryable(current_status):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Analysis status '{current_status}' is not retryable. Only failed analyses can be retried.",
+            detail=(
+                f"Analysis status '{current_status}' is not retryable. "
+                f"Only failed analyses can be retried."
+            ),
         )
 
     # Check retry limit (must be < MAX_RETRY_ATTEMPTS)
@@ -779,19 +862,55 @@ async def retry_analysis(
         # Note: WorkflowOrchestrator.run() doesn't currently support start_from_stage parameter
         # For now, we'll restart from pending and let the workflow handle status transitions
         # TODO(#544): Add start_from_stage parameter to WorkflowOrchestrator.run() for efficiency
-        task: asyncio.Task[None] = asyncio.create_task(
-            orchestrator.run(
-                analysis_id,
-                str(analysis.url),
-                "intermediate",  # Default skill level
-                "standard",  # Default analysis mode
-            )  # type: ignore[arg-type]
-        )
+
+        # Wrap workflow execution with timeout to prevent stuck analyses
+        async def run_with_timeout() -> None:
+            from app.core.timeout_config import WORKFLOW_TIMEOUT
+
+            try:
+                async with asyncio.timeout(WORKFLOW_TIMEOUT):
+                    await orchestrator.run(
+                        analysis_id,
+                        str(analysis.url),
+                        "intermediate",  # Default skill level
+                        "standard",  # Default analysis mode
+                    )  # type: ignore[arg-type]
+            except TimeoutError:
+                logger.error(
+                    "workflow_timeout_exceeded",
+                    analysis_id=str(analysis_id),
+                    timeout_seconds=WORKFLOW_TIMEOUT,
+                )
+                from app.db.session import get_session_factory
+
+                session_factory = get_session_factory()
+                async with session_factory() as session:
+                    repo = get_analysis_repository(session)
+                    analysis_check = await repo.get_by_id(analysis_id, validate=False)
+                    if analysis_check and analysis_check.status in (
+                        "pending",
+                        "analyzing",
+                        "running",
+                    ):
+                        await repo.mark_failed(
+                            analysis_id=analysis_id,
+                            error_code="WORKFLOW_TIMEOUT",
+                            error_message=f"Workflow exceeded timeout of {WORKFLOW_TIMEOUT}s",
+                            failed_at_stage="workflow_execution",
+                        )
+                        await session.commit()
+                raise
+
+        task: asyncio.Task[None] = asyncio.create_task(run_with_timeout())
         background_tasks = fastapi_request.app.state.background_tasks
         background_tasks.add(task)
         from functools import partial
 
-        task.add_done_callback(partial(_handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_id))
+        task.add_done_callback(
+            partial(
+                _handle_task_completion, background_tasks=background_tasks, analysis_id=analysis_id
+            )
+        )
 
     # Build SSE endpoint URL
     sse_endpoint = f"{settings.API_V1_PREFIX}/analyze/{analysis_id}/stream"

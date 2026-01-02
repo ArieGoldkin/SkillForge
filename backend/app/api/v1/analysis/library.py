@@ -23,8 +23,8 @@ from app.db.repositories.library_repository import ILibraryRepository, get_libra
 from app.db.session import get_db
 from app.schemas.library import LibraryFilters, LibraryListResponse, LibrarySearchResult
 from app.shared.services.embeddings.service import EmbeddingService
-from app.shared.services.search.search_service import SearchService
-from app.schemas.search import SearchMode as ChunkSearchMode
+
+# Note: db parameter is reserved for future SearchService integration if needed
 
 router = APIRouter(tags=["library"])
 logger = get_logger(__name__)
@@ -108,6 +108,7 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
 
     Args:
         repo: Library repository dependency
+        repo: Library repository for search operations
         query: Optional search query string
         content_type: Optional filter by content type (article, video, repo)
         status: Optional filter by analysis status (pending, complete, failed)
@@ -146,45 +147,30 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                 offset=offset,
             )
 
-            # Use SearchService for semantic/hybrid search (with HyDE support)
-            search_service: SearchService | None = None
-            chunk_results = []
+            # Generate query embedding for hybrid/semantic search modes
+            query_embedding: list[float] | None = None
+            embedding_service: EmbeddingService | None = None
 
-            # Use SearchService for semantic or hybrid search to get HyDE benefits
-            if search_mode in (SearchMode.semantic, SearchMode.hybrid):
+            if search_mode in (SearchMode.hybrid, SearchMode.semantic):
                 try:
-                    # Initialize services
                     embedding_service = EmbeddingService()
-                    search_service = SearchService(session, embedding_service)
-
-                    # Determine chunk-level search mode
-                    chunk_mode = ChunkSearchMode.SEMANTIC if search_mode == SearchMode.semantic else ChunkSearchMode.HYBRID
-
-                    # Search at chunk level with HyDE integration
-                    # Fetch more results since we'll aggregate by analysis
-                    chunk_results = await search_service.search(
-                        query=query.strip(),
-                        mode=chunk_mode,
-                        top_k=limit * 3,  # Fetch more to aggregate by analysis
-                    )
-
+                    query_embedding = await embedding_service.generate_embedding(query.strip())
                 except Exception as e:
                     logger.warning(
-                        "library_search_service_failed",
+                        "library_embedding_generation_failed",
                         query=query,
                         search_mode=search_mode.value,
                         error=str(e),
                         fallback_to_fulltext=True,
                     )
-                    # Fallback to full-text search if search service fails
+                    # Fallback to full-text search if embedding generation fails
                     if search_mode == SearchMode.hybrid:
-                        # For hybrid, fallback to fulltext
                         search_mode = SearchMode.fulltext
                     else:
                         # For semantic-only, raise error
                         raise HTTPException(
                             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Search service failed",
+                            detail="Embedding generation failed",
                         ) from e
                 finally:
                     if embedding_service:
@@ -192,6 +178,11 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
 
             # Execute search based on mode
             if search_mode == SearchMode.hybrid:
+                if query_embedding is None:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Query embedding required for hybrid search",
+                    )
                 results = await repo.hybrid_search(
                     query=query,
                     embedding=query_embedding,
@@ -205,6 +196,11 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                     offset=offset,
                 )
             elif search_mode == SearchMode.semantic:
+                if query_embedding is None:
+                    raise HTTPException(
+                        status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Query embedding required for semantic search",
+                    )
                 # For semantic search, don't apply offset at repository level
                 # (vector search doesn't support offset well)
                 all_results = await repo.search_by_vector(
@@ -243,7 +239,9 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                 title: str | None = None
                 if analysis.title:
                     title = str(analysis.title)
-                elif analysis.extraction_metadata and isinstance(analysis.extraction_metadata, dict):
+                elif analysis.extraction_metadata and isinstance(
+                    analysis.extraction_metadata, dict
+                ):
                     # Fallback to extraction_metadata.title if analysis.title is null
                     metadata_title = analysis.extraction_metadata.get("title")
                     if isinstance(metadata_title, str) and metadata_title.strip():
@@ -260,12 +258,14 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                         snippet=snippet,
                         rank=score,
                         created_at=analysis.created_at.isoformat() if analysis.created_at else "",
-                    # Error tracking fields (Issue #441)
-                    error_code=str(analysis.error_code) if analysis.error_code else None,
-                    error_message=str(analysis.error_message) if analysis.error_message else None,
-                    failed_at_stage=(
-                        str(analysis.failed_at_stage) if analysis.failed_at_stage else None
-                    ),
+                        # Error tracking fields (Issue #441)
+                        error_code=str(analysis.error_code) if analysis.error_code else None,
+                        error_message=str(analysis.error_message)
+                        if analysis.error_message
+                        else None,
+                        failed_at_stage=(
+                            str(analysis.failed_at_stage) if analysis.failed_at_stage else None
+                        ),
                     )
                 )
 
@@ -338,7 +338,9 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                     # Error tracking fields (Issue #441)
                     error_code=str(analysis.error_code) if analysis.error_code else None,
                     error_message=str(analysis.error_message) if analysis.error_message else None,
-                    failed_at_stage=str(analysis.failed_at_stage) if analysis.failed_at_stage else None,
+                    failed_at_stage=str(analysis.failed_at_stage)
+                    if analysis.failed_at_stage
+                    else None,
                 )
             )
 

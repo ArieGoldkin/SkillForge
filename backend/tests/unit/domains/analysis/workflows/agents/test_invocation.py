@@ -153,3 +153,77 @@ class TestInvokeAgent:
         )
 
         assert result == {"findings": "test results"}
+
+    @pytest.mark.asyncio
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_trace_id")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+    async def test_ainvoke_circuit_breaker_open_returns_skipped(
+        self, mock_resilience_manager, mock_trace_id, mock_agent, input_messages
+    ):
+        """Test that CircuitBreakerOpenError returns skipped status instead of failing.
+
+        Issue #610: When circuit breaker is open, agents should skip gracefully
+        instead of causing cascading failures.
+        """
+        from app.core.circuit_breaker import CircuitBreakerOpenError, CircuitState
+
+        mock_trace_id.return_value = None
+
+        # Mock circuit breaker that raises CircuitBreakerOpenError
+        mock_circuit_breaker = MagicMock()
+        mock_circuit_breaker.state = CircuitState.OPEN
+        mock_circuit_breaker.call.side_effect = CircuitBreakerOpenError("Circuit breaker is open")
+
+        mock_manager = MagicMock()
+        mock_manager.get_circuit_breaker.return_value = mock_circuit_breaker
+        mock_resilience_manager.return_value = mock_manager
+
+        result = await invoke_agent(
+            agent=mock_agent,
+            input_messages=input_messages,
+            analysis_id=uuid4(),
+            agent_type="tech_comparator",
+        )
+
+        # Should return skipped status dict instead of raising
+        assert isinstance(result, dict)
+        assert result["status"] == "skipped"
+        assert result["agent_type"] == "tech_comparator"
+        assert "skipped_reason" in result
+        assert "Circuit breaker is OPEN" in result["skipped_reason"]
+
+    @pytest.mark.asyncio
+    @patch("app.domains.analysis.workflows.agents.invocation.get_current_trace_id")
+    @patch("app.domains.analysis.workflows.agents.invocation.get_resilience_manager")
+    async def test_sync_invoke_circuit_breaker_open_returns_skipped(
+        self, mock_resilience_manager, mock_trace_id, mock_sync_agent, input_messages
+    ):
+        """Test that CircuitBreakerOpenError in sync path returns skipped status.
+
+        Issue #610: Circuit breaker handling should work for both async and sync paths.
+        """
+        from app.core.circuit_breaker import CircuitBreakerOpenError, CircuitState
+
+        mock_trace_id.return_value = None
+
+        # Mock circuit breaker that raises CircuitBreakerOpenError
+        mock_circuit_breaker = MagicMock()
+        mock_circuit_breaker.state = CircuitState.OPEN
+        mock_circuit_breaker.call.side_effect = CircuitBreakerOpenError("Circuit breaker is open")
+
+        mock_manager = MagicMock()
+        mock_manager.get_circuit_breaker.return_value = mock_circuit_breaker
+        mock_resilience_manager.return_value = mock_manager
+
+        result = await invoke_agent(
+            agent=mock_sync_agent,
+            input_messages=input_messages,
+            analysis_id=uuid4(),
+            agent_type="tech_comparator",
+        )
+
+        # Should return skipped status dict instead of raising
+        assert isinstance(result, dict)
+        assert result["status"] == "skipped"
+        assert result["agent_type"] == "tech_comparator"
+        assert "skipped_reason" in result
