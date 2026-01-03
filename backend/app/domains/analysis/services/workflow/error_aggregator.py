@@ -101,10 +101,11 @@ class WorkflowErrorAggregator:
             )
 
         # Check 3: Quality gate failed and not retried successfully
-        if workflow_result.get("quality_gate_error"):
+        quality_gate_error = workflow_result.get("quality_gate_error")
+        if quality_gate_error:
             return (
                 "QUALITY_GATE_FAILED",
-                workflow_result.get("quality_gate_error"),
+                str(quality_gate_error),
                 "quality_gate",
             )
 
