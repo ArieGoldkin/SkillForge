@@ -1,0 +1,14 @@
+{
+  "status": "success",
+  "dataset": "supervisor",
+  "langfuse_name": "supervisor_routing_golden_v1_prod",
+  "run_name": "supervisor_baseline_20260103_102110",
+  "created_at": "2026-01-03T10:21:11.831449+00:00",
+  "items_evaluated": 20,
+  "metrics": {},
+  "thresholds": {
+    "min_avg_score": 0.6,
+    "min_pass_rate": 0.7
+  },
+  "ci_status": "FAIL"
+}

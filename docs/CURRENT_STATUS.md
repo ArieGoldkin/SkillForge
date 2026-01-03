@@ -1,7 +1,7 @@
 # 📊 SkillForge - Current Status & Next Steps
 
 **Date:** January 3, 2026
-**Branch:** `issue/625-626-633-content-extraction-fixes`
+**Branch:** `issue/627-628-error-handling-sse`
 **Current Focus:** 🔴 Stabilizing Milestone - Critical bug fixes (#625, #626, #633)
 **Path to Launch:** Stabilizing → Backend Stabilization → Staging/Production → Memory Intelligence → Billing → Content Expansion
 
@@ -20,6 +20,21 @@
 - Added deprecation warning to `clean_extracted_content()` in content_cleaner.py
 - Updated tests to use correct agent name
 - Verified Trafilatura primary + Jina fallback architecture is working correctly
+
+---
+
+## 🚨 Error Handling Sprint (Jan 3, 2026) - Issues #627, #628
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| **#627** | TimeoutError SSE wrapper | ✅ FIXED |
+| **#628** | Error details not persisted | ✅ FIXED |
+
+**PR:** #635
+
+### Changes Made This Sprint
+- **#627**: Added `WorkflowErrorAggregator` for SSE error events - provides structured error aggregation and streaming
+- **#628**: Error details now recorded to DB - workflow failures persist error context for debugging
 
 ---
 
