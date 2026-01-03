@@ -31,7 +31,7 @@ class TestTierConstants:
         expected = {
             "tech_comparator",
             "security_auditor",
-            "impl_planner",
+            "implementation_planner",
             "performance_analyst",
             "code_quality_critic",
             "trend_validator",
@@ -101,7 +101,7 @@ class TestGetAgentTier:
         """Test get_agent_tier() returns 2 for Tier 2 agents."""
         assert get_agent_tier("tech_comparator") == 2
         assert get_agent_tier("security_auditor") == 2
-        assert get_agent_tier("impl_planner") == 2
+        assert get_agent_tier("implementation_planner") == 2
         assert get_agent_tier("performance_analyst") == 2
         assert get_agent_tier("code_quality_critic") == 2
         assert get_agent_tier("trend_validator") == 2

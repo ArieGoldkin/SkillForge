@@ -57,7 +57,7 @@ TIER_1_AGENTS = ["key_insights", "pros_cons", "audience_fit", "actionable"]
 TIER_2_AGENTS = [
     "tech_comparator",
     "security_auditor",
-    "impl_planner",
+    "implementation_planner",
     "performance_analyst",
     "code_quality_critic",
     "trend_validator",
@@ -83,7 +83,7 @@ TIER_ASSIGNMENTS: dict[str, int] = {
     # Tier 2: Technical deep-dive
     "tech_comparator": 2,
     "security_auditor": 2,
-    "impl_planner": 2,
+    "implementation_planner": 2,
     "performance_analyst": 2,
     "code_quality_critic": 2,
     "trend_validator": 2,
