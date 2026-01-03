@@ -15,6 +15,7 @@ from app.domains.analysis.schemas.api import AnalysisStatus
 from app.domains.analysis.services.events import WorkflowEventEmitter
 from app.domains.analysis.services.persistence import DataPersister, StatusUpdater
 from app.domains.analysis.services.workflow import handle_workflow_exception
+from app.domains.analysis.services.workflow.error_aggregator import workflow_error_aggregator
 from app.domains.analysis.services.workflow.validator import WorkflowResultValidator
 
 logger = get_logger(__name__)
@@ -275,7 +276,8 @@ class WorkflowOrchestrator:
                     analysis_id=str(analysis_id),
                     message="Workflow failed, skipping validation",
                 )
-                # Status and error already set by workflow_failed node
+                # Issue #627 & #628: Ensure error is recorded to DB and SSE is emitted
+                await workflow_error_aggregator.check_and_record_errors(analysis_id, result)
                 return
 
             if workflow_status == "completed":
@@ -294,6 +296,20 @@ class WorkflowOrchestrator:
                         TypeError(f"Workflow result must be dict, got {type(result)}"),
                         stage="validation",  # Orchestrator-level validation error
                     )
+                    return
+
+                # Issue #627 & #628: Check for aggregated failures even on "completed" workflows
+                # Some agents may have failed but workflow continued - detect soft failures
+                has_critical_failures = await workflow_error_aggregator.check_and_record_errors(
+                    analysis_id, result
+                )
+                if has_critical_failures:
+                    logger.warning(
+                        "workflow_completed_with_critical_failures",
+                        analysis_id=str(analysis_id),
+                        message="Workflow marked complete but has critical failures",
+                    )
+                    await self.status_updater.update(analysis_id, AnalysisStatus.FAILED.value)
                     return
 
                 validator = WorkflowResultValidator()
