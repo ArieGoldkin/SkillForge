@@ -74,6 +74,8 @@ jobs:
       # Switched from Ollama (Issue #606) to cloud for 10-30x faster evaluations
       OLLAMA_ENABLED: "false"
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      # OpenAI for reranker (gpt-4o-mini) and semantic caching
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       # Fallback to Ollama embeddings if needed (fast, local)
       OLLAMA_HOST: "http://localhost:11434"
       OLLAMA_MODEL_EMBED: "nomic-embed-text"
