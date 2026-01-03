@@ -60,22 +60,22 @@ jobs:
     needs: changes
     if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.evaluation == 'true'
     runs-on: self-hosted
-    timeout-minutes: 30
+    timeout-minutes: 15  # Reduced from 30 - cloud models are 10-30x faster
 
-    # Self-hosted macOS runners provide: PostgreSQL 18, Ollama, Langfuse (Docker)
+    # Self-hosted macOS runners provide: PostgreSQL 18, Ollama (embeddings), Langfuse (Docker)
 
     env:
       DATABASE_URL: postgresql+asyncpg://@localhost:5432/skillforge_test
       # Langfuse observability - enabled at runtime only if service is available
-      # Step-level override in evaluation steps uses runtime availability check
       LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
       LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
       LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
-      # Ollama local models for 93% CI cost reduction (Issue #606)
-      OLLAMA_ENABLED: "true"
+      # Cloud models for fast CI (Gemini 3 Flash for G-Eval, ~$0.10-0.50/run)
+      # Switched from Ollama (Issue #606) to cloud for 10-30x faster evaluations
+      OLLAMA_ENABLED: "false"
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      # Fallback to Ollama embeddings if needed (fast, local)
       OLLAMA_HOST: "http://localhost:11434"
-      OLLAMA_MODEL_REASONING: "deepseek-r1:70b"
-      OLLAMA_MODEL_CODING: "qwen2.5-coder:32b"
       OLLAMA_MODEL_EMBED: "nomic-embed-text"
 
     steps:
@@ -148,22 +148,19 @@ jobs:
           /opt/homebrew/opt/postgresql@18/bin/psql -d skillforge_test -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
           poetry run python -m alembic upgrade head
 
-      - name: Ensure Ollama models ready
+      - name: Ensure Ollama embeddings ready
         run: |
-          # Check Ollama is running
+          # Check Ollama is running (for local embeddings only)
           if ! curl -s http://localhost:11434/api/tags > /dev/null; then
             echo "Starting Ollama service..."
             ollama serve &
             sleep 5
           fi
 
-          # Ensure required models are available (pull if missing)
-          echo "Checking Ollama models..."
-          ollama list
-
           # Pre-warm embedding model for faster first call
           echo "Pre-warming embedding model..."
           curl -s http://localhost:11434/api/embeddings -d '{"model":"nomic-embed-text","prompt":"warmup"}' > /dev/null || true
+          echo "✅ Using cloud models (Gemini 3 Flash) for LLM inference"
 
       - name: Load evaluation fixtures
         working-directory: backend
@@ -181,12 +178,12 @@ jobs:
         continue-on-error: true  # Don't fail PR on evaluation results - report metrics only
         working-directory: backend
         env:
-          # Use Ollama local models for evaluation (Issue #606)
+          # Use cloud models for fast evaluation (Gemini 3 Flash)
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
           # Override Langfuse based on runtime availability check
           LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
         run: |
-          # Run evaluation with local Ollama models (93% cost savings)
+          # Run evaluation with cloud models (Gemini 3 Flash - 10-30x faster than Ollama)
           poetry run python scripts/run_evaluation.py \
             --expanded \
             --output evaluation_results.json \
