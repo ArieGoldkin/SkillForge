@@ -23,6 +23,8 @@ Supported datasets:
     - supervisor: Supervisor routing decisions
     - agent_analysis: Agent analysis quality
     - synthesis: Synthesis quality
+    - adversarial: Adversarial/safety testing examples
+    - edge_cases: Edge case and boundary testing examples
 
 Environment variables required:
     LANGFUSE_ENABLED=true
@@ -65,6 +67,16 @@ DATASET_MAPPING = {
         "file_path": "golden/synthesis",
         "langfuse_name": "synthesis_golden_v1_prod",
         "description": "Golden dataset for synthesis quality evaluation (v1, production). Contains examples of high-quality synthesis outputs.",
+    },
+    "adversarial": {
+        "file_path": "adversarial/adversarial",
+        "langfuse_name": "adversarial_safety_v1_prod",
+        "description": "Adversarial dataset for safety and robustness testing (v1, production). Contains prompt injection, jailbreak, and security anti-pattern examples.",
+    },
+    "edge_cases": {
+        "file_path": "edge_cases/edge_cases",
+        "langfuse_name": "edge_cases_boundary_v1_prod",
+        "description": "Edge cases dataset for boundary testing (v1, production). Contains very short, very long, multilingual, and ambiguous input examples.",
     },
 }
 
@@ -193,11 +205,84 @@ def format_synthesis_item(
     return input_data, expected_output, metadata
 
 
+def format_adversarial_item(
+    example: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Format adversarial dataset item for Langfuse.
+
+    Args:
+        example: Example from adversarial.json (v2.0 format)
+
+    Returns:
+        Tuple of (input, expected_output, metadata)
+
+    """
+    input_data = {
+        "content": example["inputs"]["content"],
+        "content_type": example["inputs"].get("content_type", "article"),
+        "attack_type": example.get("metadata", {}).get("tags", ["unknown"])[0],
+    }
+
+    expected_output = {
+        "behavior": example["expected_outputs"]["primary"].get("behavior"),
+        "expected_response": example["expected_outputs"]["primary"].get("expected_response"),
+        "forbidden_outputs": example["expected_outputs"].get("forbidden_outputs", []),
+    }
+
+    metadata = {
+        "id": example.get("id"),
+        "difficulty": example.get("metadata", {}).get("difficulty"),
+        "adversarial": example.get("metadata", {}).get("adversarial", True),
+        "tags": example.get("metadata", {}).get("tags", []),
+        "evaluation_criteria": example.get("evaluation_criteria", {}),
+    }
+
+    return input_data, expected_output, metadata
+
+
+def format_edge_cases_item(
+    example: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Format edge_cases dataset item for Langfuse.
+
+    Args:
+        example: Example from edge_cases.json (v2.0 format)
+
+    Returns:
+        Tuple of (input, expected_output, metadata)
+
+    """
+    input_data = {
+        "content": example["inputs"]["content"],
+        "content_type": example["inputs"].get("content_type", "query"),
+        "edge_case_type": example.get("metadata", {}).get("tags", ["unknown"])[0],
+    }
+
+    expected_output = {
+        "behavior": example["expected_outputs"]["primary"].get("behavior"),
+        "expected_response": example["expected_outputs"]["primary"].get("expected_response"),
+        "expected_error": example["expected_outputs"]["primary"].get("expected_error"),
+        "forbidden_outputs": example["expected_outputs"].get("forbidden_outputs", []),
+    }
+
+    metadata = {
+        "id": example.get("id"),
+        "difficulty": example.get("metadata", {}).get("difficulty"),
+        "edge_case": example.get("metadata", {}).get("edge_case", True),
+        "tags": example.get("metadata", {}).get("tags", []),
+        "evaluation_criteria": example.get("evaluation_criteria", {}),
+    }
+
+    return input_data, expected_output, metadata
+
+
 # Formatter registry
 FORMATTERS = {
     "supervisor": format_supervisor_item,
     "agent_analysis": format_agent_analysis_item,
     "synthesis": format_synthesis_item,
+    "adversarial": format_adversarial_item,
+    "edge_cases": format_edge_cases_item,
 }
 
 
@@ -487,9 +572,11 @@ Examples:
     poetry run python scripts/upload_datasets_to_langfuse.py --dry-run
 
 Available datasets:
-    - supervisor: Supervisor routing decisions
-    - agent_analysis: Agent analysis quality
-    - synthesis: Synthesis quality
+    - supervisor: Supervisor routing decisions (20 items)
+    - agent_analysis: Agent analysis quality (9 items)
+    - synthesis: Synthesis quality (5 items)
+    - adversarial: Adversarial/safety testing (31 items)
+    - edge_cases: Edge case/boundary testing (40 items)
         """,
     )
 
