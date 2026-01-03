@@ -125,10 +125,12 @@ async def handle_workflow_exception(
                 stage="workflow",
             )
         except Exception as recording_error:  # noqa: BLE001 - Graceful degradation
-            logger.debug(
+            # Issue #628: Log at WARNING level for visibility (was DEBUG)
+            logger.warning(
                 "error_recorder_unavailable",
                 analysis_id=str(analysis_id),
                 error=str(recording_error),
+                message="Failed to record error to database - SSE event still emitted",
             )
 
         # Emit SSE error event for TimeoutError
