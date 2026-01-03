@@ -145,7 +145,7 @@ async def _evaluate_with_g_eval(finding: AgentFinding, agent_type: str) -> float
 
     """
     try:
-        from app.shared.services.g_eval.scorer import GEvalScorer
+        from app.shared.services.g_eval.scorer import g_eval_score
 
         # Extract the output text to evaluate
         findings_dict = finding.get("findings", {})
@@ -157,23 +157,22 @@ async def _evaluate_with_g_eval(finding: AgentFinding, agent_type: str) -> float
 
         output_text = json.dumps(findings_dict, indent=2, default=str)
 
-        # Create scorer and evaluate
-        scorer = GEvalScorer(agent_type=agent_type)
+        # g_eval_score is async, call it directly
+        result = await g_eval_score(
+            input_content="",  # No input needed for quality eval
+            output=output_text,
+            agent_type=agent_type,
+            submit_to_langfuse=False,  # We handle tracing separately
+        )
 
-        # Run in executor to avoid blocking
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, scorer.score, output_text)
-
-        # Extract overall score (normalized to 0-1)
-        overall_score = result.get("overall", 0.5)
-        if overall_score > 1:
-            overall_score = overall_score / 5.0  # Convert 1-5 scale to 0-1
+        # Extract overall score (already normalized to 0-1)
+        overall_score = result.overall
 
         logger.debug(
             "g_eval_score_computed",
             agent_type=agent_type,
             overall_score=overall_score,
-            scores=result.get("scores"),
+            criteria_scores={k: v.score for k, v in result.criteria_scores.items()},
         )
 
         return round(overall_score, 3)
