@@ -156,12 +156,14 @@ def migrate_all_prompts(dry_run: bool = True, label: str = "production") -> dict
                 template_path=template_path,
                 error=str(e),
             )
-            results.append({
-                "name": name,
-                "label": label,
-                "status": "failed",
-                "error": f"Template load failed: {e}",
-            })
+            results.append(
+                {
+                    "name": name,
+                    "label": label,
+                    "status": "failed",
+                    "error": f"Template load failed: {e}",
+                }
+            )
             continue
 
         result = create_or_update_prompt(

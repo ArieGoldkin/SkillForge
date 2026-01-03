@@ -195,14 +195,13 @@ async def test_combined_activation():
     if activated_count == 3:
         print("\n✅ SUCCESS: All three agents were auto-activated!")
         return True
-    elif activated_count >= 2:
+    if activated_count >= 2:
         print(f"\n⚠️  PARTIAL: {activated_count}/3 agents activated")
         missing = [a for a in expected_agents if a not in agents]
         print(f"   Missing: {missing}")
         return True  # Still acceptable
-    else:
-        print(f"\n❌ FAILURE: Only {activated_count}/3 agents activated")
-        return False
+    print(f"\n❌ FAILURE: Only {activated_count}/3 agents activated")
+    return False
 
 
 async def main():
@@ -231,9 +230,8 @@ async def main():
     if passed == total:
         print("\n✅ ALL TESTS PASSED - Sprint 3 implementation verified!")
         return 0
-    else:
-        print(f"\n❌ {total - passed} TEST(S) FAILED")
-        return 1
+    print(f"\n❌ {total - passed} TEST(S) FAILED")
+    return 1
 
 
 if __name__ == "__main__":

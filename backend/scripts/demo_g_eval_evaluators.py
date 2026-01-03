@@ -39,8 +39,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.logging import get_logger
 from app.shared.services.g_eval import (
-    create_g_eval_evaluator,
-    create_g_eval_overall_evaluator,
     get_standard_evaluators,
     get_standard_run_evaluators,
 )
@@ -220,7 +218,7 @@ def run_demo_experiment(
         print(result.format())
 
         print()
-        print(f"View detailed results in Langfuse UI:")
+        print("View detailed results in Langfuse UI:")
         import os
 
         host = os.getenv("LANGFUSE_HOST", "http://localhost:3000")

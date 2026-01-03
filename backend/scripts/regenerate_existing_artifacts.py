@@ -20,7 +20,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -31,10 +31,10 @@ load_dotenv()
 from sqlalchemy import delete, select, update
 
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
 from app.db.models.analysis_chunk import AnalysisChunk
 from app.db.models.artifact import Artifact
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.analysis import create_analysis_workflow
 
 logger = get_logger(__name__)
@@ -160,10 +160,9 @@ async def regenerate_fixture(
     }.get(content_type, "https://content.skillforge.dev")
 
     try:
-        # Create analysis record
+        # Create analysis record - DB generates UUIDs via server_default
         async with AsyncSessionLocal() as session:
             analysis = Analysis(
-                id=uuid4(),
                 url=f"{url_base}/{doc['id']}",
                 content_type=content_type,
                 status="pending",
@@ -171,6 +170,7 @@ async def regenerate_fixture(
             )
             session.add(analysis)
             await session.commit()
+            await session.refresh(analysis)
             analysis_id = str(analysis.id)
             logger.info(f"[{idx + 1}/{total}] Created analysis: {analysis_id}")
 

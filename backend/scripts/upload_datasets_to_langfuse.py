@@ -546,13 +546,12 @@ Available datasets:
             datasets=datasets_to_upload,
         )
         return 0
-    else:
-        logger.error(
-            "upload_some_failed",
-            message="Some datasets failed to upload",
-            datasets=datasets_to_upload,
-        )
-        return 1
+    logger.error(
+        "upload_some_failed",
+        message="Some datasets failed to upload",
+        datasets=datasets_to_upload,
+    )
+    return 1
 
 
 if __name__ == "__main__":

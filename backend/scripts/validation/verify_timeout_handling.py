@@ -13,7 +13,8 @@ Run with:
 import asyncio
 import sys
 from pathlib import Path
-from uuid import uuid4
+
+import uuid_utils
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -23,8 +24,8 @@ from unittest.mock import MagicMock
 from app.domains.analysis.workflows.tasks.agent_execution import execute_agents
 
 from app.core.logging import get_logger
-from app.db.session import AsyncSessionLocal
 from app.db.models.analysis import Analysis
+from app.db.session import AsyncSessionLocal
 from app.domains.analysis.workflows.agents.streaming import stream_agent_response
 
 logger = get_logger(__name__)
@@ -64,7 +65,7 @@ async def test_agent_execution_error_isolation():
     """Test that one agent timeout doesn't crash the entire workflow."""
     print("\n=== Test 2: Agent Execution Error Isolation ===")
 
-    analysis_id = str(uuid4())
+    analysis_id = str(uuid_utils.uuid7())
     content = "Test content for error isolation verification"
     content_type = "article"
 
@@ -177,9 +178,8 @@ async def main():
     if all(results):
         print("✅ ALL TESTS PASSED - Timeout handling verified!")
         return 0
-    else:
-        print("❌ SOME TESTS FAILED - Review timeout handling")
-        return 1
+    print("❌ SOME TESTS FAILED - Review timeout handling")
+    return 1
 
 
 if __name__ == "__main__":

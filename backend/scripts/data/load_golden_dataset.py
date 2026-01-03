@@ -30,7 +30,8 @@ import hashlib
 import json
 import sys
 from pathlib import Path
-from uuid import uuid4
+
+import uuid_utils
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -172,8 +173,8 @@ async def main(replace: bool = False) -> int:
             logger.info(f"[{doc_idx + 1}/{len(documents)}] Creating: {doc_title}")
 
             # Create analysis record
-            analysis_id = uuid4()
-            artifact_id = uuid4()
+            analysis_id = uuid_utils.uuid7()
+            artifact_id = uuid_utils.uuid7()
 
             if not source_url:
                 logger.error(
@@ -232,7 +233,7 @@ async def main(replace: bool = False) -> int:
                 content_hash = hashlib.sha256(content.encode()).hexdigest()
 
                 chunk = AnalysisChunk(
-                    id=uuid4(),
+                    id=uuid_utils.uuid7(),
                     analysis_id=analysis_id,
                     snippet=content,
                     vector=embedding,

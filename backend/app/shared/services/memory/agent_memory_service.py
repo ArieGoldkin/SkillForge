@@ -6,10 +6,8 @@ Implements reactive and proactive recall patterns from Google ADK's Context Engi
 
 from __future__ import annotations
 
-import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
-from uuid import UUID
 
 from sqlalchemy import select
 
@@ -18,6 +16,8 @@ from app.db.models.agent_memory import AgentMemory, MemoryType
 from app.shared.services.embeddings.service import EmbeddingService
 
 if TYPE_CHECKING:
+    from uuid import UUID
+
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.core.types import EmbeddingVector
@@ -119,8 +119,8 @@ class AgentMemoryService:
         # Generate embedding for the content
         embedding = await self.embedding_service.generate_embedding(content)
 
+        # Don't set id - let DB generate UUID v7 via server_default
         memory = AgentMemory(
-            id=uuid.uuid4(),
             analysis_id=analysis_id,
             memory_type=memory_type.value,
             agent_type=agent_type,

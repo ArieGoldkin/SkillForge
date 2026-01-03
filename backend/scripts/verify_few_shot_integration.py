@@ -15,11 +15,10 @@ Run this script manually to verify the integration:
 import asyncio
 from datetime import UTC, datetime
 
-from sqlalchemy import select, text
+from sqlalchemy import text
 
 from app.core.logging import get_logger
 from app.db.session import AsyncSessionLocal
-from app.db.models.agent_example import AgentExample as AgentExampleModel
 from app.shared.services.agents.few_shot_factory import (
     MAX_EXAMPLE_TOKENS,
     _estimate_token_count,
@@ -145,7 +144,7 @@ async def test_token_budget_enforcement():
             min_quality_score=0.7,
         )
 
-        print(f"\nRequested: 20[/bold] examples")
+        print("\nRequested: 20[/bold] examples")
         print(f"Retrieved: {len(result.examples)}[/bold] examples")
 
         # Test truncation
@@ -308,7 +307,7 @@ async def main():
         print("\n" + "=" * 60)
         print("Verification Summary")
         print("=" * 60)
-        print(f"Database: ✓")
+        print("Database: ✓")
         print(f"Token Budget: {'✓' if budget_ok else '✗'}")
         print(f"Agent Creation: {'✓' if agent_ok else '⚠'}")
 

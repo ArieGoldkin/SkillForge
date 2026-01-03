@@ -28,7 +28,8 @@ import json
 import os
 import sys
 from pathlib import Path
-from uuid import uuid4
+
+import uuid_utils
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -98,7 +99,7 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
 
     async with AsyncSessionLocal() as session:
         # Create or get analysis record for fixtures
-        analysis_id = uuid4()
+        analysis_id = uuid_utils.uuid7()
         analysis_name = "expanded-fixtures" if expanded else "original-fixtures"
 
         # Check if we should replace existing data
@@ -135,7 +136,7 @@ async def main(expanded: bool = False, replace: bool = False) -> int:
             logger.info("Cleared existing fixture data")
 
         # Create analysis record
-        artifact_id = uuid4()
+        artifact_id = uuid_utils.uuid7()
         analysis = Analysis(
             id=analysis_id,
             url=f"https://fixtures.skillforge.local/{analysis_name}",
@@ -296,7 +297,7 @@ Effective context engineering can improve AI agent performance by 40-60% while r
 
                 # Create chunk
                 chunk = AnalysisChunk(
-                    id=uuid4(),
+                    id=uuid_utils.uuid7(),
                     analysis_id=analysis_id,
                     snippet=content,
                     vector=embedding,

@@ -114,8 +114,7 @@ def create_task_function(agent_type: str):
 
         if isinstance(expected, dict):
             return expected
-        else:
-            return {"content": str(expected)}
+        return {"content": str(expected)}
 
     task.__name__ = f"golden_artifact_task_{agent_type}"
     return task

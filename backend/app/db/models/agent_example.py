@@ -6,11 +6,13 @@ Used by SemanticExampleSelector to improve agent output quality.
 
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Boolean, Column, DateTime, Float, String, Text
+from sqlalchemy import Boolean, DateTime, Float, String, Text, text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID  # noqa: N811
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
@@ -40,38 +42,46 @@ class AgentExample(Base):
 
     __tablename__ = "agent_examples"
 
-    id = Column(
+    id: Mapped[uuid.UUID] = mapped_column(
         PostgresUUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        server_default=text("uuidv7()"),
     )
-    agent_type = Column(String(50), nullable=False, index=True)
+    agent_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
     # Few-shot data
-    input_summary = Column(Text, nullable=False)
-    input_content_preview = Column(Text, nullable=True)  # First 2000 chars
-    output_example = Column(JSON, nullable=False)
-    context_note = Column(Text, nullable=True)
+    input_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    input_content_preview: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # First 2000 chars
+    output_example: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    context_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Quality metadata
-    quality_score = Column(Float, nullable=False, default=1.0, index=True)
-    is_golden = Column(Boolean, default=False)
-    source_analysis_id = Column(PostgresUUID(as_uuid=True), nullable=True)
+    quality_score: Mapped[float] = mapped_column(Float, nullable=False, default=1.0, index=True)
+    is_golden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    source_analysis_id: Mapped[uuid.UUID | None] = mapped_column(
+        PostgresUUID(as_uuid=True), nullable=True
+    )
 
     # Semantic search (OpenAI text-embedding-3-small: 1536 dimensions)
-    embedding = Column(Vector(1536), nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
 
     # Content classification
-    content_type = Column(String(50), nullable=True, index=True)  # article, video, repo
-    difficulty_level = Column(String(20), nullable=True)  # beginner, intermediate, advanced
+    content_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, index=True
+    )  # article, video, repo
+    difficulty_level: Mapped[str | None] = mapped_column(
+        String(20), nullable=True
+    )  # beginner, intermediate, advanced
 
     # Auditing
-    created_at = Column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         nullable=False,
     )
-    updated_at = Column(
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),

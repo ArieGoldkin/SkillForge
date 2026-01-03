@@ -110,6 +110,8 @@ async def create_complete_analysis(
         db_session: Database session to use
         url: Optional URL (defaults to unique test URL with UUID)
         **kwargs: Additional Analysis fields (id, title, content_type, etc.)
+            Note: If 'id' is provided in kwargs, it will be used; otherwise,
+            PostgreSQL will auto-generate a UUIDv7 via server_default.
 
     Returns:
         Created Analysis instance
@@ -124,13 +126,13 @@ async def create_complete_analysis(
     """
     from app.db.models.analysis import Analysis
 
-    analysis = Analysis(
-        id=kwargs.get("id", uuid4()),
-        url=url or f"https://example.com/test-{uuid4()}",
-        content_type=kwargs.get("content_type", "article"),
-        status="complete",
-        raw_content=kwargs.get("raw_content", "Test content for complete analysis."),
-        extraction_metadata=kwargs.get(
+    # Let PostgreSQL generate UUIDv7 unless explicitly provided
+    analysis_kwargs = {
+        "url": url or f"https://example.com/test-{uuid4()}",
+        "content_type": kwargs.get("content_type", "article"),
+        "status": "complete",
+        "raw_content": kwargs.get("raw_content", "Test content for complete analysis."),
+        "extraction_metadata": kwargs.get(
             "extraction_metadata",
             {
                 "title": kwargs.get("title", "Test Article"),
@@ -138,22 +140,15 @@ async def create_complete_analysis(
                 "char_count": kwargs.get("char_count", 500),
             },
         ),
-        created_at=kwargs.get("created_at", datetime.now(UTC)),
-        **{
-            k: v
-            for k, v in kwargs.items()
-            if k
-            not in [
-                "id",
-                "url",
-                "content_type",
-                "status",
-                "raw_content",
-                "extraction_metadata",
-                "created_at",
-            ]
-        },
-    )
+        "created_at": kwargs.get("created_at", datetime.now(UTC)),
+    }
+
+    # Add any additional kwargs, including 'id' if explicitly provided
+    for k, v in kwargs.items():
+        if k not in ["url", "content_type", "status", "raw_content", "extraction_metadata", "created_at"]:
+            analysis_kwargs[k] = v
+
+    analysis = Analysis(**analysis_kwargs)
     db_session.add(analysis)
     await db_session.flush()
     return analysis
@@ -173,6 +168,8 @@ async def create_pending_analysis(
         db_session: Database session to use
         url: Optional URL (defaults to unique test URL with UUID)
         **kwargs: Additional Analysis fields (id, content_type, status, etc.)
+            Note: If 'id' is provided in kwargs, it will be used; otherwise,
+            PostgreSQL will auto-generate a UUIDv7 via server_default.
 
     Returns:
         Created Analysis instance
@@ -187,13 +184,19 @@ async def create_pending_analysis(
     """
     from app.db.models.analysis import Analysis
 
-    analysis = Analysis(
-        id=kwargs.get("id", uuid4()),
-        url=url or f"https://example.com/test-{uuid4()}",
-        content_type=kwargs.get("content_type", "article"),
-        status=kwargs.get("status", "pending"),
-        **{k: v for k, v in kwargs.items() if k not in ["id", "url", "content_type", "status"]},
-    )
+    # Let PostgreSQL generate UUIDv7 unless explicitly provided
+    analysis_kwargs = {
+        "url": url or f"https://example.com/test-{uuid4()}",
+        "content_type": kwargs.get("content_type", "article"),
+        "status": kwargs.get("status", "pending"),
+    }
+
+    # Add any additional kwargs, including 'id' if explicitly provided
+    for k, v in kwargs.items():
+        if k not in ["url", "content_type", "status"]:
+            analysis_kwargs[k] = v
+
+    analysis = Analysis(**analysis_kwargs)
     db_session.add(analysis)
     await db_session.flush()
     return analysis

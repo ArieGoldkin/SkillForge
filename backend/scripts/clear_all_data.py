@@ -37,19 +37,19 @@ from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
-from app.db.session import get_session_factory
 from app.db.models import (
+    AgentExample,
+    AgentFinding,
+    AgentMemory,
     Analysis,
     AnalysisChunk,
-    Artifact,
-    AgentFinding,
     AnalysisProgress,
-    TutoringSession,
-    TutoringMessage,
-    AgentMemory,
-    AgentExample,
     AnnotationQueue,
+    Artifact,
+    TutoringMessage,
+    TutoringSession,
 )
+from app.db.session import get_session_factory
 
 logger = get_logger(__name__)
 
@@ -91,6 +91,7 @@ async def clear_all_data(session: AsyncSession, dry_run: bool = False) -> dict[s
 
     Returns:
         Dictionary mapping table names to number of rows deleted
+
     """
     deleted_counts: dict[str, int] = {}
 

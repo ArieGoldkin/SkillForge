@@ -5,10 +5,11 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+import uuid_utils
 
 if TYPE_CHECKING:
     from typing import Any
@@ -308,9 +309,10 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
         """
         # Check for existing request ID (for distributed tracing)
+        # UUID v7 for time-ordering in distributed traces
         request_id = request.headers.get("X-Request-ID")
         if not request_id:
-            request_id = str(uuid.uuid4())
+            request_id = str(uuid_utils.uuid7())
 
         # Store in request state
         request.state.request_id = request_id

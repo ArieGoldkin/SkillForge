@@ -17,7 +17,7 @@ name: skillforge-test
 
 services:
   postgres:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg18-bookworm
     container_name: skillforge-postgres-test
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-dev}
@@ -31,7 +31,7 @@ services:
       timeout: 3s
       retries: 5
     volumes:
-      - postgres-test-data:/var/lib/postgresql/data
+      - postgres-test-data:/var/lib/postgresql
 
   redis:
     image: redis/redis-stack-server:7.4.0-v1

@@ -31,9 +31,9 @@ import argparse
 import asyncio
 import json
 import sys
-import uuid
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from dotenv import load_dotenv
 from sqlalchemy import select
@@ -43,8 +43,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 load_dotenv()
 
 from app.core.logging import get_logger  # noqa: E402
-from app.db.session import get_session_factory  # noqa: E402
 from app.db.models.agent_example import AgentExample  # noqa: E402
+from app.db.session import get_session_factory  # noqa: E402
 from app.shared.services.embeddings.service import EmbeddingService  # noqa: E402
 
 logger = get_logger(__name__)
@@ -313,9 +313,8 @@ async def seed_examples(dry_run: bool = False, limit: int | None = None) -> None
 
             embedding = await embedding_service.generate_embedding(input_summary, normalize=True)
 
-            # Create AgentExample model
+            # Create AgentExample model - DB generates UUIDs via server_default
             example = AgentExample(
-                id=uuid.uuid4(),
                 agent_type=agent_type,
                 input_summary=input_summary,
                 input_content_preview=markdown_content[:2000],
@@ -323,7 +322,7 @@ async def seed_examples(dry_run: bool = False, limit: int | None = None) -> None
                 context_note=f"Extracted from golden dataset artifact {artifact['id']}",
                 quality_score=quality_score,
                 is_golden=True,
-                source_analysis_id=uuid.UUID(source_analysis_id) if source_analysis_id else None,
+                source_analysis_id=UUID(source_analysis_id) if source_analysis_id else None,
                 embedding=embedding,
                 content_type=metadata.get("source", "article"),
                 difficulty_level=metadata.get("complexity", "intermediate"),

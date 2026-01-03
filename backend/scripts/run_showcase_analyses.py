@@ -14,7 +14,6 @@ Usage:
 import argparse
 import asyncio
 import json
-import sys
 import time
 from pathlib import Path
 
@@ -53,7 +52,6 @@ async def clear_existing_analyses(urls: list[str]) -> int:
     Returns count of deleted analyses.
     """
     # We'll use direct database access for cleanup
-    import os
     import subprocess
 
     # Build SQL to delete analyses with matching URLs
@@ -87,6 +85,7 @@ async def clear_existing_analyses(urls: list[str]) -> int:
                 "-c",
                 count_sql,
             ],
+            check=False,
             capture_output=True,
             text=True,
         )
@@ -107,6 +106,7 @@ async def clear_existing_analyses(urls: list[str]) -> int:
                     "-c",
                     delete_sql,
                 ],
+                check=False,
                 capture_output=True,
                 text=True,
             )
@@ -134,12 +134,11 @@ async def trigger_analysis(client: httpx.AsyncClient, url: str) -> dict:
                 "existing": data.get("existing", False),
                 "sse_endpoint": data.get("sse_endpoint"),
             }
-        else:
-            return {
-                "success": False,
-                "url": url,
-                "error": f"HTTP {response.status_code}: {response.text[:200]}",
-            }
+        return {
+            "success": False,
+            "url": url,
+            "error": f"HTTP {response.status_code}: {response.text[:200]}",
+        }
     except Exception as e:
         return {
             "success": False,
@@ -160,6 +159,7 @@ async def wait_for_analysis(
 
     Returns:
         Final status dict
+
     """
     start = time.time()
     while time.time() - start < timeout:
@@ -171,7 +171,7 @@ async def wait_for_analysis(
 
                 if status in ("complete", "completed"):
                     return {"status": "complete", "artifact_id": data.get("artifact_id")}
-                elif status == "failed":
+                if status == "failed":
                     return {"status": "failed", "error": data.get("error")}
                 # Still running, wait and poll again
             await asyncio.sleep(5)
@@ -191,6 +191,7 @@ async def run_showcase_analyses(urls: list[str], wait: bool = True) -> list[dict
 
     Returns:
         List of result dicts
+
     """
     results = []
 
@@ -292,7 +293,7 @@ async def main():
 
     if not args.no_wait:
         print("\n✅ Showcase data ready for demonstration!")
-        print(f"   View at: http://localhost:5173/library")
+        print("   View at: http://localhost:5173/library")
 
 
 if __name__ == "__main__":

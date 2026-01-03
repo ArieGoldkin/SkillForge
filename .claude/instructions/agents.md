@@ -1,96 +1,233 @@
-# 👥 Agent Registry & Capabilities
+# Agent Registry & Capabilities
 
 *Load this file when you need to work with specific agents*
 
-## Available Agents
+## Agent Overview
 
-### ai-ml-engineer 🤖
-**Role**: AI/ML engineer who integrates LLM APIs, implements prompt engineering, builds ML pipelines, optimizes inference performance, designs recommendation systems, and architects intelligent features for production applications
-**Tools**: Read, Edit, MultiEdit, Write, Bash...
-**Trigger**: "Use ai-ml-engineer to [task]"
+SkillForge has **20 specialized agents** organized into two categories:
 
-### backend-system-architect 🤖
-**Role**: Backend architect who designs REST/GraphQL APIs, database schemas, microservice boundaries, and distributed systems. Focuses on scalability, security, performance optimization, and clean architecture patterns
-**Tools**: Read, Edit, MultiEdit, Write, Bash...
-**Trigger**: "Use backend-system-architect to [task]"
+| Category | Count | Purpose |
+|----------|-------|---------|
+| **Technical Agents** | 14 | Implementation, quality, security |
+| **Product Agents** | 6 | Strategy, prioritization, requirements |
 
-### code-quality-reviewer 🤖
-**Role**: Quality assurance expert who reviews code for bugs, security vulnerabilities, performance issues, and compliance with best practices. Runs linting, type checking, ensures test coverage, and validates architectural patterns
+---
+
+## Product Thinking Pipeline (NEW)
+
+Sequential pipeline for product decisions before technical implementation:
+
+```
+market-intelligence → product-strategist → prioritization-analyst → business-case-builder → requirements-translator → metrics-architect → [TECHNICAL HANDOFF]
+```
+
+### market-intelligence 🔮
+**Role**: Market research specialist who analyzes competitive landscapes, identifies market trends, sizes opportunities (TAM/SAM/SOM), and surfaces threats/opportunities
+**Color**: Violet
+**Tools**: Read, Write, WebSearch, WebFetch, Grep, Glob, Bash
+**Triggers**: `market research`, `competitor analysis`, `TAM`, `SWOT`, `market trends`
+**Output**: Market report with competitors, sizing, SWOT analysis
+
+### product-strategist 🎯
+**Role**: Product strategy specialist who validates value propositions, aligns features with business goals, evaluates build/buy/partner decisions
+**Color**: Purple
+**Tools**: Read, Write, WebSearch, WebFetch, Grep, Glob, Bash
+**Triggers**: `product strategy`, `value proposition`, `should we build`, `go/no-go`
+**Output**: Strategic go/no-go recommendation with rationale
+
+### prioritization-analyst 📊
+**Role**: Prioritization specialist who scores features using RICE/ICE/WSJF frameworks, analyzes opportunity costs, manages backlog ranking
+**Color**: Plum
+**Tools**: Read, Write, Grep, Glob, Bash
+**Triggers**: `prioritization`, `RICE`, `ICE`, `backlog`, `what to build next`
+**Output**: RICE-scored backlog with recommended sequence
+
+### business-case-builder 💰
+**Role**: Business analyst who builds ROI projections, cost-benefit analyses, risk assessments, and investment justifications
+**Color**: Indigo
+**Tools**: Read, Write, WebSearch, Grep, Glob, Bash
+**Triggers**: `business case`, `ROI`, `cost-benefit`, `investment`, `justification`
+**Output**: Business case with ROI, sensitivity analysis, risks
+
+### requirements-translator 📝
+**Role**: Requirements specialist who transforms ambiguous ideas into clear PRDs, user stories with acceptance criteria, and scoped specifications
+**Color**: Magenta
+**Tools**: Read, Write, Grep, Glob, Bash
+**Triggers**: `requirements`, `PRD`, `user stories`, `acceptance criteria`, `specification`
+**Output**: PRD with user stories, acceptance criteria, scope boundaries
+
+### metrics-architect 📈
+**Role**: Metrics specialist who designs OKRs, KPIs, success criteria, and instrumentation plans to measure product outcomes
+**Color**: Orchid
+**Tools**: Read, Write, Grep, Glob, Bash
+**Triggers**: `metrics`, `KPI`, `OKR`, `success criteria`, `instrumentation`
+**Output**: Metrics framework with OKRs, KPIs, experiment design
+
+---
+
+## Technical Agents
+
+### Architecture & Design
+
+#### backend-system-architect 🏗️
+**Role**: Backend architect who designs REST/GraphQL APIs, database schemas, microservice boundaries, and distributed systems
+**Tools**: Read, Edit, MultiEdit, Write, Bash, Grep, Glob
+**Triggers**: API design, database schema, microservices, scalability
+
+#### workflow-architect 🔄
+**Role**: Multi-agent workflow specialist who designs LangGraph pipelines, implements supervisor-worker patterns, manages state and checkpointing
+**Model**: Opus (complex reasoning)
+**Tools**: Bash, Read, Write, Edit, Grep, Glob
+**Triggers**: LangGraph, workflow, multi-agent, supervisor, RAG pipeline
+
+#### system-design-reviewer 🔍
+**Role**: System design reviewer for architectural decisions
+**Tools**: Read, Grep, Glob
+**Triggers**: Architecture review, system design, scalability review
+
+### Implementation
+
+#### frontend-ui-developer ⚛️
+**Role**: Frontend developer who builds React 19/TypeScript components with optimistic updates, concurrent features, Zod-validated APIs
+**Tools**: Read, Edit, MultiEdit, Write, Bash, Grep, Glob
+**Triggers**: React components, TypeScript, frontend implementation
+
+#### rapid-ui-designer 🎨
+**Role**: UI/UX designer specializing in rapid prototyping with Tailwind CSS
+**Tools**: Write, Read, Grep, Glob
+**Triggers**: UI design, mockups, Tailwind, design system
+
+#### database-engineer 🗄️
+**Role**: PostgreSQL specialist who designs schemas, creates migrations, optimizes queries, and configures pgvector/full-text search
+**Tools**: Bash, Read, Write, Edit, Grep, Glob
+**Triggers**: PostgreSQL, migrations, database optimization, pgvector
+
+#### llm-integrator 🤖
+**Role**: LLM integration specialist who connects to OpenAI/Anthropic/Ollama APIs, designs prompt templates, implements function calling
+**Tools**: Bash, Read, Write, Edit, Grep, Glob, WebFetch
+**Triggers**: LLM API, prompt engineering, function calling, streaming
+
+#### data-pipeline-engineer 📦
+**Role**: Data pipeline specialist who generates embeddings, implements chunking strategies, manages vector indexes
+**Tools**: Bash, Read, Write, Edit, Grep, Glob
+**Triggers**: Embeddings, chunking, vector indexes, data transformation
+
+### Quality & Security
+
+#### code-quality-reviewer ✅
+**Role**: Quality assurance expert who reviews code for bugs, security vulnerabilities, performance issues
 **Tools**: Read, Bash, Grep, Glob
-**Trigger**: "Use code-quality-reviewer to [task]"
+**Triggers**: Code review, quality check, linting, type checking
 
-### frontend-ui-developer 🤖
-**Role**: Frontend developer who builds React/TypeScript components, implements responsive layouts, manages complex state, ensures accessibility compliance, optimizes performance, and creates reusable component libraries
-**Tools**: Read, Edit, MultiEdit, Write, Bash...
-**Trigger**: "Use frontend-ui-developer to [task]"
+#### test-generator 🧪
+**Role**: Test specialist who analyzes code coverage gaps, generates unit/integration tests, creates test fixtures
+**Tools**: Bash, Read, Write, Edit, Grep, Glob
+**Triggers**: Unit tests, integration tests, test coverage, MSW mocking
 
-### product-manager 🤖
-**Role**: Product strategy specialist who transforms business goals into actionable development plans. Creates PRDs, roadmaps, and prioritizes features using data-driven frameworks (RICE, JTBD, Kano model)
-**Tools**: Write, Read, WebSearch, WebFetch, TodoWrite
-**Trigger**: "Use product-manager to [task]"
+#### security-auditor 🔒
+**Role**: Security specialist who scans for vulnerabilities, audits dependencies, checks OWASP Top 10 compliance
+**Tools**: Bash, Read, Grep, Glob
+**Triggers**: Security scan, OWASP, vulnerability audit, secrets detection
 
-### rapid-ui-designer 🤖
-**Role**: UI/UX designer specializing in rapid prototyping. Creates mockups with Tailwind classes, defines component architectures, establishes design systems, and balances aesthetic excellence with practical implementation constraints
-**Tools**: Write, Read
-**Trigger**: "Use rapid-ui-designer to [task]"
+#### security-layer-auditor 🛡️
+**Role**: Security layer auditor for defense-in-depth review
+**Tools**: Read, Bash, Grep, Glob
+**Triggers**: Security layers, defense in depth, security architecture
 
-### sprint-prioritizer 🤖
-**Role**: Agile planning specialist for 6-day sprints. Uses MoSCoW prioritization, manages backlogs, creates sprint plans, tracks velocity, and makes strategic trade-offs to maximize value delivery within tight timelines
-**Tools**: Write, Read, TodoWrite
-**Trigger**: "Use sprint-prioritizer to [task]"
+#### debug-investigator 🐛
+**Role**: Debug specialist who performs systematic root cause analysis on bugs and failures
+**Tools**: Bash, Read, Grep, Glob
+**Triggers**: Bug investigation, root cause analysis, debugging, error tracing
 
-### studio-coach 🤖
-**Role**: Master orchestrator that coordinates all other agents through phased execution. Breaks down complex projects into tasks, assigns work to specialized agents, validates outputs, and ensures all components integrate properly
-**Tools**: Task, Write, Read
-**Trigger**: "Use studio-coach to [task]"
+### Research
 
-### ux-researcher 🤖
-**Role**: User research expert who conducts interviews, creates personas, maps user journeys, validates design decisions, and ensures features solve real user problems through data-driven insights
-**Tools**: Write, Read, WebSearch
-**Trigger**: "Use ux-researcher to [task]"
+#### ux-researcher 👥
+**Role**: User research specialist who creates personas, maps user journeys, validates design decisions
+**Tools**: Write, Read, WebSearch, Grep, Glob
+**Triggers**: User research, personas, user journey, JTBD, usability
 
-### whimsy-injector 🤖
-**Role**: Delight specialist who adds personality to interfaces through micro-interactions, easter eggs, playful animations, and memorable moments. Transforms routine user actions into joyful experiences that users want to share
-**Tools**: Read, Edit, MultiEdit
-**Trigger**: "Use whimsy-injector to [task]"
+---
 
 ## Capabilities Matrix
 
-| Agent | Planning | Design | Backend | Frontend | ML/AI | Quality |
-|-------|----------|--------|---------|----------|-------|---------|
-| ai-ml-engineer | - | - | - | - | - | - |
-| backend-system-architect | - | - | - | - | - | - |
-| code-quality-reviewer | - | - | - | - | - | - |
-| frontend-ui-developer | - | - | - | - | - | - |
-| product-manager | - | - | - | - | - | - |
-| rapid-ui-designer | - | - | - | - | - | - |
-| sprint-prioritizer | - | - | - | - | - | - |
-| studio-coach | - | - | - | - | - | - |
-| ux-researcher | - | - | - | - | - | - |
-| whimsy-injector | - | - | - | - | - | - |
+| Agent | Strategy | Design | Backend | Frontend | Data | Quality | Security |
+|-------|----------|--------|---------|----------|------|---------|----------|
+| market-intelligence | ✅ | - | - | - | - | - | - |
+| product-strategist | ✅ | - | - | - | - | - | - |
+| prioritization-analyst | ✅ | - | - | - | - | - | - |
+| business-case-builder | ✅ | - | - | - | - | - | - |
+| requirements-translator | ✅ | - | - | - | - | - | - |
+| metrics-architect | ✅ | - | - | - | - | - | - |
+| backend-system-architect | - | ✅ | ✅ | - | - | - | - |
+| workflow-architect | - | ✅ | ✅ | - | ✅ | - | - |
+| frontend-ui-developer | - | - | - | ✅ | - | - | - |
+| rapid-ui-designer | - | ✅ | - | ✅ | - | - | - |
+| database-engineer | - | - | ✅ | - | ✅ | - | - |
+| llm-integrator | - | - | ✅ | - | ✅ | - | - |
+| data-pipeline-engineer | - | - | - | - | ✅ | - | - |
+| code-quality-reviewer | - | - | - | - | - | ✅ | - |
+| test-generator | - | - | - | - | - | ✅ | - |
+| security-auditor | - | - | - | - | - | - | ✅ |
+| debug-investigator | - | - | ✅ | ✅ | - | ✅ | - |
+| ux-researcher | ✅ | ✅ | - | - | - | - | - |
 
-## Common Invocation Patterns
-
-### Studio Coach (Orchestrator)
-- "Build a viral app" → Coordinates multiple agents
-- "Plan our sprint" → Creates optimized workflow
-
-### Backend System Architect
-- "Design API for millions of users" → Scalable architecture
-- "Review API structure" → Architecture analysis
-
-### Frontend UI Developer
-- "Create dropdown component" → UI implementation
-- "Fix rendering issues" → Performance optimization
+---
 
 ## Agent Collaboration Patterns
 
-**Backend → Frontend Flow**:
-1. Backend designs API
-2. Frontend builds matching UI
-3. Both update shared context
+### Product → Technical Flow
+```
+1. market-intelligence → Competitive landscape
+2. product-strategist → Go/no-go decision
+3. prioritization-analyst → RICE-scored backlog
+4. business-case-builder → Investment justification
+5. requirements-translator → PRD + user stories
+6. metrics-architect → Success criteria
+7. ux-researcher → User journeys, personas
+8. backend-system-architect / frontend-ui-developer → Implementation
+9. code-quality-reviewer → Quality gate
+10. metrics-architect → Validate outcomes
+```
 
-**Design → Implementation Flow**:
-1. UX Researcher validates needs
-2. UI Designer creates mockups
-3. Frontend Developer implements
+### Technical Implementation Flow
+```
+1. backend-system-architect → API design
+2. database-engineer → Schema + migrations
+3. frontend-ui-developer → UI implementation
+4. test-generator → Test coverage
+5. code-quality-reviewer → Quality review
+6. security-auditor → Security scan
+```
+
+### AI Feature Flow
+```
+1. workflow-architect → LangGraph design
+2. llm-integrator → LLM integration
+3. data-pipeline-engineer → Embeddings/vectors
+4. test-generator → AI-specific tests
+```
+
+---
+
+## Common Invocation Patterns
+
+### Starting a New Feature
+```
+"Use market-intelligence to research competitors for [feature]"
+"Use product-strategist to evaluate if we should build [feature]"
+"Use prioritization-analyst to score [feature] against the backlog"
+```
+
+### Implementation
+```
+"Use backend-system-architect to design the API for [feature]"
+"Use frontend-ui-developer to build the [component]"
+"Use workflow-architect to design the LangGraph pipeline"
+```
+
+### Quality Assurance
+```
+"Use code-quality-reviewer to review [PR/files]"
+"Use security-auditor to scan [directory]"
+"Use test-generator to add tests for [module]"
+```

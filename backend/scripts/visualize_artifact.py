@@ -21,9 +21,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import desc, select
 
+from app.db.models.artifact import Artifact
 from app.db.repositories.artifact_repository import ArtifactRepository
 from app.db.session import AsyncSessionLocal
-from app.db.models.artifact import Artifact
 
 
 def format_size(size_bytes: int) -> str:

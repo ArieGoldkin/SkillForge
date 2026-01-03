@@ -224,9 +224,14 @@ async def smoke_test_analysis(
 
     Creates a dedicated analysis record that will hold test chunks.
     Cleans up after tests complete.
+
+    Note: Explicitly uses uuid4() (not DB-generated UUIDv7) because cleanup
+    queries require the exact ID. This is acceptable for test fixtures that
+    need predictable IDs for cleanup/verification.
     """
     from app.db.models.analysis import Analysis
 
+    # Use uuid4() for predictable ID in cleanup queries
     analysis_id = uuid4()
     analysis = Analysis(
         id=analysis_id,
@@ -290,6 +295,8 @@ async def seeded_chunks(
 
             # Create chunk with actual column names (not property aliases)
             # Properties: content→snippet, embedding→vector, chunk_type→granularity
+            # Note: Explicitly uses uuid4() (not DB-generated UUIDv7) for consistency
+            # with parent analysis fixture which also uses uuid4() for cleanup queries.
             chunk = AnalysisChunk(
                 id=uuid4(),
                 analysis_id=analysis_id,

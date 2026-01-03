@@ -438,12 +438,12 @@ async def generate_artifact(  # noqa: PLR0915
             trace_id = get_current_trace_id()
 
             # Store artifact in database using repository pattern
+            # Note: Don't pass "id" - let DB generate UUID v7 via server_default
             session_factory = get_session_factory()
             async with session_factory() as db_session:
                 repository = ArtifactRepository(session=db_session)
                 artifact = await repository.create_artifact(
                     {
-                        "id": uuid.uuid4(),
                         "analysis_id": analysis_id,
                         "markdown_content": markdown_content,
                         "version": 1,

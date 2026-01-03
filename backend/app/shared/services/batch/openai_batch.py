@@ -39,8 +39,8 @@ import asyncio
 import json
 from pathlib import Path
 from typing import Any, Literal
-from uuid import uuid4
 
+import uuid_utils
 from openai import AsyncOpenAI
 
 from app.core.config import settings
@@ -139,7 +139,7 @@ class OpenAIBatchClient:
             msg = "Cannot create batch file with empty requests list"
             raise ValueError(msg)
 
-        file_path = self.batch_dir / f"batch_{uuid4()}.jsonl"
+        file_path = self.batch_dir / f"batch_{uuid_utils.uuid7()}.jsonl"
 
         # Write JSONL format required by Batch API
         # ASYNC230: File I/O is acceptable here - this is a one-time write before

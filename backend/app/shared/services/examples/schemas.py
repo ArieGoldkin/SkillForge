@@ -15,8 +15,9 @@ class AgentExample(BaseModel):
     to improve agent output quality.
 
     Example:
+        >>> import uuid_utils
         >>> example = AgentExample(
-        ...     id=uuid4(),
+        ...     id=uuid_utils.uuid7(),
         ...     agent_type="tech_comparator",
         ...     input_summary="Comparing React vs Vue for state management",
         ...     output_example={"key_differences": [...], "recommendation": "..."},
