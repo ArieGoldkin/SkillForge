@@ -3,6 +3,13 @@
 This is the SINGLE source of truth for LLM model initialization in SkillForge.
 Supports cloud providers (OpenAI, Anthropic, Google, etc.) and local Ollama.
 
+Architecture (Issue #637 - Provider Configuration Registry):
+- Init-time params: Handled here (api_key, temperature, max_tokens, etc.)
+- Call-time params: Handled in provider_config.py (stream_options, strict mode)
+
+The separation ensures parameters are applied at the correct lifecycle stage.
+stream_options is only valid for OpenAI streaming calls, not ainvoke().
+
 When OLLAMA_ENABLED=true, all LLM calls use local models:
 - reasoning/g_eval → deepseek-r1:70b
 - coding/supervisor → qwen2.5-coder:32b
@@ -31,7 +38,14 @@ if TYPE_CHECKING:
 
 
 class StreamOptions(TypedDict):
-    """Stream options for usage metadata extraction."""
+    """Stream options for usage metadata extraction.
+
+    NOTE: This TypedDict is kept for type checking but stream_options
+    should NOT be passed at model init time. Use provider_config.py's
+    get_streaming_kwargs() at astream() call time instead.
+
+    See Issue #637 for architecture details.
+    """
 
     include_usage: bool
 
@@ -338,8 +352,10 @@ def _build_init_kwargs(
     if max_retries is not None:
         init_kwargs["max_retries"] = max_retries
 
-    # Stream options for usage metadata (separate from init_kwargs for typing)
-    model_kwargs: dict[str, StreamOptions] = {"stream_options": {"include_usage": True}}
+    # Issue #637: stream_options moved to provider_config.py for call-time injection.
+    # stream_options is only valid for OpenAI streaming calls (astream), not ainvoke().
+    # Use get_streaming_kwargs(provider) from provider_config.py at call sites.
+    model_kwargs: dict[str, Any] = {}
 
     return init_kwargs, model_kwargs
 
@@ -588,3 +604,23 @@ def get_chat_model(
         runtime_model_provided=runtime_model is not None,
         routed_model=routed_model,
     )
+
+
+# =============================================================================
+# Re-exports from provider_config for convenience (Issue #637)
+# =============================================================================
+
+from app.core.provider_config import (  # noqa: E402
+    get_provider_for_model,
+    get_streaming_kwargs,
+    get_structured_output_kwargs,
+)
+
+__all__ = [
+    "OLLAMA_TASK_MODEL_MAP",
+    "TASK_MODEL_MAP",
+    "get_chat_model",
+    "get_provider_for_model",
+    "get_streaming_kwargs",
+    "get_structured_output_kwargs",
+]

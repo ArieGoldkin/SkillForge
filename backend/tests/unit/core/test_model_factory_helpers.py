@@ -106,8 +106,13 @@ class TestBuildInitKwargs:
         assert init_kwargs["max_retries"] == 5
 
     @patch("app.core.model_factory.settings")
-    def test_stream_options_always_included(self, mock_settings: MagicMock) -> None:
-        """Test that stream_options is always included in model_kwargs."""
+    def test_model_kwargs_empty_by_default(self, mock_settings: MagicMock) -> None:
+        """Test that model_kwargs is empty at init time.
+
+        Issue #637: stream_options moved to call-time via provider_config.py.
+        Passing stream_options at init caused errors with ainvoke() (non-streaming).
+        Use get_streaming_kwargs() from provider_config at call sites instead.
+        """
         mock_settings.OPENAI_API_KEY = "sk-test"
         mock_settings.ANTHROPIC_API_KEY = None
         mock_settings.GOOGLE_API_KEY = None
@@ -120,8 +125,9 @@ class TestBuildInitKwargs:
 
         _, model_kwargs = _build_init_kwargs("openai", {})
 
-        assert "stream_options" in model_kwargs
-        assert model_kwargs["stream_options"]["include_usage"] is True
+        # Issue #637: stream_options no longer at init time
+        assert "stream_options" not in model_kwargs
+        assert model_kwargs == {}
 
 
 # =============================================================================
