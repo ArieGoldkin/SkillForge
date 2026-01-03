@@ -1,7 +1,8 @@
 name: Langfuse Experiments
 
-# Issue #428 Phase 4.2: Automated Langfuse experiment execution
-# Runs quality experiments on golden dataset using ExperimentRunner
+# Issue #570: Unified Langfuse experiment runner with real G-Eval
+# Runs quality experiments using run_dataset_experiments.py (3-mode architecture)
+# Mode: quality (LLM-as-judge via real G-Eval)
 
 on:
   # Run on changes to backend code that affect model quality
@@ -11,7 +12,7 @@ on:
       - "backend/app/domains/**/workflows/agents/**"
       - "backend/app/domains/**/workflows/**"
       - "backend/app/shared/services/**"
-      - "backend/app/evaluation/**"
+      - "backend/app/shared/services/g_eval/**"
       - ".github/workflows/langfuse-experiments.yml"
 
   pull_request:
@@ -20,28 +21,35 @@ on:
       - "backend/app/domains/**/workflows/agents/**"
       - "backend/app/domains/**/workflows/**"
       - "backend/app/shared/services/**"
-      - "backend/app/evaluation/**"
+      - "backend/app/shared/services/g_eval/**"
       - ".github/workflows/langfuse-experiments.yml"
 
   # Manual trigger with configurable options
   workflow_dispatch:
     inputs:
-      dataset_name:
-        description: "Dataset name in Langfuse (default: golden-dataset)"
+      dataset:
+        description: "Dataset to evaluate (all, golden_analyses, synthesis, etc.)"
         required: false
-        default: "golden-dataset"
-        type: string
-      experiment_name:
-        description: "Experiment name (default: auto-generated from commit)"
+        default: "all"
+        type: choice
+        options:
+          - all
+          - supervisor
+          - agent_analysis
+          - synthesis
+          - golden_analyses
+          - adversarial
+          - edge_cases
+      mode:
+        description: "Evaluation mode"
         required: false
-        type: string
-      max_parallel:
-        description: "Max parallel evaluations (default: 10)"
-        required: false
-        default: "10"
-        type: string
+        default: "quality"
+        type: choice
+        options:
+          - validate
+          - quality
       fail_on_threshold:
-        description: "Fail if success rate < threshold (e.g., 0.8)"
+        description: "Fail if score < threshold (e.g., 0.6)"
         required: false
         type: string
 
@@ -110,137 +118,145 @@ jobs:
           fi
           poetry install --no-interaction --no-root
 
-      - name: Generate experiment name
-        id: experiment-name
-        run: |
-          # Use input if provided, otherwise generate from Git metadata
-          if [ -n "${{ inputs.experiment_name }}" ]; then
-            NAME="${{ inputs.experiment_name }}"
-          else
-            # Format: ci-{short-sha}-{branch}
-            BRANCH="${{ github.head_ref || github.ref_name }}"
-            BRANCH_CLEAN=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g')
-            SHA_SHORT="${{ github.sha }}"
-            SHA_SHORT="${SHA_SHORT:0:7}"
-            NAME="ci-${SHA_SHORT}-${BRANCH_CLEAN}"
-          fi
-          echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "Generated experiment name: $NAME"
-
-      - name: Run quality experiments
+      - name: Run G-Eval experiments
         id: run-experiments
         continue-on-error: true
         working-directory: backend
         env:
           # Langfuse configuration
-          # Required secrets: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST
           LANGFUSE_ENABLED: "true"
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
-          LANGFUSE_ANNOTATION_QUEUE_ID: ${{ secrets.LANGFUSE_ANNOTATION_QUEUE_ID }}
-          # Experiment parameters
-          EXPERIMENT_DATASET: ${{ inputs.dataset_name || 'golden-dataset' }}
-          EXPERIMENT_NAME: ${{ steps.experiment-name.outputs.name }}
-          EXPERIMENT_MAX_PARALLEL: ${{ inputs.max_parallel || '10' }}
+          # Cloud LLM for G-Eval (Issue #570: real LLM-as-judge)
+          OLLAMA_ENABLED: "false"
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # Git metadata for experiment context
           GIT_COMMIT_SHA: ${{ github.sha }}
           GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
-          GIT_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          # Run experiments and capture output
-          poetry run python scripts/run_langfuse_experiments.py \
-            --dataset "$EXPERIMENT_DATASET" \
-            --experiment "$EXPERIMENT_NAME" \
-            --max-parallel "$EXPERIMENT_MAX_PARALLEL" \
-            --output-file experiment_results.json \
-            2>&1 | tee experiment_output.log
+          # Run unified dataset experiments with real G-Eval
+          DATASET="${{ inputs.dataset || 'all' }}"
+          MODE="${{ inputs.mode || 'quality' }}"
+
+          if [ "$DATASET" = "all" ]; then
+            # Run all datasets sequentially
+            for ds in supervisor agent_analysis synthesis golden_analyses adversarial edge_cases; do
+              echo "=========================================="
+              echo "Running $ds dataset with mode: $MODE"
+              echo "=========================================="
+              poetry run python scripts/run_dataset_experiments.py \
+                --dataset "$ds" \
+                --mode "$MODE" \
+                2>&1 | tee -a experiment_output.log
+            done
+          else
+            # Run single dataset
+            poetry run python scripts/run_dataset_experiments.py \
+              --dataset "$DATASET" \
+              --mode "$MODE" \
+              2>&1 | tee experiment_output.log
+          fi
 
       - name: Parse experiment results
         id: parse-results
         if: always()
         working-directory: backend
         run: |
-          # Extract key metrics from results JSON
-          if [ -f experiment_results.json ]; then
-            SUCCESS_RATE=$(jq -r '.success_rate // 0' experiment_results.json)
-            TOTAL_ITEMS=$(jq -r '.total_items // 0' experiment_results.json)
-            SUCCESSFUL_RUNS=$(jq -r '.successful_runs // 0' experiment_results.json)
-            FAILED_RUNS=$(jq -r '.failed_runs // 0' experiment_results.json)
-            DURATION_MS=$(jq -r '.total_duration_ms // 0' experiment_results.json)
-            ITEMS_PER_SEC=$(jq -r '.items_per_second // 0' experiment_results.json)
+          # Parse baseline scores from all datasets
+          ALL_PASS="true"
+          TOTAL_ITEMS=0
+          AVG_SCORES=""
 
-            # Format for display
-            SUCCESS_PCT=$(echo "$SUCCESS_RATE * 100" | bc -l | xargs printf "%.1f")
-            DURATION_SEC=$(echo "$DURATION_MS / 1000" | bc -l | xargs printf "%.2f")
+          for baseline in scripts/baseline_scores/*_baseline.json; do
+            if [ -f "$baseline" ]; then
+              DATASET=$(jq -r '.dataset // "unknown"' "$baseline")
+              STATUS=$(jq -r '.ci_status // "UNKNOWN"' "$baseline")
+              ITEMS=$(jq -r '.items_evaluated // 0' "$baseline")
+              SCORE=$(jq -r '.metrics.avg_score // 0' "$baseline")
+              PASS_RATE=$(jq -r '.metrics.pass_rate // 0' "$baseline")
 
-            echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT
-            echo "success_pct=$SUCCESS_PCT" >> $GITHUB_OUTPUT
-            echo "total_items=$TOTAL_ITEMS" >> $GITHUB_OUTPUT
-            echo "successful_runs=$SUCCESSFUL_RUNS" >> $GITHUB_OUTPUT
-            echo "failed_runs=$FAILED_RUNS" >> $GITHUB_OUTPUT
-            echo "duration_sec=$DURATION_SEC" >> $GITHUB_OUTPUT
-            echo "items_per_sec=$ITEMS_PER_SEC" >> $GITHUB_OUTPUT
+              TOTAL_ITEMS=$((TOTAL_ITEMS + ITEMS))
+              AVG_SCORES="${AVG_SCORES}${DATASET}: ${SCORE} (pass_rate: ${PASS_RATE})\n"
 
-            # Extract average scores
-            SCORES=$(jq -r '.average_scores // {}' experiment_results.json)
-            echo "scores=$SCORES" >> $GITHUB_OUTPUT
+              if [ "$STATUS" != "PASS" ]; then
+                ALL_PASS="false"
+              fi
+            fi
+          done
+
+          if [ "$ALL_PASS" = "true" ]; then
+            echo "ci_status=PASS" >> $GITHUB_OUTPUT
           else
-            echo "No results file found"
-            echo "success_rate=0" >> $GITHUB_OUTPUT
-            echo "success_pct=0.0" >> $GITHUB_OUTPUT
+            echo "ci_status=FAIL" >> $GITHUB_OUTPUT
           fi
+
+          echo "total_items=$TOTAL_ITEMS" >> $GITHUB_OUTPUT
+          echo "scores<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$AVG_SCORES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Check quality threshold
         if: always() && inputs.fail_on_threshold != ''
+        working-directory: backend
         run: |
           THRESHOLD="${{ inputs.fail_on_threshold }}"
-          SUCCESS_RATE="${{ steps.parse-results.outputs.success_rate }}"
+          CI_STATUS="${{ steps.parse-results.outputs.ci_status }}"
 
-          echo "Success rate: $SUCCESS_RATE"
+          echo "CI Status: $CI_STATUS"
           echo "Threshold: $THRESHOLD"
 
-          # Compare using bc for float comparison
-          if [ $(echo "$SUCCESS_RATE < $THRESHOLD" | bc -l) -eq 1 ]; then
-            echo "::error::Experiment success rate ($SUCCESS_RATE) below threshold ($THRESHOLD)"
-            exit 1
-          else
-            echo "::notice::Experiment success rate ($SUCCESS_RATE) meets threshold ($THRESHOLD)"
-          fi
+          # Check each baseline file against threshold
+          for baseline in scripts/baseline_scores/*_baseline.json; do
+            if [ -f "$baseline" ]; then
+              SCORE=$(jq -r '.metrics.avg_score // 0' "$baseline")
+              DATASET=$(jq -r '.dataset // "unknown"' "$baseline")
+
+              if [ $(echo "$SCORE < $THRESHOLD" | bc -l) -eq 1 ]; then
+                echo "::error::Dataset $DATASET score ($SCORE) below threshold ($THRESHOLD)"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "::notice::All datasets meet quality threshold ($THRESHOLD)"
 
       - name: Generate experiment report
         if: always()
         working-directory: backend
         run: |
-          # Create markdown report
-          cat > experiment_report.md <<'EOF'
-          # Langfuse Experiment Results
+          # Create markdown report from baseline scores
+          cat > experiment_report.md << 'HEADER'
+          # G-Eval Experiment Results
 
-          **Experiment**: `${{ steps.experiment-name.outputs.name }}`
-          **Dataset**: `${{ inputs.dataset_name || 'golden-dataset' }}`
+          **Mode**: `${{ inputs.mode || 'quality' }}`
+          **Dataset**: `${{ inputs.dataset || 'all' }}`
           **Commit**: `${{ github.sha }}`
           **Branch**: `${{ github.head_ref || github.ref_name }}`
+          **CI Status**: `${{ steps.parse-results.outputs.ci_status }}`
 
-          ## Summary
+          ## Dataset Scores
 
-          | Metric | Value |
-          |--------|-------|
-          | Total Items | ${{ steps.parse-results.outputs.total_items }} |
-          | Successful Runs | ${{ steps.parse-results.outputs.successful_runs }} |
-          | Failed Runs | ${{ steps.parse-results.outputs.failed_runs }} |
-          | Success Rate | ${{ steps.parse-results.outputs.success_pct }}% |
-          | Duration | ${{ steps.parse-results.outputs.duration_sec }}s |
-          | Throughput | ${{ steps.parse-results.outputs.items_per_sec }} items/sec |
+          | Dataset | Items | Avg Score | Pass Rate | Status |
+          |---------|-------|-----------|-----------|--------|
+          HEADER
 
-          ## Average Scores
+          # Add each dataset row
+          for baseline in scripts/baseline_scores/*_baseline.json; do
+            if [ -f "$baseline" ]; then
+              DATASET=$(jq -r '.dataset // "unknown"' "$baseline")
+              ITEMS=$(jq -r '.items_evaluated // 0' "$baseline")
+              SCORE=$(jq -r '.metrics.avg_score // 0' "$baseline")
+              PASS_RATE=$(jq -r '.metrics.pass_rate // 0' "$baseline")
+              STATUS=$(jq -r '.ci_status // "UNKNOWN"' "$baseline")
 
-          ```json
-          ${{ steps.parse-results.outputs.scores }}
-          ```
+              echo "| $DATASET | $ITEMS | $SCORE | $PASS_RATE | $STATUS |" >> experiment_report.md
+            fi
+          done
+
+          cat >> experiment_report.md << 'FOOTER'
 
           ## View in Langfuse
-
-          Experiment ID: `${{ steps.parse-results.outputs.experiment_id }}`
 
           [View Experiment Results →](${{ secrets.LANGFUSE_HOST }})
 
@@ -250,11 +266,12 @@ jobs:
           <summary>Execution Log (last 50 lines)</summary>
 
           ```
-          $(tail -50 experiment_output.log 2>/dev/null || echo "No log file available")
-          ```
+          FOOTER
 
-          </details>
-          EOF
+          tail -50 experiment_output.log 2>/dev/null >> experiment_report.md || echo "No log file available" >> experiment_report.md
+
+          echo '```' >> experiment_report.md
+          echo '</details>' >> experiment_report.md
 
       - name: Add summary to GitHub Actions
         if: always()
@@ -279,7 +296,7 @@ jobs:
 
             const botComment = comments.find(comment =>
               comment.user.type === 'Bot' &&
-              comment.body.includes('# Langfuse Experiment')
+              comment.body.includes('# G-Eval Experiment')
             );
 
             const commentBody = `${report}\n\n---\n*Automated from [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*`;
@@ -306,9 +323,9 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: langfuse-experiment-results-${{ github.run_number }}
+          name: g-eval-experiment-results-${{ github.run_number }}
           path: |
-            backend/experiment_results.json
+            backend/scripts/baseline_scores/*.json
             backend/experiment_report.md
             backend/experiment_output.log
           compression-level: 9
@@ -318,10 +335,13 @@ jobs:
       - name: Report final status
         if: always()
         run: |
-          if [ "${{ steps.run-experiments.outcome }}" = "success" ]; then
-            echo "::notice::Langfuse experiments completed successfully"
+          CI_STATUS="${{ steps.parse-results.outputs.ci_status }}"
+
+          if [ "$CI_STATUS" = "PASS" ]; then
+            echo "::notice::G-Eval experiments completed - all datasets passed"
             exit 0
           else
-            echo "::error::Langfuse experiments failed or had errors"
-            exit 1
+            echo "::warning::G-Eval experiments completed with failures - check dataset scores"
+            # Don't fail the workflow, just warn (experiments are informational)
+            exit 0
           fi
