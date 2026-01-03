@@ -167,12 +167,13 @@ jobs:
       - name: Load evaluation fixtures
         working-directory: backend
         env:
-          # Use Ollama embeddings instead of deterministic (Issue #606)
-          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
+          # Use deterministic embeddings for fast, reproducible fixture loading
+          # OPENAI_API_KEY is still available for reranker (gpt-4o-mini)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
           # Override Langfuse based on runtime availability check
           LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
         run: |
-          # Load fixture data with Ollama embeddings for evaluation
+          # Load fixture data with deterministic embeddings for evaluation
           poetry run python scripts/load_expanded_fixtures.py --expanded --replace
 
       - name: Run evaluation pipeline
@@ -180,8 +181,9 @@ jobs:
         continue-on-error: true  # Don't fail PR on evaluation results - report metrics only
         working-directory: backend
         env:
-          # Use cloud models for fast evaluation (Gemini 3 Flash)
-          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "false"
+          # Use deterministic embeddings for fast, reproducible evaluation
+          # Reranker uses OPENAI_API_KEY (gpt-4o-mini), G-Eval uses GOOGLE_API_KEY (Gemini)
+          SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
           # Override Langfuse based on runtime availability check
           LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
         run: |
