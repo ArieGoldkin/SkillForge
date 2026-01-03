@@ -1,9 +1,25 @@
 # 📊 SkillForge - Current Status & Next Steps
 
-**Date:** December 27, 2025
-**Branch:** `dev`
-**Current Focus:** 🟢 Langfuse Observability (Issues #564, #566 ✅ CLOSED) + 🟡 Stabilizing Milestone
-**Path to Launch:** Triple-Consumer → Tutoring → Evaluation → Content Expansion → Staging/Production → Voice Tutor → Multimodal → MCP Server
+**Date:** January 3, 2026
+**Branch:** `issue/625-626-633-content-extraction-fixes`
+**Current Focus:** 🔴 Stabilizing Milestone - Critical bug fixes (#625, #626, #633)
+**Path to Launch:** Stabilizing → Backend Stabilization → Staging/Production → Memory Intelligence → Billing → Content Expansion
+
+---
+
+## 🚨 Active Sprint (Jan 3, 2026) - Issues #625, #626, #633
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| **#633** | tier_types.py uses wrong agent name | ✅ FIXED |
+| **#625** | Content cleaner truncates 82%+ of content | ✅ FIXED (architecture already correct, added deprecation) |
+| **#626** | Empty artifact content fallback | ✅ FIXED (already implemented) |
+
+### Changes Made This Sprint
+- Fixed `impl_planner` → `implementation_planner` in tier_types.py (lines 60, 86)
+- Added deprecation warning to `clean_extracted_content()` in content_cleaner.py
+- Updated tests to use correct agent name
+- Verified Trafilatura primary + Jina fallback architecture is working correctly
 
 ---
 

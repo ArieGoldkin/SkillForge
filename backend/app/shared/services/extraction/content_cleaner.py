@@ -1,5 +1,11 @@
 """Content cleaning utilities for extracted content.
 
+DEPRECATION WARNING (Issue #625):
+- clean_extracted_content() is DEPRECATED and should NOT be used in extraction pipelines
+- It can truncate content due to aggressive END_CONTENT_INDICATORS patterns
+- Use Trafilatura (ML-based cleaning, F1=0.958) as primary extractor instead
+- Only sanitize_utf8() should be used for PostgreSQL compatibility
+
 This module provides utilities to clean extracted markdown content by removing
 boilerplate elements like cookie consent banners, navigation menus, footers,
 and other non-article content.
@@ -136,6 +142,10 @@ def sanitize_utf8(text: str) -> str:
 def clean_extracted_content(content: str) -> str:
     """Clean extracted markdown content by removing boilerplate.
 
+    DEPRECATED (Issue #625): This function is deprecated.
+    Use TrafilaturaExtractor (ML-based cleaning, F1=0.958) instead.
+    This function can truncate content due to aggressive patterns.
+
     This function removes:
     - Cookie consent banners and GDPR notices
     - Navigation menus and skip links
@@ -152,6 +162,15 @@ def clean_extracted_content(content: str) -> str:
         Cleaned markdown content with boilerplate removed
 
     """
+    import warnings
+
+    warnings.warn(
+        "clean_extracted_content() is deprecated (Issue #625). "
+        "Use TrafilaturaExtractor (ML-based cleaning) instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if not content:
         return content
 
