@@ -3,7 +3,7 @@
 import asyncio
 import os
 import uuid
-from typing import Annotated, Any, ClassVar, cast
+from typing import Annotated, Any, ClassVar
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
 from sqlalchemy.exc import IntegrityError
