@@ -68,17 +68,22 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          # Include runner.name to prevent cross-runner cache corruption (Issue #638)
+          key: poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v6-${{ runner.os }}-py3.13-
+            poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          # Force fresh venv if cache is corrupted (check ruff, since that's what this job uses)
-          if [ -d ".venv" ] && ! poetry run ruff --version >/dev/null 2>&1; then
-            echo "⚠️ Cached venv appears corrupted, removing..."
-            rm -rf .venv 2>/dev/null || true
+          # Force fresh venv if cache is corrupted or from different runner
+          # Check: 1) ruff exists, 2) python path matches current directory
+          if [ -d ".venv" ]; then
+            VENV_PYTHON=$(cat .venv/pyvenv.cfg 2>/dev/null | grep "^home" | cut -d= -f2 | tr -d ' ')
+            if ! poetry run ruff --version >/dev/null 2>&1 || [ -z "$VENV_PYTHON" ]; then
+              echo "⚠️ Cached venv appears corrupted, removing..."
+              rm -rf .venv 2>/dev/null || true
+            fi
           fi
           poetry install --no-interaction --no-root
 
@@ -116,17 +121,21 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          # Include runner.name to prevent cross-runner cache corruption (Issue #638)
+          key: poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v6-${{ runner.os }}-py3.13-
+            poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          # Force fresh venv if cache is corrupted (check ty, since that's what this job uses)
-          if [ -d ".venv" ] && ! poetry run ty --version >/dev/null 2>&1; then
-            echo "⚠️ Cached venv appears corrupted, removing..."
-            rm -rf .venv 2>/dev/null || true
+          # Force fresh venv if cache is corrupted or from different runner
+          if [ -d ".venv" ]; then
+            VENV_PYTHON=$(cat .venv/pyvenv.cfg 2>/dev/null | grep "^home" | cut -d= -f2 | tr -d ' ')
+            if ! poetry run ty --version >/dev/null 2>&1 || [ -z "$VENV_PYTHON" ]; then
+              echo "⚠️ Cached venv appears corrupted, removing..."
+              rm -rf .venv 2>/dev/null || true
+            fi
           fi
           poetry install --no-interaction --no-root
 
@@ -166,17 +175,21 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-v6-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          # Include runner.name to prevent cross-runner cache corruption (Issue #638)
+          key: poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-v6-${{ runner.os }}-py3.13-
+            poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          # Force fresh venv if cache is corrupted (check pytest, since that's what this job uses)
-          if [ -d ".venv" ] && ! poetry run pytest --version >/dev/null 2>&1; then
-            echo "⚠️ Cached venv appears corrupted, removing..."
-            rm -rf .venv 2>/dev/null || true
+          # Force fresh venv if cache is corrupted or from different runner
+          if [ -d ".venv" ]; then
+            VENV_PYTHON=$(cat .venv/pyvenv.cfg 2>/dev/null | grep "^home" | cut -d= -f2 | tr -d ' ')
+            if ! poetry run pytest --version >/dev/null 2>&1 || [ -z "$VENV_PYTHON" ]; then
+              echo "⚠️ Cached venv appears corrupted, removing..."
+              rm -rf .venv 2>/dev/null || true
+            fi
           fi
           poetry install --no-interaction --no-root
 

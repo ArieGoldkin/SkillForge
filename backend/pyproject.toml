@@ -42,7 +42,7 @@ pypdf = "^6.5.0"
 # Content extraction - 2026 improvements
 youtube-transcript-api = "^0.6.2"
 PyGithub = "^2.3.0"
-trafilatura = "^1.6.3"
+trafilatura = "^2.0.0"
 # Langfuse observability (replaces LangSmith - Issue #372)
 langfuse = "3.11.2"
 orjson = "^3.11.5"

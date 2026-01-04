@@ -117,9 +117,10 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          # Include runner.name to prevent cross-runner cache corruption (Issue #638)
+          key: poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.name }}-${{ runner.os }}-py3.13-
+            poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: backend
@@ -198,17 +199,13 @@ jobs:
           # Use detected host (localhost for self-hosted, or cloud from secrets)
           LANGFUSE_HOST: ${{ steps.langfuse.outputs.host }}
         run: |
-          # Run evaluation in "raw retrieval" mode (Issue #638: Fix CI timeout)
-          # --no-hyde: Skip HyDE LLM calls (direct embedding for pure retrieval testing)
-          # --no-rerank: Skip LLM reranking (raw score ordering)
-          # --parallel 10: Process 10 queries concurrently
-          # Expected time: 14min → ~90 seconds
+          # Run full evaluation with HyDE + reranking for accurate metrics
+          # HyDE improves recall via semantic expansion, reranker improves precision
+          # Expected time: ~2-3 minutes with cloud models, ~$0.10-0.50/run
           poetry run python scripts/run_evaluation.py \
             --expanded \
             --output evaluation_results.json \
-            --no-hyde \
-            --no-rerank \
-            --parallel 10 \
+            --parallel 5 \
             ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
 
       - name: Generate markdown report
