@@ -118,18 +118,46 @@ def parse_args() -> argparse.Namespace:
         help="Use expanded fixtures (queries_expanded.json)",
     )
 
+    # Raw retrieval mode flags (Issue #638: Fix CI timeout)
+    # These disable LLM-based augmentation for faster, pure retrieval testing
+    parser.add_argument(
+        "--no-hyde",
+        action="store_true",
+        help="Disable HyDE (direct embedding for pure retrieval testing)",
+    )
+
+    parser.add_argument(
+        "--no-rerank",
+        action="store_true",
+        help="Disable LLM reranking (raw score ordering)",
+    )
+
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Number of parallel queries (default: 1 for sequential, recommended: 10-20)",
+    )
+
     return parser.parse_args()
 
 
 async def run_evaluation(
     difficulties: list[Difficulty] | None = None,
     expanded: bool = False,
+    no_hyde: bool = False,
+    no_rerank: bool = False,
+    parallel: int = 1,
 ) -> PipelineResult:
     """Run evaluation pipeline.
 
     Args:
         difficulties: List of difficulties to evaluate (None = all)
         expanded: Use expanded fixtures (queries_expanded.json)
+        no_hyde: Disable HyDE (direct embedding for pure retrieval testing)
+        no_rerank: Disable LLM reranking (raw score ordering)
+        parallel: Number of parallel queries (1 = sequential)
 
     Returns:
         PipelineResult with evaluation results
@@ -179,19 +207,31 @@ async def run_evaluation(
             else:
                 embedding_service = EmbeddingService()
 
+            # Log evaluation mode for debugging
+            mode_desc = []
+            if no_hyde:
+                mode_desc.append("HyDE disabled")
+            if no_rerank:
+                mode_desc.append("reranking disabled")
+            if parallel > 1:
+                mode_desc.append(f"{parallel}x parallel")
+            mode_str = ", ".join(mode_desc) if mode_desc else "full augmentation"
+            logger.info(f"Evaluation mode: {mode_str}")
+
             # Run evaluation
             runner = EvaluationRunner(
                 session=session,
                 embedding_service=embedding_service,
+                use_hyde=not no_hyde,
+                use_rerank=not no_rerank,
+                max_parallel=parallel,
             )
 
             # Load queries into runner
             runner._queries = queries
 
             logger.info("Starting evaluation pipeline", difficulties=difficulties)
-            result = await runner.run_all(difficulties=difficulties)
-
-            return result
+            return await runner.run_all(difficulties=difficulties)
 
     finally:
         await engine.dispose()
@@ -273,7 +313,13 @@ async def main() -> int:
 
     # Run evaluation
     try:
-        result = await run_evaluation(difficulties, expanded=args.expanded)
+        result = await run_evaluation(
+            difficulties,
+            expanded=args.expanded,
+            no_hyde=args.no_hyde,
+            no_rerank=args.no_rerank,
+            parallel=args.parallel,
+        )
     except Exception as e:
         logger.error("Evaluation failed", error=str(e), exc_info=True)
         print(f"Error: {e}", file=sys.stderr)

@@ -198,10 +198,17 @@ jobs:
           # Use detected host (localhost for self-hosted, or cloud from secrets)
           LANGFUSE_HOST: ${{ steps.langfuse.outputs.host }}
         run: |
-          # Run evaluation with cloud models (Gemini 3 Flash - 10-30x faster than Ollama)
+          # Run evaluation in "raw retrieval" mode (Issue #638: Fix CI timeout)
+          # --no-hyde: Skip HyDE LLM calls (direct embedding for pure retrieval testing)
+          # --no-rerank: Skip LLM reranking (raw score ordering)
+          # --parallel 10: Process 10 queries concurrently
+          # Expected time: 14min → ~90 seconds
           poetry run python scripts/run_evaluation.py \
             --expanded \
             --output evaluation_results.json \
+            --no-hyde \
+            --no-rerank \
+            --parallel 10 \
             ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
 
       - name: Generate markdown report

@@ -62,7 +62,7 @@ LLM_ERRORS = (
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
 
-    from app.shared.services.embeddings.service import EmbeddingService
+    from app.shared.services.embeddings import EmbeddingServiceProtocol
     from app.shared.services.llm.ollama_provider import OllamaProvider
 
 # Type alias for LLM providers (cloud + local)
@@ -322,7 +322,7 @@ class HyDEService:
 
     def __init__(
         self,
-        embedding_service: EmbeddingService,
+        embedding_service: EmbeddingServiceProtocol,
         llm: LLMProvider | None = None,
         cache: HyDECache | None = None,
     ) -> None:

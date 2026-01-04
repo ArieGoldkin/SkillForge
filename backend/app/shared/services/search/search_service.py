@@ -50,7 +50,7 @@ from app.schemas.search import (
     SearchMode,
     SearchResult,
 )
-from app.shared.services.embeddings.service import EmbeddingService
+from app.shared.services.embeddings import EmbeddingServiceProtocol
 from app.shared.services.metrics import get_metrics_service
 from app.shared.services.search.decomposer import QueryDecomposer
 from app.shared.services.search.hyde import HyDEService
@@ -81,9 +81,10 @@ class SearchService:
     def __init__(
         self,
         session: AsyncSession,
-        embedding_service: EmbeddingService,
+        embedding_service: EmbeddingServiceProtocol,
         reranker: ReRanker | None = None,
         hyde_service: HyDEService | None = None,
+        evaluation_mode: bool = False,
     ) -> None:
         """Initialize SearchService with dependencies.
 
@@ -92,12 +93,20 @@ class SearchService:
             embedding_service: Service for generating embeddings
             reranker: Optional re-ranker for LLM-based relevance scoring
             hyde_service: Optional HyDE service for vocabulary mismatch resolution
+            evaluation_mode: Skip HyDE for faster, raw retrieval testing (Issue #638)
 
         """
         self.session = session
         self.embedding_service = embedding_service
         self.reranker = reranker or ReRanker()
-        self.hyde_service = hyde_service or HyDEService(embedding_service)
+        self.evaluation_mode = evaluation_mode
+
+        # Only create HyDE service if not in evaluation mode
+        if evaluation_mode:
+            self.hyde_service = None
+        else:
+            self.hyde_service = hyde_service or HyDEService(embedding_service)
+
         self._metrics = get_metrics_service()
 
         # Import here to avoid circular dependency
@@ -109,7 +118,8 @@ class SearchService:
             "search_service_initialized",
             embedding_model=embedding_service.model,
             embedding_dimensions=embedding_service.expected_dimensions,
-            hyde_enabled=True,
+            hyde_enabled=not evaluation_mode,
+            evaluation_mode=evaluation_mode,
         )
 
     async def search(
@@ -356,6 +366,8 @@ class SearchService:
         for queries with vocabulary mismatch. Generates a hypothetical
         document that would answer the query, then embeds that document.
 
+        In evaluation_mode, skips HyDE for faster, raw retrieval testing.
+
         Args:
             query: Search query string
             top_k: Maximum number of results
@@ -365,23 +377,34 @@ class SearchService:
             List of SearchResult with similarity scores (0.0-1.0)
 
         """
-        logger.info("semantic_search_started", query_length=len(query))
-
-        # Use HyDE for improved semantic matching (Issue #602)
-        # Generates hypothetical document, embeds it instead of raw query
-        hyde_result = await self.hyde_service.generate(query)
-
-        # Get the HyDE embedding (already normalized by embedding service)
-        query_embedding = hyde_result.embedding
-
-        logger.debug(
-            "hyde_embedding_generated",
-            query=query[:50],
-            hypothetical_len=len(hyde_result.hypothetical_doc),
-            source=hyde_result.source.value,
-            latency_ms=hyde_result.latency_ms,
-            embedding_dimensions=len(query_embedding),
+        logger.info(
+            "semantic_search_started",
+            query_length=len(query),
+            evaluation_mode=self.evaluation_mode,
         )
+
+        # In evaluation mode, use direct embedding (skip HyDE LLM call)
+        # This is faster for CI/CD testing of raw retrieval quality
+        if self.evaluation_mode or self.hyde_service is None:
+            query_embedding = await self.embedding_service.generate_embedding(query)
+            logger.debug(
+                "direct_embedding_generated",
+                query=query[:50],
+                embedding_dimensions=len(query_embedding),
+            )
+        else:
+            # Use HyDE for improved semantic matching (Issue #602)
+            # Generates hypothetical document, embeds it instead of raw query
+            hyde_result = await self.hyde_service.generate(query)
+            query_embedding = hyde_result.embedding
+            logger.debug(
+                "hyde_embedding_generated",
+                query=query[:50],
+                hypothetical_len=len(hyde_result.hypothetical_doc),
+                source=hyde_result.source.value,
+                latency_ms=hyde_result.latency_ms,
+                embedding_dimensions=len(query_embedding),
+            )
 
         # Convert SearchFilters to dict format expected by repository
         filter_dict = self._filters_to_dict(filters) if filters else None
@@ -461,6 +484,8 @@ class SearchService:
         combines results using Reciprocal Rank Fusion (RRF).
         Uses HyDE for the semantic component to improve vocabulary matching.
 
+        In evaluation_mode, skips HyDE for faster, raw retrieval testing.
+
         RRF formula: score(item) = Σ 1/(k + rank(item))
         where k=60 is the standard constant.
 
@@ -473,18 +498,30 @@ class SearchService:
             List of SearchResult sorted by RRF score
 
         """
-        logger.info("hybrid_search_started", query=query[:100])
-
-        # Use HyDE for semantic component (Issue #602)
-        hyde_result = await self.hyde_service.generate(query)
-        query_embedding = hyde_result.embedding
-
-        logger.debug(
-            "hybrid_hyde_embedding_generated",
-            query=query[:50],
-            source=hyde_result.source.value,
-            latency_ms=hyde_result.latency_ms,
+        logger.info(
+            "hybrid_search_started",
+            query=query[:100],
+            evaluation_mode=self.evaluation_mode,
         )
+
+        # In evaluation mode, use direct embedding (skip HyDE LLM call)
+        if self.evaluation_mode or self.hyde_service is None:
+            query_embedding = await self.embedding_service.generate_embedding(query)
+            logger.debug(
+                "hybrid_direct_embedding_generated",
+                query=query[:50],
+                embedding_dimensions=len(query_embedding),
+            )
+        else:
+            # Use HyDE for semantic component (Issue #602)
+            hyde_result = await self.hyde_service.generate(query)
+            query_embedding = hyde_result.embedding
+            logger.debug(
+                "hybrid_hyde_embedding_generated",
+                query=query[:50],
+                source=hyde_result.source.value,
+                latency_ms=hyde_result.latency_ms,
+            )
 
         # Convert SearchFilters to dict format expected by repository
         filter_dict = self._filters_to_dict(filters) if filters else None
@@ -727,7 +764,7 @@ class SearchService:
             snippet=snippet,
             score=float(score),  # Ensure float type
             metadata=metadata,
-            created_at=chunk.created_at,  # type: ignore[arg-type]
+            created_at=chunk.created_at,
         )
 
     def _filters_to_dict(self, filters: SearchFilters) -> dict[str, str]:

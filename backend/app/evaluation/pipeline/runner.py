@@ -20,6 +20,7 @@ Usage:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import math
 import time
@@ -41,7 +42,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.shared.services.embeddings.service import EmbeddingService
+    from app.shared.services.embeddings import EmbeddingServiceProtocol
     from app.shared.services.search.search_service import SearchService
 
 logger = get_logger(__name__)
@@ -216,13 +217,21 @@ class EvaluationRunner:
     - Computing metrics
     - Checking thresholds
     - Generating reports
+
+    Supports "raw retrieval mode" for CI performance (Issue #638):
+    - use_hyde=False: Skip HyDE LLM call, use direct embedding
+    - use_rerank=False: Skip reranker LLM call, use raw scores
+    - max_parallel>1: Process queries concurrently
     """
 
     def __init__(
         self,
         session: AsyncSession,
-        embedding_service: EmbeddingService,
+        embedding_service: EmbeddingServiceProtocol,
         search_service: SearchService | None = None,
+        use_hyde: bool = True,
+        use_rerank: bool = True,
+        max_parallel: int = 1,
     ) -> None:
         """Initialize evaluation runner.
 
@@ -230,10 +239,16 @@ class EvaluationRunner:
             session: Database session for retrieval
             embedding_service: Service for generating query embeddings
             search_service: Optional search service (created if not provided)
+            use_hyde: Enable HyDE for improved retrieval (default: True)
+            use_rerank: Enable LLM reranking (default: True)
+            max_parallel: Max concurrent queries (default: 1 = sequential)
 
         """
         self.session = session
         self.embedding_service = embedding_service
+        self.use_hyde = use_hyde
+        self.use_rerank = use_rerank
+        self.max_parallel = max(1, max_parallel)
 
         if search_service is None:
             from app.shared.services.search.search_service import SearchService
@@ -241,10 +256,18 @@ class EvaluationRunner:
             search_service = SearchService(
                 session=session,
                 embedding_service=embedding_service,
+                evaluation_mode=not use_hyde,  # Skip HyDE in evaluation mode
             )
 
         self.search_service = search_service
         self._queries: list[dict[str, Any]] = []
+
+        logger.info(
+            "evaluation_runner_initialized",
+            use_hyde=use_hyde,
+            use_rerank=use_rerank,
+            max_parallel=max_parallel,
+        )
 
     async def run_all(
         self,
@@ -308,6 +331,8 @@ class EvaluationRunner:
         Loads examples from the configured queries, runs retrieval,
         and computes IR metrics (Recall@5, MRR, NDCG@5).
 
+        Supports parallel processing when max_parallel > 1 for faster CI runs.
+
         Args:
             difficulty: Difficulty level to evaluate
 
@@ -334,79 +359,18 @@ class EvaluationRunner:
                 execution_time_seconds=time.time() - start_time,
             )
 
-        # Compute metrics for each query
-        recalls: list[float] = []
-        mrrs: list[float] = []
-        ndcgs: list[float] = []
-        failed_ids: list[str] = []
-        passed_count = 0
+        # Process queries - parallel if max_parallel > 1
+        if self.max_parallel > 1:
+            query_results = await self._evaluate_queries_parallel(queries)
+        else:
+            query_results = await self._evaluate_queries_sequential(queries)
 
-        for query in queries:
-            query_id = query.get("id", "unknown")
-            query_text = query.get("query", "")
-            expected_chunks = query.get("expected_chunks", [])
-            min_score = query.get("min_score")
-
-            try:
-                # Run retrieval with dynamic top_k
-                # Use at least 5, but increase if query expects more chunks
-                # This ensures we don't artificially cap recall for multi-target queries
-                dynamic_top_k = max(5, len(expected_chunks))
-
-                # Configure reranking for improved result quality
-                # Fetch 20 candidates, rerank with cross-encoder, return top_k
-                rerank_config = ReRankConfig(
-                    enabled=True,
-                    candidate_count=20,
-                    final_count=dynamic_top_k,
-                    timeout_seconds=5.0,
-                )
-
-                results = await self.search_service.search(
-                    query=query_text,
-                    top_k=dynamic_top_k,
-                    mode=SearchMode.HYBRID,
-                    rerank=rerank_config,
-                )
-
-                # Extract section IDs from path metadata for matching
-                # Path is stored as ["doc_id", "section_id"],
-                # e.g., ["fastapi-auth", "fastapi-auth/intro"]
-                # We use path[1] (section_id) to match against expected_chunks
-                retrieved_ids = []
-                for r in results:
-                    if r.metadata.path and len(r.metadata.path) > 1:
-                        retrieved_ids.append(r.metadata.path[1])
-                    else:
-                        # Fallback to chunk_id if path not available
-                        retrieved_ids.append(r.chunk_id)
-
-                # Compute metrics
-                metrics = self._compute_metrics(retrieved_ids, expected_chunks, k=5)
-                recalls.append(metrics["recall"])
-                mrrs.append(metrics["mrr"])
-                ndcgs.append(metrics["ndcg"])
-
-                # Check if query passed (based on min_score if provided)
-                query_passed = True
-                if min_score is not None and results and results[0].score < min_score:
-                    query_passed = False
-
-                # Also check recall - must have at least one hit
-                if metrics["recall"] == 0 and expected_chunks:
-                    query_passed = False
-
-                if query_passed:
-                    passed_count += 1
-                else:
-                    failed_ids.append(query_id)
-
-            except Exception as e:
-                logger.error(f"Error evaluating query {query_id}: {e}")
-                recalls.append(0.0)
-                mrrs.append(0.0)
-                ndcgs.append(0.0)
-                failed_ids.append(query_id)
+        # Aggregate metrics
+        recalls = [r["recall"] for r in query_results]
+        mrrs = [r["mrr"] for r in query_results]
+        ndcgs = [r["ndcg"] for r in query_results]
+        failed_ids = [r["query_id"] for r in query_results if not r["passed"]]
+        passed_count = sum(1 for r in query_results if r["passed"])
 
         # Aggregate metrics
         mean_recall = sum(recalls) / len(recalls) if recalls else 0.0
@@ -435,6 +399,145 @@ class EvaluationRunner:
         )
 
         return result
+
+    async def _evaluate_queries_sequential(
+        self,
+        queries: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Evaluate queries sequentially (one at a time).
+
+        Args:
+            queries: List of query dicts with id, query, expected_chunks, min_score
+
+        Returns:
+            List of result dicts with query_id, recall, mrr, ndcg, passed
+        """
+        results = []
+        for query in queries:
+            result = await self._evaluate_single_query(query)
+            results.append(result)
+        return results
+
+    async def _evaluate_queries_parallel(
+        self,
+        queries: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Evaluate queries in parallel with concurrency limit.
+
+        Uses asyncio.Semaphore to limit concurrent queries to max_parallel.
+
+        Args:
+            queries: List of query dicts with id, query, expected_chunks, min_score
+
+        Returns:
+            List of result dicts with query_id, recall, mrr, ndcg, passed
+        """
+        semaphore = asyncio.Semaphore(self.max_parallel)
+
+        async def limited_evaluate(query: dict[str, Any]) -> dict[str, Any]:
+            async with semaphore:
+                return await self._evaluate_single_query(query)
+
+        # Run all queries concurrently (up to max_parallel at a time)
+        tasks = [limited_evaluate(q) for q in queries]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Handle any exceptions
+        processed_results = []
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                query_id = queries[i].get("id", "unknown")
+                logger.error(f"Error evaluating query {query_id}: {result}")
+                processed_results.append(
+                    {
+                        "query_id": query_id,
+                        "recall": 0.0,
+                        "mrr": 0.0,
+                        "ndcg": 0.0,
+                        "passed": False,
+                    }
+                )
+            else:
+                processed_results.append(result)
+
+        return processed_results
+
+    async def _evaluate_single_query(
+        self,
+        query: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Evaluate a single query and return metrics.
+
+        Args:
+            query: Query dict with id, query, expected_chunks, min_score
+
+        Returns:
+            Dict with query_id, recall, mrr, ndcg, passed
+        """
+        query_id = query.get("id", "unknown")
+        query_text = query.get("query", "")
+        expected_chunks = query.get("expected_chunks", [])
+        min_score = query.get("min_score")
+
+        try:
+            # Run retrieval with dynamic top_k
+            # Use at least 5, but increase if query expects more chunks
+            dynamic_top_k = max(5, len(expected_chunks))
+
+            # Configure reranking based on use_rerank flag
+            # When disabled, skip the expensive LLM reranking call
+            if self.use_rerank:
+                rerank_config = ReRankConfig(
+                    enabled=True,
+                    candidate_count=20,
+                    final_count=dynamic_top_k,
+                    timeout_seconds=5.0,
+                )
+            else:
+                rerank_config = None  # Skip reranking entirely
+
+            results = await self.search_service.search(
+                query=query_text,
+                top_k=dynamic_top_k,
+                mode=SearchMode.HYBRID,
+                rerank=rerank_config,
+            )
+
+            # Extract section IDs from path metadata for matching
+            retrieved_ids = []
+            for r in results:
+                if r.metadata.path and len(r.metadata.path) > 1:
+                    retrieved_ids.append(r.metadata.path[1])
+                else:
+                    retrieved_ids.append(r.chunk_id)
+
+            # Compute metrics
+            metrics = self._compute_metrics(retrieved_ids, expected_chunks, k=5)
+
+            # Check if query passed
+            query_passed = True
+            if min_score is not None and results and results[0].score < min_score:
+                query_passed = False
+            if metrics["recall"] == 0 and expected_chunks:
+                query_passed = False
+
+            return {
+                "query_id": query_id,
+                "recall": metrics["recall"],
+                "mrr": metrics["mrr"],
+                "ndcg": metrics["ndcg"],
+                "passed": query_passed,
+            }
+
+        except Exception as e:
+            logger.error(f"Error evaluating query {query_id}: {e}")
+            return {
+                "query_id": query_id,
+                "recall": 0.0,
+                "mrr": 0.0,
+                "ndcg": 0.0,
+                "passed": False,
+            }
 
     def _compute_metrics(
         self,
