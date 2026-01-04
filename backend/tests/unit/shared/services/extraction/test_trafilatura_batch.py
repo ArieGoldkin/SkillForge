@@ -11,6 +11,7 @@ from app.core.exceptions import JinaReaderError
 from app.shared.services.extraction.trafilatura_extractor import TrafilaturaExtractor
 
 
+@pytest.mark.unit
 class TestTrafilaturaExtractorBatch:
     """Tests for batch URL extraction."""
 
@@ -77,6 +78,66 @@ class TestTrafilaturaExtractorBatch:
 
             # Verify buffered_downloads was called correctly
             mock_buffered.assert_called_once_with(urls, download_threads=5)
+
+    @pytest.mark.asyncio
+    async def test_extract_batch_returns_extraction_result_objects(
+        self, extractor: TrafilaturaExtractor
+    ) -> None:
+        """Test that batch extraction returns properly structured ExtractionResult objects.
+
+        Verifies that each result has all required fields: title, content, word_count,
+        and metadata with correct types matching the ExtractionResult type.
+        """
+        # Arrange
+        urls = ["https://example.com/article"]
+        mock_html = "<html><body>Test article content</body></html>"
+        mock_content = "# Test Article\n\nThis is test content with words."
+
+        mock_metadata = Mock()
+        mock_metadata.title = None
+
+        mock_downloads = [(urls[0], mock_html)]
+
+        with (
+            patch(
+                "trafilatura.downloads.buffered_downloads", return_value=mock_downloads
+            ) as mock_buffered,
+            patch.object(extractor.trafilatura, "extract") as mock_extract,
+            patch.object(extractor.trafilatura, "extract_metadata") as mock_extract_metadata,
+        ):
+            mock_extract.return_value = mock_content
+            mock_extract_metadata.return_value = mock_metadata
+
+            # Act
+            results = await extractor.extract_batch(urls)
+
+            # Assert - verify ExtractionResult structure
+            assert len(results) == 1
+            result = results[0]
+
+            # Check all required fields are present
+            assert "title" in result
+            assert "content" in result
+            assert "word_count" in result
+            assert "metadata" in result
+
+            # Verify types
+            assert isinstance(result["title"], str)
+            assert isinstance(result["content"], str)
+            assert isinstance(result["word_count"], int)
+            assert isinstance(result["metadata"], dict)
+
+            # Verify metadata structure
+            assert "extractor" in result["metadata"]
+            assert "source_url" in result["metadata"]
+            assert "has_metadata" in result["metadata"]
+            assert result["metadata"]["extractor"] == "trafilatura"
+            assert result["metadata"]["source_url"] == urls[0]
+
+            # Verify content is correct
+            assert result["title"] == "Test Article"
+            assert result["content"] == mock_content
+            assert result["word_count"] == len(mock_content.split())
 
     @pytest.mark.asyncio
     async def test_extract_batch_partial_failure(self, extractor: TrafilaturaExtractor) -> None:
@@ -217,6 +278,7 @@ class TestTrafilaturaExtractorBatch:
                 await extractor.extract_batch(urls, threads=5)
 
 
+@pytest.mark.unit
 class TestTrafilaturaExtractorDeduplication:
     """Tests for content deduplication using Simhash."""
 
@@ -373,6 +435,7 @@ class TestTrafilaturaExtractorDeduplication:
             assert (3, "Duplicate content") not in unique
 
 
+@pytest.mark.unit
 class TestTrafilaturaExtractorBatchWithDeduplication:
     """Integration tests combining batch extraction and deduplication."""
 

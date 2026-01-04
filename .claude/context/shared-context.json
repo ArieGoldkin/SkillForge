@@ -148,6 +148,28 @@
         }
       },
       "outcome": "completed"
+    },
+    {
+      "task_id": "add-llm-utilities",
+      "description": "Create standard LLM utilities for message handling and token counting",
+      "completion_date": "2026-01-04",
+      "files_created": [
+        "app/shared/services/llm/message_utils.py",
+        "app/shared/services/llm/token_counter.py",
+        "app/shared/services/llm/__init__.py"
+      ],
+      "features_added": [
+        "MessageUtils.extract_text() - Handle string and block content",
+        "MessageUtils.extract_reasoning() - Claude extended thinking",
+        "MessageUtils.extract_tool_calls() - Tool call extraction",
+        "MessageUtils.get_usage_metadata() - Token usage extraction",
+        "TokenCounter.count_messages() - Message token counting",
+        "TokenCounter.count_text() - Text token counting",
+        "TokenCounter.estimate_cost() - Multi-provider cost estimation",
+        "Cached tiktoken encodings for performance"
+      ],
+      "lines_of_code": 200,
+      "outcome": "completed"
     }
   ],
   "tasks_pending": [
@@ -211,6 +233,47 @@
       ],
       "decision_date": "2026-01-04",
       "status": "completed"
+    },
+    "llm_utilities_standardization": {
+      "decision": "Create standard utilities for LLM message handling and token counting",
+      "rationale": "Provider-agnostic abstractions for multi-model support, accurate cost tracking, consistent content extraction",
+      "implementation": "app/shared/services/llm/ package with message_utils.py and token_counter.py",
+      "use_cases": [
+        "Extract text from string or block-based message content",
+        "Extract Claude extended thinking/reasoning blocks",
+        "Count tokens for cost estimation and context management",
+        "Track token usage across multiple providers",
+        "Provider-agnostic tool call extraction"
+      ],
+      "technical_notes": [
+        "Handles both string content and list[dict] block structures",
+        "Uses tiktoken for accurate tokenization matching production models",
+        "Caches encodings for performance (ClassVar pattern)",
+        "Supports OpenAI, Anthropic, Google, xAI, DeepSeek pricing",
+        "Falls back to cl100k_base encoding for unknown models"
+      ],
+      "decision_date": "2026-01-04",
+      "status": "completed"
+    },
+    "trafilatura_batch_extraction": {
+      "decision": "Add batch URL extraction and deduplication to TrafilaturaExtractor",
+      "rationale": "Reduce API costs via self-hosted extraction, parallel processing for performance, fuzzy deduplication for content quality",
+      "implementation": "Enhanced app/shared/services/extraction/trafilatura_extractor.py",
+      "features": [
+        "extract_batch() with buffered_downloads for parallel fetching",
+        "deduplicate_content() using Simhash fuzzy hashing",
+        "Configurable thread pool (default: 10 threads)",
+        "Success/failure rate tracking"
+      ],
+      "technical_notes": [
+        "Uses trafilatura native threading via buffered_downloads",
+        "Simhash detects near-duplicates (not just exact matches)",
+        "Individual URL failures don't fail entire batch",
+        "Self-hosted (no API key required)",
+        "Primary extraction method with JinaReader fallback"
+      ],
+      "decision_date": "2026-01-04",
+      "status": "completed"
     }
   },
   "pattern_compliance": {
@@ -245,5 +308,5 @@
       "type_hints": "full_coverage"
     }
   },
-  "last_session": "2026-01-04T12:44:14+02:00"
+  "last_session": "2026-01-04T12:54:42+02:00"
 }

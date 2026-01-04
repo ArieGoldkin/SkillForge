@@ -8,7 +8,9 @@ Import them directly from app.db.session when needed at runtime.
 """
 
 from app.db.base import Base
+from app.db.bulk_operations import BulkOperations
 
 __all__ = [
     "Base",
+    "BulkOperations",
 ]
