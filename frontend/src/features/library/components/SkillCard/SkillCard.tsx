@@ -40,6 +40,11 @@ interface SkillCardHeaderProps {
 }
 
 function SkillCardHeaderContent({ title, description, onDelete }: SkillCardHeaderProps) {
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete?.()
+  }
+
   return (
     <CardHeader className="pb-2">
       <div className="flex items-start justify-between gap-2">
@@ -49,7 +54,7 @@ function SkillCardHeaderContent({ title, description, onDelete }: SkillCardHeade
             variant="ghost"
             size="icon"
             aria-label="Delete analysis"
-            onClick={onDelete}
+            onClick={handleDeleteClick}
             className="h-8 w-8 shrink-0"
           >
             <Trash2 className="h-4 w-4" />
@@ -72,9 +77,8 @@ export function SkillCard(props: SkillCardProps): React.ReactNode {
     }
   }
 
-  const handleDelete = onDelete
-    ? (e: React.MouseEvent) => {
-        e.stopPropagation()
+  const handleDeleteClick = onDelete
+    ? () => {
         onDelete(id)
       }
     : undefined
@@ -90,7 +94,11 @@ export function SkillCard(props: SkillCardProps): React.ReactNode {
         className
       )}
     >
-      <SkillCardHeaderContent title={title} description={description} onDelete={handleDelete} />
+      <SkillCardHeaderContent
+        title={title}
+        description={description}
+        onDelete={handleDeleteClick}
+      />
       <CardContent className="space-y-3">
         <SkillCardMetadata difficulty={difficulty} duration={duration} status={status} />
         <SkillCardTags tags={tags} />
