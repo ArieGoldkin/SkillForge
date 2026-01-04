@@ -25,7 +25,6 @@ export interface SkillCardProps {
   tags: string[]
   status: SkillStatus
   onSelect: (id: string) => void
-  // Error tracking fields
   errorCode?: string | null
   errorMessage?: string | null
   failedAtStage?: string | null
@@ -34,43 +33,51 @@ export interface SkillCardProps {
   className?: string
 }
 
-/**
- * SkillCard component
- *
- * Displays analysis information with support for:
- * - Click/keyboard selection
- * - Error display with retry functionality
- * - Delete functionality
- */
-export function SkillCard({
-  id,
-  title,
-  description,
-  difficulty,
-  duration,
-  tags,
-  status,
-  onSelect,
-  errorCode,
-  errorMessage,
-  failedAtStage,
-  onRetry,
-  onDelete,
-  className,
-}: SkillCardProps): React.ReactNode {
-  const showErrorDetails = status === 'failed' && errorCode
+interface SkillCardHeaderProps {
+  title: string
+  description: string
+  onDelete?: () => void
+}
 
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
+function SkillCardHeaderContent({ title, description, onDelete }: SkillCardHeaderProps) {
+  return (
+    <CardHeader className="pb-2">
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-semibold text-lg line-clamp-2">{title}</h3>
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Delete analysis"
+            onClick={onDelete}
+            className="h-8 w-8 shrink-0"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
+    </CardHeader>
+  )
+}
+
+export function SkillCard(props: SkillCardProps): React.ReactNode {
+  const { id, title, description, difficulty, duration, tags, status, className } = props
+  const { onSelect, errorCode, errorMessage, failedAtStage, onRetry, onDelete } = props
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
       onSelect(id)
     }
   }
 
-  const handleDeleteClick = (event: React.MouseEvent) => {
-    event.stopPropagation()
-    onDelete?.(id)
-  }
+  const handleDelete = onDelete
+    ? (e: React.MouseEvent) => {
+        e.stopPropagation()
+        onDelete(id)
+      }
+    : undefined
 
   return (
     <Card
@@ -83,29 +90,11 @@ export function SkillCard({
         className
       )}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg line-clamp-2">{title}</h3>
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Delete analysis"
-              onClick={handleDeleteClick}
-              className="h-8 w-8 shrink-0"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
-      </CardHeader>
-
+      <SkillCardHeaderContent title={title} description={description} onDelete={handleDelete} />
       <CardContent className="space-y-3">
         <SkillCardMetadata difficulty={difficulty} duration={duration} status={status} />
         <SkillCardTags tags={tags} />
-
-        {showErrorDetails && (
+        {status === 'failed' && errorCode && (
           <FailedStageDetails
             analysisId={id}
             errorCode={errorCode}
