@@ -24,14 +24,18 @@ from app.main import app, lifespan
 
 # Import app and lifespan for lifecycle initialization
 
-# CRITICAL: Load .env BEFORE any other imports to get real API keys
-# Integration tests need real keys, not placeholders
+# CRITICAL: Load .env.test BEFORE any other imports to get test environment API keys
+# Integration tests use TEST environment (.env.test), not dev (.env)
+# This ensures complete separation: tests use test database, test Langfuse, etc.
+_test_env_file = Path(__file__).parent.parent.parent / ".env.test"
 _env_file = Path(__file__).parent.parent.parent / ".env"
-if _env_file.exists():
+# Prefer .env.test if it exists, fallback to .env for backward compatibility
+env_file_to_load = _test_env_file if _test_env_file.exists() else _env_file
+if env_file_to_load.exists():
     from dotenv import load_dotenv
 
-    # Override=True ensures we get real keys from .env, not placeholders
-    load_dotenv(_env_file, override=True)
+    # Override=True ensures we get keys from test environment, not placeholders
+    load_dotenv(env_file_to_load, override=True)
 
 # Note: Langfuse tracing is configured via LANGFUSE_* environment variables
 # LANGCHAIN_TRACING_V2 was used for LangSmith but is NOT needed for Langfuse

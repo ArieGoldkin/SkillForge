@@ -285,4 +285,3 @@ class TestPostgreSQLCompatibility:
             assert code_point != 0x00
             # No invalid code points
             assert code_point not in {0xFFFE, 0xFFFF}
-            assert code_point not in {0xFFFE, 0xFFFF}

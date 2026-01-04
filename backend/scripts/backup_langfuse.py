@@ -4,6 +4,10 @@
 This script exports all Langfuse configurations to JSON files that can be
 version controlled and restored after container rebuilds.
 
+This script implements Option A (API restore). For Option B (SQL restore),
+see restore_langfuse_db_filtered.py which provides faster, more complete
+restoration via direct database restore.
+
 Usage:
     poetry run python scripts/backup_langfuse.py backup
     poetry run python scripts/backup_langfuse.py restore
