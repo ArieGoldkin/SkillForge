@@ -1,7 +1,9 @@
-"""Integration tests for UTF-8 sanitization across extraction pipeline.
+"""Unit tests for UTF-8 sanitization across extraction pipeline.
 
-Tests the full flow: extraction → sanitization → storage prep.
+Tests the full flow: extraction → sanitization → storage prep using mocked extractors.
 Note: clean_extracted_content() is deprecated - TrafilaturaExtractor handles cleaning during extraction.
+
+These are unit tests (using mocks), not integration tests.
 """
 
 from unittest.mock import AsyncMock, Mock, patch
@@ -74,15 +76,16 @@ class TestTrafilaturaExtractionPipeline:
             result = await extractor.extract_article("https://example.com/article")
 
             # Assert - boilerplate removed by Trafilatura, content preserved
-            assert "cookie" not in result["content"].lower()
-            assert "Technical Article" in result["content"]  # type: ignore
-            assert "Vector databases" in result["content"]  # type: ignore
-            assert "Semantic search" in result["content"]  # type: ignore
+            content = result["content"]
+            assert isinstance(content, str), "Content should be a string"
+            assert "cookie" not in content.lower()
+            assert "Technical Article" in content
+            assert "Vector databases" in content
+            assert "Semantic search" in content
 
             # Verify it's PostgreSQL-compatible (sanitize_utf8 is applied in pipeline)
-            content = result["content"]
-            assert "\x00" not in content  # type: ignore
-            assert all(ord(c) < 0xD800 or ord(c) > 0xDFFF for c in content)  # type: ignore
+            assert "\x00" not in content
+            assert all(ord(c) < 0xD800 or ord(c) > 0xDFFF for c in content)  # No surrogates
 
     @pytest.mark.asyncio
     async def test_trafilatura_unicode_preservation(self, extractor: TrafilaturaExtractor) -> None:
@@ -130,12 +133,14 @@ class TestTrafilaturaExtractionPipeline:
             result = await extractor.extract_article("https://example.com/article")
 
             # Assert - all legitimate Unicode preserved
-            assert "🚀" in result["content"]  # type: ignore
-            assert "检索增强生成" in result["content"]  # type: ignore
-            assert "💡" in result["content"]  # type: ignore
-            assert "🗄️" in result["content"]  # type: ignore
-            assert "🔍" in result["content"]  # type: ignore
-            assert "cookie" not in result["content"].lower()  # Boilerplate removed
+            content = result["content"]
+            assert isinstance(content, str), "Content should be a string"
+            assert "🚀" in content
+            assert "检索增强生成" in content
+            assert "💡" in content
+            assert "🗄️" in content
+            assert "🔍" in content
+            assert "cookie" not in content.lower()  # Boilerplate removed
 
 
 class TestJinaReaderSanitization:
@@ -279,6 +284,5 @@ class TestPostgreSQLCompatibility:
             # No null bytes
             assert code_point != 0x00
             # No invalid code points
-            assert code_point not in {0xFFFE, 0xFFFF}
             assert code_point not in {0xFFFE, 0xFFFF}
             assert code_point not in {0xFFFE, 0xFFFF}

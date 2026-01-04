@@ -1,12 +1,12 @@
 """Unit tests for content_cleaner module.
 
 Tests UTF-8 sanitization for PostgreSQL compatibility.
+Note: clean_extracted_content() is deprecated - use TrafilaturaExtractor instead.
 """
 
-from app.shared.services.extraction.content_cleaner import (
-    clean_extracted_content,
-    sanitize_utf8,
-)
+import pytest
+
+from app.shared.services.extraction.content_cleaner import clean_extracted_content, sanitize_utf8
 
 
 class TestSanitizeUtf8:
@@ -117,7 +117,12 @@ class TestSanitizeUtf8:
 
 
 class TestCleanExtractedContentSanitization:
-    """Tests that clean_extracted_content calls sanitize_utf8."""
+    """Tests that clean_extracted_content calls sanitize_utf8.
+
+    NOTE: clean_extracted_content() is DEPRECATED (Issue #625).
+    Use TrafilaturaExtractor instead for new code.
+    These tests verify deprecated function behavior with explicit warning handling.
+    """
 
     def test_clean_extracted_content_sanitizes_utf8(self) -> None:
         """Test that clean_extracted_content sanitizes UTF-8 as final step."""
@@ -129,8 +134,9 @@ class TestCleanExtractedContentSanitization:
             "Cookie consent: We use cookies.\n"
         )
 
-        # Act
-        result = clean_extracted_content(content)
+        # Act - expect deprecation warning
+        with pytest.warns(DeprecationWarning, match="clean_extracted_content.*deprecated"):
+            result = clean_extracted_content(content)
 
         # Assert - both boilerplate cleaning AND UTF-8 sanitization should occur
         assert "\x00" not in result  # Null bytes removed
@@ -152,8 +158,9 @@ class TestCleanExtractedContentSanitization:
             "Cookie consent: Accept all cookies.\n"
         )
 
-        # Act
-        result = clean_extracted_content(content)
+        # Act - expect deprecation warning
+        with pytest.warns(DeprecationWarning, match="clean_extracted_content.*deprecated"):
+            result = clean_extracted_content(content)
 
         # Assert
         assert "🚀" in result
@@ -168,8 +175,9 @@ class TestCleanExtractedContentSanitization:
         # Arrange
         empty = ""
 
-        # Act
-        result = clean_extracted_content(empty)
+        # Act - expect deprecation warning
+        with pytest.warns(DeprecationWarning, match="clean_extracted_content.*deprecated"):
+            result = clean_extracted_content(empty)
 
         # Assert
         assert result == ""
