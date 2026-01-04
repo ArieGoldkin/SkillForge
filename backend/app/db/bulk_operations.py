@@ -189,7 +189,7 @@ class BulkOperations:
             # Access the underlying asyncpg connection
             # SQLAlchemy wraps asyncpg connection in AsyncAdapt_asyncpg_connection
             # driver_connection is a property, not a coroutine
-            conn = raw_conn.driver_connection  # type: ignore[attr-defined]
+            conn = raw_conn.driver_connection
 
             # Prepare records for COPY
             # Note: We don't include id, created_at, updated_at - they're auto-generated
@@ -328,7 +328,7 @@ class BulkOperations:
 
         async with self.engine.raw_connection() as raw_conn:  # type: ignore[attr-defined]
             # driver_connection is a property, not a coroutine
-            conn = raw_conn.driver_connection  # type: ignore[attr-defined]
+            conn = raw_conn.driver_connection
 
             import json
 
@@ -453,7 +453,7 @@ class BulkOperations:
 
         async with self.engine.raw_connection() as raw_conn:  # type: ignore[attr-defined]
             # driver_connection is a property, not a coroutine
-            conn = raw_conn.driver_connection  # type: ignore[attr-defined]
+            conn = raw_conn.driver_connection
 
             import json
 

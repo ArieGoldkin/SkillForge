@@ -216,8 +216,8 @@ class TrafilaturaExtractor:
 
         for i, content in enumerate(contents):
             h = Simhash(content)
-            if h.value not in seen_hashes:
-                seen_hashes.add(h.value)
+            if h.value not in seen_hashes:  # type: ignore[attr-defined]
+                seen_hashes.add(h.value)  # type: ignore[attr-defined]
                 unique.append((i, content))
 
         duplicates_removed = len(contents) - len(unique)

@@ -577,9 +577,7 @@ class AnalysisRepository:
             raise NoResultFound(msg)
 
         # Calculate new rerun count before update
-        # Type guard: rerun_count is an int column with default 0
-        # Type ignore: SQLAlchemy Column type inference - rerun_count is int in runtime
-        current_rerun_count = int(analysis.rerun_count) if analysis.rerun_count is not None else 0  # type: ignore[arg-type]
+        current_rerun_count = int(analysis.rerun_count) if analysis.rerun_count is not None else 0
         new_rerun_count = current_rerun_count + 1
 
         # Archive current artifact and increment rerun count
