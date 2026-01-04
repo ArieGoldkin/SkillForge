@@ -208,23 +208,28 @@ jobs:
         if: always()
         working-directory: backend
         run: |
-          # Generate markdown report from JSON results
-          poetry run python -c "
+          # Generate markdown report from JSON results (handle missing file)
+          if [ -f evaluation_results.json ]; then
+            poetry run python -c "
           import json
-          from pathlib import Path
-          from app.evaluation.pipeline.runner import PipelineResult
 
           with open('evaluation_results.json') as f:
               data = json.load(f)
 
-          # Reconstruct PipelineResult for markdown generation
-          # This is a simplified version - real implementation would deserialize properly
           print('# Evaluation Results')
           print()
           print(f\"**Status**: {data['overall_status']}\")
           print(f\"**Examples**: {data['total_passed']}/{data['total_examples']}\")
           print(f\"**Time**: {data['execution_time_seconds']:.1f}s\")
           " > evaluation_report.md
+          else
+            echo "# Evaluation Results" > evaluation_report.md
+            echo "" >> evaluation_report.md
+            echo "**Status**: error" >> evaluation_report.md
+            echo "**Error**: Evaluation pipeline failed to produce results" >> evaluation_report.md
+            echo "" >> evaluation_report.md
+            echo "Check the 'Run evaluation pipeline' step logs for details." >> evaluation_report.md
+          fi
 
           # Append regression report if it exists
           if [ -f evaluation_results_regression.md ]; then
