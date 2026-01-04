@@ -134,13 +134,20 @@ jobs:
       - name: Check Langfuse availability
         id: langfuse
         run: |
-          # Check if Langfuse is already running on self-hosted runner
+          # Check if self-hosted Langfuse is running on runner
           if curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
-            echo "✅ Langfuse is available"
+            echo "✅ Self-hosted Langfuse is available at localhost:3000"
             echo "available=true" >> $GITHUB_OUTPUT
+            echo "host=http://localhost:3000" >> $GITHUB_OUTPUT
+          elif [ -n "$LANGFUSE_HOST" ]; then
+            # Fall back to cloud Langfuse if configured
+            echo "⚠️ Using cloud Langfuse at $LANGFUSE_HOST"
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "host=$LANGFUSE_HOST" >> $GITHUB_OUTPUT
           else
             echo "⚠️ Langfuse not available - evaluation will run without tracing"
             echo "available=false" >> $GITHUB_OUTPUT
+            echo "host=" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup database
@@ -172,6 +179,8 @@ jobs:
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
           # Override Langfuse based on runtime availability check
           LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
+          # Use detected host (localhost for self-hosted, or cloud from secrets)
+          LANGFUSE_HOST: ${{ steps.langfuse.outputs.host }}
         run: |
           # Load fixture data with deterministic embeddings for evaluation
           poetry run python scripts/load_expanded_fixtures.py --expanded --replace
@@ -186,6 +195,8 @@ jobs:
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
           # Override Langfuse based on runtime availability check
           LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
+          # Use detected host (localhost for self-hosted, or cloud from secrets)
+          LANGFUSE_HOST: ${{ steps.langfuse.outputs.host }}
         run: |
           # Run evaluation with cloud models (Gemini 3 Flash - 10-30x faster than Ollama)
           poetry run python scripts/run_evaluation.py \
