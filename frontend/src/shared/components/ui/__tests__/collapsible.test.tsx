@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible'
 
 describe('Collapsible', () => {
-  it('renders trigger and content', () => {
+  it('renders trigger and hides content by default', () => {
     render(
       <Collapsible>
         <CollapsibleTrigger>Toggle</CollapsibleTrigger>
@@ -14,7 +14,8 @@ describe('Collapsible', () => {
     )
 
     expect(screen.getByText('Toggle')).toBeInTheDocument()
-    expect(screen.getByText('Content')).toBeInTheDocument()
+    // Content should be hidden when defaultOpen is not set (defaults to false)
+    expect(screen.queryByText('Content')).not.toBeInTheDocument()
   })
 
   it('hides content by default', () => {
