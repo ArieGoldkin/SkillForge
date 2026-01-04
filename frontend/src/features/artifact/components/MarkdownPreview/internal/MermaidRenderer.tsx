@@ -24,7 +24,10 @@ const initializeMermaid = () => {
   mermaid.initialize({
     startOnLoad: false,
     theme: 'default',
-    securityLevel: 'loose',
+    // Issue #638: Use 'strict' (default since Mermaid 10) to prevent XSS
+    // 'strict' encodes HTML tags in text and disables click handlers
+    // Safe for LLM-generated diagrams; htmlLabels still works for text rendering
+    securityLevel: 'strict',
     fontFamily: 'inherit',
     fontSize: 14,
     // Flowchart configuration for proper text rendering (Issue #299-304)

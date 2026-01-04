@@ -35,9 +35,65 @@ LANGFUSE_HOST=http://localhost:3000 \
 poetry run python scripts/backup_langfuse.py restore
 ```
 
+## Restore Methods
+
+Two restore methods are available:
+
+### Option A: API Restore (JSON/API) - Default
+
+**Description:** Uses Langfuse API to restore prompts, score_configs, datasets  
+**Script:** `backend/scripts/backup_langfuse.py restore`  
+**Advantages:**
+- Simpler, safer for most use cases
+- No direct database access required
+- Easier to debug
+
+**Usage:** See "Recovery After Container Rebuild" section below
+
+### Option B: SQL Restore (Database Direct)
+
+**Description:** Direct PostgreSQL database restore from SQL backup  
+**Scripts:** 
+- `backend/scripts/extract_langfuse_config_tables.py` - Filters SQL backup
+- `backend/scripts/restore_langfuse_db_filtered.py` - Restores filtered backup
+
+**Advantages:**
+- Faster (single SQL restore vs multiple API calls)
+- More complete (includes datasets, annotation_queues automatically)
+- Preserves all config tables
+
+**Requirements:**
+- SQL backup file (see `backend/data/langfuse_db_backups/`)
+- Direct database access (Docker container)
+
+**Usage:**
+```bash
+cd backend
+
+# Restore filtered SQL backup
+poetry run python scripts/restore_langfuse_db_filtered.py \
+  --backup data/langfuse_db_backups/latest.sql \
+  --container skillforge-langfuse-db-test
+```
+
+**For automatic restore:** Set `LANGFUSE_RESTORE_METHOD=sql` in `.env.test`
+
+**See:** `docs/LANGFUSE_SQL_RESTORE_PLAN.md` for detailed documentation
+
+| Aspect | Option A (API) | Option B (SQL) |
+|--------|---------------|----------------|
+| **Completeness** | Partial (prompts, score_configs) | Complete (all config tables) |
+| **Datasets** | ❌ Not restored | ✅ Restored |
+| **Annotation Queues** | ❌ Manual setup | ✅ Restored |
+| **Speed** | Slower (multiple API calls) | Faster (single SQL restore) |
+| **Safety** | ✅ Very safe (no data risk) | ⚠️ Requires filtering |
+| **When to Use** | Default for most cases | When you need complete config restore |
+
 ## Recovery After Container Rebuild
 
-### Automatic Recovery (Prompts)
+Two restore methods are available (see "Restore Methods" section above).
+
+### Option A: API Restore (Recommended for most cases)
 
 1. Ensure Langfuse container is running:
    ```bash
@@ -53,6 +109,23 @@ poetry run python scripts/backup_langfuse.py restore
    LANGFUSE_HOST=http://localhost:3000 \
    poetry run python scripts/backup_langfuse.py restore
    ```
+
+### Option B: SQL Restore (For complete config restore)
+
+1. Ensure Langfuse database container is running:
+   ```bash
+   docker compose up -d langfuse-db
+   ```
+
+2. Run SQL restore script:
+   ```bash
+   cd backend
+   poetry run python scripts/restore_langfuse_db_filtered.py \
+     --backup data/langfuse_db_backups/latest.sql \
+     --container skillforge-langfuse-db-test
+   ```
+
+**Note:** SQL restore requires a SQL backup file. See `backend/data/langfuse_db_backups/README.md` (if exists) or `docs/LANGFUSE_SQL_RESTORE_PLAN.md` for SQL backup creation.
 
 ### Manual Recovery (Score Configs)
 
@@ -138,6 +211,15 @@ LLM API keys should NOT be committed to git. This file documents the required co
 
 ## See Also
 
-- Backup script: `backend/scripts/backup_langfuse.py`
-- Langfuse documentation: https://langfuse.com/docs
-- Langfuse observability skill: `.claude/skills/langfuse-observability/SKILL.md`
+- **Option A (API Restore):**
+  - Backup script: `backend/scripts/backup_langfuse.py`
+  - Setup scripts: `setup_langfuse_score_configs.py`, `setup_langfuse_annotation_queue.py`
+
+- **Option B (SQL Restore):**
+  - Extract script: `backend/scripts/extract_langfuse_config_tables.py`
+  - Restore script: `backend/scripts/restore_langfuse_db_filtered.py`
+  - Detailed documentation: `docs/LANGFUSE_SQL_RESTORE_PLAN.md`
+
+- **General:**
+  - Langfuse documentation: https://langfuse.com/docs
+  - Langfuse observability skill: `.claude/skills/langfuse-observability/SKILL.md`

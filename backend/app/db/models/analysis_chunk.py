@@ -186,7 +186,7 @@ class AnalysisChunk(Base):
     @property
     def embedding(self) -> list[float] | None:
         """Alias for vector to provide consistent SearchService interface."""
-        return self.vector  # type: ignore[return-value]
+        return self.vector
 
     @property
     def chunk_metadata(self) -> dict:

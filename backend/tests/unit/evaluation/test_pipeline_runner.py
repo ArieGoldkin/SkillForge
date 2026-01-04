@@ -509,3 +509,75 @@ class TestPipelineRunner:
 
         with pytest.raises(FileNotFoundError):
             asyncio.get_event_loop().run_until_complete(run_test())
+
+    def test_runner_init_with_raw_mode_flags(self):
+        """Test EvaluationRunner correctly stores use_hyde and use_rerank flags."""
+        from unittest.mock import MagicMock
+
+        mock_session = MagicMock()
+        mock_embedding_service = MagicMock()
+        mock_embedding_service.model = "test-model"
+        mock_embedding_service.expected_dimensions = 768
+        mock_search_service = MagicMock()
+
+        # Test with all flags disabled (raw mode)
+        runner = EvaluationRunner(
+            session=mock_session,
+            embedding_service=mock_embedding_service,
+            search_service=mock_search_service,
+            use_hyde=False,
+            use_rerank=False,
+            max_parallel=10,
+        )
+
+        assert runner.use_hyde is False
+        assert runner.use_rerank is False
+        assert runner.max_parallel == 10
+
+    def test_runner_init_defaults_to_full_mode(self):
+        """Test EvaluationRunner defaults to full HyDE and reranking enabled."""
+        from unittest.mock import MagicMock
+
+        mock_session = MagicMock()
+        mock_embedding_service = MagicMock()
+        mock_embedding_service.model = "test-model"
+        mock_embedding_service.expected_dimensions = 768
+        mock_search_service = MagicMock()
+
+        runner = EvaluationRunner(
+            session=mock_session,
+            embedding_service=mock_embedding_service,
+            search_service=mock_search_service,
+        )
+
+        assert runner.use_hyde is True
+        assert runner.use_rerank is True
+        assert runner.max_parallel == 1  # Sequential by default
+
+    def test_runner_max_parallel_clamped_to_minimum(self):
+        """Test max_parallel is clamped to at least 1."""
+        from unittest.mock import MagicMock
+
+        mock_session = MagicMock()
+        mock_embedding_service = MagicMock()
+        mock_embedding_service.model = "test-model"
+        mock_embedding_service.expected_dimensions = 768
+        mock_search_service = MagicMock()
+
+        runner = EvaluationRunner(
+            session=mock_session,
+            embedding_service=mock_embedding_service,
+            search_service=mock_search_service,
+            max_parallel=0,  # Invalid value
+        )
+
+        assert runner.max_parallel == 1  # Should be clamped to 1
+
+        runner = EvaluationRunner(
+            session=mock_session,
+            embedding_service=mock_embedding_service,
+            search_service=mock_search_service,
+            max_parallel=-5,  # Negative value
+        )
+
+        assert runner.max_parallel == 1  # Should be clamped to 1

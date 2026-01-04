@@ -56,7 +56,9 @@ services:
     environment:
       ENVIRONMENT: development
       LOG_LEVEL: DEBUG
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # DATABASE_URL uses variable substitution - defaults to dev:dev@postgres:5432/skillforge
+      # when POSTGRES_USER is not set in root .env (root .env removed duplicate POSTGRES_* vars)
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-dev}:${POSTGRES_PASSWORD:-dev}@postgres:5432/${POSTGRES_DB:-skillforge}
       API_V1_PREFIX: /api/v1
       HOST: 0.0.0.0
       PORT: 8500

@@ -223,9 +223,8 @@ async def get_library(  # noqa: PLR0913, PLR0912, PLR0915
                 snippet: str | None = None
                 if search_mode in (SearchMode.fulltext, SearchMode.hybrid):
                     try:
-                        # Type ignore: analysis.id is UUID at runtime, mypy sees Column[UUID]
                         snippet = await repo.get_search_snippet(
-                            analysis_id=analysis.id,  # type: ignore[arg-type]
+                            analysis_id=analysis.id,
                             query=query,
                         )
                     except Exception as e:  # noqa: BLE001 - snippet failures are non-critical

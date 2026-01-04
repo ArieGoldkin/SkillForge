@@ -117,9 +117,10 @@ jobs:
           path: |
             backend/.venv
             ~/.cache/pypoetry
-          key: poetry-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
+          # Include runner.name to prevent cross-runner cache corruption (Issue #638)
+          key: poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-${{ hashFiles('backend/poetry.lock') }}
           restore-keys: |
-            poetry-${{ runner.name }}-${{ runner.os }}-py3.13-
+            poetry-v7-${{ runner.name }}-${{ runner.os }}-py3.13-
 
       - name: Install dependencies
         working-directory: backend
@@ -134,13 +135,20 @@ jobs:
       - name: Check Langfuse availability
         id: langfuse
         run: |
-          # Check if Langfuse is already running on self-hosted runner
+          # Check if self-hosted Langfuse is running on runner
           if curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
-            echo "✅ Langfuse is available"
+            echo "✅ Self-hosted Langfuse is available at localhost:3000"
             echo "available=true" >> $GITHUB_OUTPUT
+            echo "host=http://localhost:3000" >> $GITHUB_OUTPUT
+          elif [ -n "$LANGFUSE_HOST" ]; then
+            # Fall back to cloud Langfuse if configured
+            echo "⚠️ Using cloud Langfuse at $LANGFUSE_HOST"
+            echo "available=true" >> $GITHUB_OUTPUT
+            echo "host=$LANGFUSE_HOST" >> $GITHUB_OUTPUT
           else
             echo "⚠️ Langfuse not available - evaluation will run without tracing"
             echo "available=false" >> $GITHUB_OUTPUT
+            echo "host=" >> $GITHUB_OUTPUT
           fi
 
       - name: Setup database
@@ -172,6 +180,8 @@ jobs:
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
           # Override Langfuse based on runtime availability check
           LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
+          # Use detected host (localhost for self-hosted, or cloud from secrets)
+          LANGFUSE_HOST: ${{ steps.langfuse.outputs.host }}
         run: |
           # Load fixture data with deterministic embeddings for evaluation
           poetry run python scripts/load_expanded_fixtures.py --expanded --replace
@@ -186,34 +196,44 @@ jobs:
           SKILLFORGE_DETERMINISTIC_EMBEDDINGS: "true"
           # Override Langfuse based on runtime availability check
           LANGFUSE_ENABLED: ${{ steps.langfuse.outputs.available }}
+          # Use detected host (localhost for self-hosted, or cloud from secrets)
+          LANGFUSE_HOST: ${{ steps.langfuse.outputs.host }}
         run: |
-          # Run evaluation with cloud models (Gemini 3 Flash - 10-30x faster than Ollama)
+          # Run full evaluation with HyDE + reranking for accurate metrics
+          # HyDE improves recall via semantic expansion, reranker improves precision
+          # Expected time: ~2-3 minutes with cloud models, ~$0.10-0.50/run
           poetry run python scripts/run_evaluation.py \
             --expanded \
             --output evaluation_results.json \
+            --parallel 5 \
             ${{ inputs.fail_on_warn && '--fail-on-warn' || '' }}
 
       - name: Generate markdown report
         if: always()
         working-directory: backend
         run: |
-          # Generate markdown report from JSON results
-          poetry run python -c "
+          # Generate markdown report from JSON results (handle missing file)
+          if [ -f evaluation_results.json ]; then
+            poetry run python -c "
           import json
-          from pathlib import Path
-          from app.evaluation.pipeline.runner import PipelineResult
 
           with open('evaluation_results.json') as f:
               data = json.load(f)
 
-          # Reconstruct PipelineResult for markdown generation
-          # This is a simplified version - real implementation would deserialize properly
           print('# Evaluation Results')
           print()
           print(f\"**Status**: {data['overall_status']}\")
           print(f\"**Examples**: {data['total_passed']}/{data['total_examples']}\")
           print(f\"**Time**: {data['execution_time_seconds']:.1f}s\")
           " > evaluation_report.md
+          else
+            echo "# Evaluation Results" > evaluation_report.md
+            echo "" >> evaluation_report.md
+            echo "**Status**: error" >> evaluation_report.md
+            echo "**Error**: Evaluation pipeline failed to produce results" >> evaluation_report.md
+            echo "" >> evaluation_report.md
+            echo "Check the 'Run evaluation pipeline' step logs for details." >> evaluation_report.md
+          fi
 
           # Append regression report if it exists
           if [ -f evaluation_results_regression.md ]; then

@@ -83,15 +83,19 @@ function ErrorContentPanel({
   )
 }
 
-interface ErrorTriggerProps {
+interface ErrorTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   title: string
   failedAtStage?: string | null
   isOpen: boolean
 }
 
-function ErrorTrigger({ title, failedAtStage, isOpen }: ErrorTriggerProps) {
+function ErrorTrigger({ title, failedAtStage, isOpen, ...props }: ErrorTriggerProps) {
   return (
-    <Button variant="ghost" className="w-full justify-between p-3 h-auto hover:bg-destructive/10">
+    <Button
+      variant="ghost"
+      className="w-full justify-between p-3 h-auto hover:bg-destructive/10"
+      {...props}
+    >
       <div className="flex items-center gap-2 flex-1 text-left">
         <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
         <div className="flex-1 min-w-0">

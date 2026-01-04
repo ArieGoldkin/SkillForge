@@ -47,16 +47,49 @@
   - `llm_connections_backup.json` - LLM connection configs
   - `backup_metadata.json` - Backup metadata/timestamp
 
+**SQL Database Backups:**
+- Location: `backend/data/langfuse_db_backups/`
+- Format: PostgreSQL `pg_dump` backups (COPY format)
+- Contains: Full database dump including all config and data
+
+### Restore Methods
+
+Two restore methods are available:
+
+**Option A: API Restore (JSON/API)** - Default
+- Uses Langfuse API to restore prompts, score_configs, datasets
+- Simpler, safer for most use cases
+- Script: `backend/scripts/backup_langfuse.py restore`
+- Sets up score configs and annotation queues separately
+
+**Option B: SQL Restore (Database Direct)**
+- Direct PostgreSQL database restore
+- Faster, more complete (includes datasets, annotation_queues automatically)
+- Requires SQL backup file
+- Scripts: `extract_langfuse_config_tables.py`, `restore_langfuse_db_filtered.py`
+- See `docs/LANGFUSE_SQL_RESTORE_PLAN.md` for details
+
+| Aspect | Option A (API) | Option B (SQL) |
+|--------|---------------|----------------|
+| **Completeness** | Partial (prompts, score_configs) | Complete (all config tables) |
+| **Datasets** | ❌ Not restored | ✅ Restored |
+| **Annotation Queues** | ❌ Manual setup | ✅ Restored |
+| **Speed** | Slower (multiple API calls) | Faster (single SQL restore) |
+| **Safety** | ✅ Very safe (no data risk) | ⚠️ Requires filtering |
+| **Complexity** | ✅ Simple | ⚠️ More complex |
+| **When to Use** | Default for most cases | When you need complete config restore |
+
 **Restore Process:**
 1. Test environment starts Langfuse services
 2. `langfuse-restore` service runs after Langfuse is healthy
-3. Executes existing scripts:
-   - `backup_langfuse.py restore` - Restores prompts, datasets, configs
-   - `setup_langfuse_score_configs.py` - Sets up score configs
-   - `setup_langfuse_annotation_queue.py` - Sets up annotation queue
+3. Checks `LANGFUSE_RESTORE_METHOD` environment variable:
+   - If `api` (default): Executes API restore scripts
+     - `backup_langfuse.py restore` - Restores prompts, datasets, configs
+     - `setup_langfuse_score_configs.py` - Sets up score configs
+     - `setup_langfuse_annotation_queue.py` - Sets up annotation queue
+   - If `sql`: Executes SQL restore script
+     - `restore_langfuse_db_filtered.py` - Restores filtered SQL backup
 4. Test environment now matches dev Langfuse setup exactly
-
-**No New Code Needed** - All restore scripts already exist!
 
 ---
 

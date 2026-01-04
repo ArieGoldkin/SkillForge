@@ -3,7 +3,7 @@
 import asyncio
 import os
 import uuid
-from typing import Annotated, Any, ClassVar, cast
+from typing import Annotated, Any, ClassVar
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
 from sqlalchemy.exc import IntegrityError
@@ -283,9 +283,8 @@ async def create_analysis(  # noqa: PLR0915 - Complex workflow orchestration
             content_type=content_type,
             status="pending",
         )
-        # cast() is the standard pattern for SQLAlchemy 1.x Column -> value conversion
-        # At runtime, created_analysis.id is a UUID, not a Column descriptor
-        analysis_uuid = cast("AnalysisID", created_analysis.id)
+        # At runtime, created_analysis.id is already a UUID
+        analysis_uuid = created_analysis.id
 
         logger.info(
             "analysis_created",
@@ -935,7 +934,7 @@ async def retry_analysis(  # noqa: PLR0915 - Complex retry orchestration
         retry_count=updated_analysis.retry_count,
     )
 
-    retry_count: int = updated_analysis.retry_count or 0  # type: ignore[assignment]
+    retry_count: int = updated_analysis.retry_count or 0
     return AnalysisRetryResponse(
         analysis_id=str(analysis_id),
         status=restart_stage,

@@ -65,7 +65,7 @@ SEARCH_ERRORS = (
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
 
-    from app.shared.services.embeddings.service import EmbeddingService
+    from app.shared.services.embeddings import EmbeddingServiceProtocol
     from app.shared.services.llm.ollama_provider import OllamaProvider
 
 # Type alias for LLM providers (cloud + local)
@@ -227,7 +227,7 @@ class QueryDecomposer:
 
     def __init__(
         self,
-        embedding_service: EmbeddingService | None = None,
+        embedding_service: EmbeddingServiceProtocol | None = None,
         llm: LLMProvider | None = None,
         cache: DecompositionCache | None = None,
     ) -> None:
@@ -521,7 +521,7 @@ class DecompositionCache:
 
     def __init__(
         self,
-        embedding_service: EmbeddingService | None = None,
+        embedding_service: EmbeddingServiceProtocol | None = None,
         l1_maxsize: int = 1000,
         l1_ttl: int = 300,  # 5 minutes
     ) -> None:

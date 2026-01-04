@@ -6,6 +6,8 @@ Uses trafilatura library which is fast, free, and doesn't require API keys.
 Best for: News sites, blogs, articles, documentation
 """
 
+import asyncio
+
 from app.core.exceptions import JinaReaderError  # Reuse for consistency
 from app.core.logging import get_logger
 from app.core.types import ExtractionResult
@@ -58,8 +60,6 @@ class TrafilaturaExtractor:
             JinaReaderError: If extraction fails (reused for API consistency)
 
         """
-        import asyncio
-
         logger.info(
             "trafilatura_extraction_started",
             url=url,
@@ -97,6 +97,142 @@ class TrafilaturaExtractor:
             )
             raise JinaReaderError(error_msg) from e
 
+    async def extract_batch(self, urls: list[str], threads: int = 10) -> list[ExtractionResult]:
+        """Batch extract multiple URLs in parallel using trafilatura's native threading.
+
+        This method uses trafilatura's built-in buffered_downloads which implements
+        efficient multi-threaded downloading. Significantly faster than sequential
+        extraction for multiple URLs.
+
+        Args:
+            urls: List of URLs to extract content from
+            threads: Number of concurrent threads for downloading (default: 10)
+
+        Returns:
+            List of ExtractionResult dictionaries (only successful extractions)
+
+        Example:
+            >>> extractor = TrafilaturaExtractor()
+            >>> urls = ["https://example.com/1", "https://example.com/2"]
+            >>> results = await extractor.extract_batch(urls, threads=5)
+            >>> len(results)  # May be less than len(urls) if some failed
+            2
+
+        """
+        from trafilatura.downloads import buffered_downloads
+
+        logger.info(
+            "trafilatura_batch_extraction_started",
+            url_count=len(urls),
+            threads=threads,
+        )
+
+        try:
+            # Run buffered_downloads in executor since it's synchronous
+            # It returns a generator of (url, html) tuples
+            loop = asyncio.get_event_loop()
+            downloaded = await loop.run_in_executor(
+                None, lambda: list(buffered_downloads(urls, download_threads=threads))
+            )
+
+            results: list[ExtractionResult] = []
+            successful = 0
+            failed = 0
+
+            for url, html in downloaded:
+                if html:
+                    try:
+                        result = self._extract_content(html, url)
+                        results.append(result)
+                        successful += 1
+                    except JinaReaderError as e:
+                        # Catch extraction errors for individual URLs
+                        # Don't fail the entire batch if one URL fails
+                        failed += 1
+                        logger.warning(
+                            "trafilatura_batch_extraction_item_failed",
+                            url=url,
+                            error=str(e),
+                            error_type=type(e).__name__,
+                        )
+                else:
+                    failed += 1
+                    logger.warning(
+                        "trafilatura_batch_extraction_download_failed",
+                        url=url,
+                    )
+
+            logger.info(
+                "trafilatura_batch_extraction_completed",
+                total_urls=len(urls),
+                successful=successful,
+                failed=failed,
+                success_rate=f"{successful / len(urls) * 100:.1f}%" if urls else "0.0%",
+            )
+
+            return results
+
+        except Exception as e:
+            error_msg = f"Trafilatura batch extraction failed: {type(e).__name__}: {e!s}"
+            logger.exception(
+                "trafilatura_batch_extraction_failed",
+                url_count=len(urls),
+                error=str(e),
+                error_type=type(e).__name__,
+            )
+            raise JinaReaderError(error_msg) from e
+
+    def deduplicate_content(self, contents: list[str]) -> list[tuple[int, str]]:
+        """Deduplicate content using Simhash fuzzy hashing.
+
+        Uses trafilatura's Simhash implementation for near-duplicate detection.
+        This is more sophisticated than exact string matching - it detects
+        semantically similar content even with minor textual differences.
+
+        Args:
+            contents: List of content strings to deduplicate
+
+        Returns:
+            List of (index, content) tuples for unique contents only.
+            Index refers to the original position in the input list.
+
+        Example:
+            >>> extractor = TrafilaturaExtractor()
+            >>> contents = ["Article A", "Article B", "Article A with typo"]
+            >>> unique = extractor.deduplicate_content(contents)
+            >>> len(unique)  # Simhash may detect A and "A with typo" as duplicates
+            2
+
+        """
+        from trafilatura.deduplication import Simhash
+
+        logger.info(
+            "trafilatura_deduplication_started",
+            content_count=len(contents),
+        )
+
+        seen_hashes: set[int] = set()
+        unique: list[tuple[int, str]] = []
+
+        for i, content in enumerate(contents):
+            h = Simhash(content)
+            if h.value not in seen_hashes:  # type: ignore[attr-defined]
+                seen_hashes.add(h.value)  # type: ignore[attr-defined]
+                unique.append((i, content))
+
+        duplicates_removed = len(contents) - len(unique)
+        logger.info(
+            "trafilatura_deduplication_completed",
+            original_count=len(contents),
+            unique_count=len(unique),
+            duplicates_removed=duplicates_removed,
+            deduplication_rate=f"{duplicates_removed / len(contents) * 100:.1f}%"
+            if contents
+            else "0.0%",
+        )
+
+        return unique
+
     def _extract_sync(self, url: str) -> ExtractionResult:
         """Extract content synchronously using trafilatura.
 
@@ -114,10 +250,29 @@ class TrafilaturaExtractor:
             msg = f"Failed to download content from: {url}"
             raise JinaReaderError(msg)
 
+        return self._extract_content(downloaded, url)
+
+    def _extract_content(self, html: str, url: str) -> ExtractionResult:
+        """Extract content from pre-downloaded HTML.
+
+        This internal method is used by both extract_article (single URL)
+        and extract_batch (multiple URLs) to avoid code duplication.
+
+        Args:
+            html: Downloaded HTML content
+            url: Source URL (for metadata)
+
+        Returns:
+            ExtractionResult dictionary
+
+        Raises:
+            JinaReaderError: If content extraction fails
+
+        """
         # Extract main content (article text)
         # This removes boilerplate, ads, navigation, etc.
         extracted = self.trafilatura.extract(
-            downloaded,
+            html,
             favor_recall=True,  # Include more content when unsure
             include_comments=False,  # Don't include comments
             include_tables=True,  # Tables often contain valuable data
@@ -129,7 +284,7 @@ class TrafilaturaExtractor:
         if not extracted:
             # Try extracting as plain text if markdown fails
             extracted = self.trafilatura.extract(
-                downloaded,
+                html,
                 favor_recall=True,  # Include more content when unsure
                 include_comments=False,
                 include_tables=True,  # Tables often contain valuable data
@@ -143,7 +298,7 @@ class TrafilaturaExtractor:
             raise JinaReaderError(msg)
 
         # Extract metadata
-        metadata = self.trafilatura.extract_metadata(downloaded)
+        metadata = self.trafilatura.extract_metadata(html)
 
         # Get title from metadata or extract from content
         # Note: trafilatura.extract_metadata() returns a Document object, not a dict

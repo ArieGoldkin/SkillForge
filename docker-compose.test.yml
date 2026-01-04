@@ -186,7 +186,7 @@ services:
       LANGFUSE_INIT_PROJECT_ID: skillforge-test
       LANGFUSE_INIT_PROJECT_NAME: SkillForge Test Backend
       LANGFUSE_INIT_USER_EMAIL: test@skillforge.local
-      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-test}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-skillforge-test-password-2025-secure}
     depends_on:
       langfuse-db:
         condition: service_healthy
@@ -366,6 +366,10 @@ services:
       ENVIRONMENT: test
       # LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY are loaded from .env.test via env_file
       LANGFUSE_HOST: http://langfuse-web:3000
+      # Restore method: 'sql' for SQL backup restore, 'api' for JSON/API restore (default: api)
+      LANGFUSE_RESTORE_METHOD: ${LANGFUSE_RESTORE_METHOD:-api}
+      # Path to SQL backup file (if using SQL restore method)
+      LANGFUSE_SQL_BACKUP_PATH: ${LANGFUSE_SQL_BACKUP_PATH:-backend/data/langfuse_db_backups/latest.sql}
     depends_on:
       langfuse-web:
         condition: service_healthy
@@ -374,20 +378,31 @@ services:
     volumes:
       - ./backend/scripts:/app/scripts:ro
       - ./backend/data/langfuse_backups:/app/data/langfuse_backups:ro
+      - ./backend/data/langfuse_db_backups:/app/data/langfuse_db_backups:ro
     command: >
       sh -c "
         echo 'Waiting for Langfuse to be ready...' &&
         until curl -f http://langfuse-web:3000/api/public/health; do sleep 2; done &&
         sleep 5 &&
-        echo 'Checking Langfuse credentials...' &&
-        if [ -n \"$$LANGFUSE_PUBLIC_KEY\" ] && [ -n \"$$LANGFUSE_SECRET_KEY\" ]; then
-          echo 'Restoring Langfuse configurations from backups...' &&
-          /app/.venv/bin/python scripts/backup_langfuse.py restore || echo 'Warning: Langfuse restore failed' &&
-          /app/.venv/bin/python scripts/setup_langfuse_score_configs.py || echo 'Warning: Score configs setup failed' &&
-          /app/.venv/bin/python scripts/setup_langfuse_annotation_queue.py || echo 'Warning: Annotation queue setup failed' &&
-          echo 'Langfuse configuration restored'
+        echo 'Checking restore method: $$LANGFUSE_RESTORE_METHOD' &&
+        if [ \"$$LANGFUSE_RESTORE_METHOD\" = \"sql\" ] && [ -f \"/app/$$LANGFUSE_SQL_BACKUP_PATH\" ]; then
+          echo 'Using SQL restore method (Option B)...' &&
+          /app/.venv/bin/python scripts/restore_langfuse_db_filtered.py \
+            --backup \"/app/$$LANGFUSE_SQL_BACKUP_PATH\" \
+            --container skillforge-langfuse-db-test \
+            --skip-backup || echo 'Warning: SQL restore failed' &&
+          echo 'SQL restore complete - langfuse-web will pick up changes automatically'
         else
-          echo 'Skipping Langfuse restore: LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY not set (optional for lightweight tests)'
+          echo 'Using API restore method (Option A)...' &&
+          if [ -n \"$$LANGFUSE_PUBLIC_KEY\" ] && [ -n \"$$LANGFUSE_SECRET_KEY\" ]; then
+            echo 'Restoring Langfuse configurations from backups...' &&
+            /app/.venv/bin/python scripts/backup_langfuse.py restore || echo 'Warning: Langfuse restore failed' &&
+            /app/.venv/bin/python scripts/setup_langfuse_score_configs.py || echo 'Warning: Score configs setup failed' &&
+            /app/.venv/bin/python scripts/setup_langfuse_annotation_queue.py || echo 'Warning: Annotation queue setup failed' &&
+            echo 'API restore complete'
+          else
+            echo 'Skipping Langfuse restore: LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY not set (optional for lightweight tests)'
+          fi
         fi
       "
     restart: "no"

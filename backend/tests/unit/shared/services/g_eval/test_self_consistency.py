@@ -416,7 +416,13 @@ class TestSelfConsistencyIntegration:
         """Test g_eval_score with self_consistency=True."""
         from app.shared.services.g_eval.scorer import g_eval_score
 
-        with patch("app.shared.services.g_eval.self_consistency.get_chat_model") as mock_model:
+        with (
+            patch("app.shared.services.g_eval.self_consistency.get_chat_model") as mock_model,
+            patch("app.core.langfuse_service.get_langfuse_service") as mock_langfuse,
+        ):
+            # Prevent Langfuse calls in unit tests
+            mock_langfuse.return_value = None
+
             mock_response = MagicMock()
             mock_response.content = """
             <reasoning>Good quality output</reasoning>
