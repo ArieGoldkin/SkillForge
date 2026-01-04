@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 
 import type { AnalysisStatus, FilterStatus } from '@app-types/api'
 import { useNavigate } from '@tanstack/react-router'
@@ -147,15 +147,18 @@ function extractAvailableStatuses(items: SearchResultItem[]): FilterStatus[] {
 
 export function useLibrarySkills({ searchResults }: UseLibrarySkillsParams) {
   const navigate = useNavigate()
-  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set())
+  // Use ref for synchronous mutex check to prevent race conditions
+  const retryingIdsRef = useRef<Set<string>>(new Set())
 
   const handleRetry = useCallback(
     async (analysisId: string, stage?: string) => {
-      if (retryingIds.has(analysisId)) {
+      // Synchronous check prevents race condition when called rapidly
+      if (retryingIdsRef.current.has(analysisId)) {
         return // Already retrying
       }
 
-      setRetryingIds((prev) => new Set(prev).add(analysisId))
+      // Immediately mark as retrying (synchronous)
+      retryingIdsRef.current.add(analysisId)
 
       try {
         logger.info('Retrying analysis', { analysisId, stage })
@@ -172,16 +175,14 @@ export function useLibrarySkills({ searchResults }: UseLibrarySkillsParams) {
           error: error instanceof Error ? error.message : String(error),
         })
         // TODO: Show error toast/notification
-        alert(`Failed to retry analysis: ${error instanceof Error ? error.message : String(error)}`)
+        console.error(
+          `Failed to retry analysis: ${error instanceof Error ? error.message : String(error)}`
+        )
       } finally {
-        setRetryingIds((prev) => {
-          const next = new Set(prev)
-          next.delete(analysisId)
-          return next
-        })
+        retryingIdsRef.current.delete(analysisId)
       }
     },
-    [retryingIds, navigate]
+    [navigate]
   )
 
   const skills = useMemo(() => {

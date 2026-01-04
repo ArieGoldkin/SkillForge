@@ -2,6 +2,8 @@
  * SkillCard barrel export
  */
 
+export type { SkillCardProps } from './SkillCard'
+export { SkillCard } from './SkillCard'
 export type { SkillCardMetadataProps } from './SkillCardMetadata'
 export { SkillCardMetadata } from './SkillCardMetadata'
 export type { SkillCardProgressProps } from './SkillCardProgress'
