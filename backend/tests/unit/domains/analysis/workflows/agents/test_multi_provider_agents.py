@@ -27,8 +27,8 @@ from app.domains.analysis.workflows.agents.base import (
     create_structured_agent,
     create_tool_enabled_agent,
 )
+from app.core.provider_config import get_structured_output_kwargs
 from app.domains.analysis.workflows.agents.factories import (
-    _get_structured_output_kwargs,
     create_agent_with_lcel_fallback,
 )
 
@@ -70,26 +70,44 @@ def mock_response_schema():
 
 
 class TestProviderSpecificKwargs:
-    """Test _get_structured_output_kwargs helper function."""
+    """Test get_structured_output_kwargs from provider_config module.
+
+    Issue #637: Centralized provider configuration registry.
+    """
 
     def test_openai_gets_strict_true(self):
         """OpenAI provider should get strict=True for JSON mode."""
-        kwargs = _get_structured_output_kwargs("openai")
+        kwargs = get_structured_output_kwargs("openai")
         assert kwargs == {"strict": True}
 
     def test_anthropic_gets_empty_kwargs(self):
         """Anthropic provider should not get strict mode."""
-        kwargs = _get_structured_output_kwargs("anthropic")
+        kwargs = get_structured_output_kwargs("anthropic")
         assert kwargs == {}
 
     def test_google_genai_gets_empty_kwargs(self):
         """Gemini provider should not get strict mode."""
-        kwargs = _get_structured_output_kwargs("google_genai")
+        kwargs = get_structured_output_kwargs("google_genai")
         assert kwargs == {}
 
     def test_unknown_provider_gets_empty_kwargs(self):
         """Unknown providers should not get strict mode (safe default)."""
-        kwargs = _get_structured_output_kwargs("unknown_provider")
+        kwargs = get_structured_output_kwargs("unknown_provider")
+        assert kwargs == {}
+
+    def test_xai_gets_strict_true(self):
+        """xAI (Grok) provider uses OpenAI-compatible API with strict=True."""
+        kwargs = get_structured_output_kwargs("xai")
+        assert kwargs == {"strict": True}
+
+    def test_deepseek_gets_strict_true(self):
+        """DeepSeek provider uses OpenAI-compatible API with strict=True."""
+        kwargs = get_structured_output_kwargs("deepseek")
+        assert kwargs == {"strict": True}
+
+    def test_ollama_gets_empty_kwargs(self):
+        """Ollama (local) should not get strict mode."""
+        kwargs = get_structured_output_kwargs("ollama")
         assert kwargs == {}
 
 

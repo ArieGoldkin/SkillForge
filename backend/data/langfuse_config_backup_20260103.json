@@ -1,0 +1,70 @@
+{
+  "backup_date": "2026-01-03T15:51:56Z",
+  "langfuse_version": "v3.143.0",
+  "sql_backup": "langfuse_db_backups/langfuse_backup_20260103_155156.sql",
+  
+  "summary": {
+    "llm_api_keys": 5,
+    "score_configs": 17,
+    "eval_templates": 5,
+    "annotation_queues": 1,
+    "prompts": 10,
+    "datasets": 6,
+    "dataset_items": 203
+  },
+  
+  "llm_providers": [
+    "openai",
+    "anthropic", 
+    "google",
+    "xai",
+    "deepseek"
+  ],
+  
+  "score_configs": [
+    "g_eval_relevance",
+    "g_eval_depth",
+    "g_eval_coherence",
+    "g_eval_completeness",
+    "g_eval_overall",
+    "g_eval_actionability",
+    "quality_relevance",
+    "quality_depth",
+    "quality_coherence",
+    "quality_avg",
+    "latency_seconds",
+    "token_count_input",
+    "token_count_output",
+    "token_count_total",
+    "cost_usd",
+    "cache_hit",
+    "user_feedback"
+  ],
+  
+  "eval_templates": [
+    "g_eval_relevance",
+    "g_eval_depth",
+    "g_eval_coherence",
+    "g_eval_overall",
+    "g_eval_accuracy"
+  ],
+  
+  "annotation_queues": [
+    "skillforge-user-feedback"
+  ],
+  
+  "datasets": [
+    "supervisor_routing_golden_v1_prod",
+    "agent_analysis_golden_v1_prod",
+    "synthesis_golden_v1_prod",
+    "adversarial_safety_v1_prod",
+    "edge_cases_boundary_v1_prod",
+    "skillforge_golden_analyses_v1_prod"
+  ],
+  
+  "restore_instructions": {
+    "full_restore": "./scripts/backup_langfuse_db.sh restore langfuse_backup_20260103_155156.sql",
+    "after_restore": "docker compose restart langfuse-web",
+    "env_update": "LANGFUSE_ANNOTATION_QUEUE_ID=cmjyckdzz007vqj072co0bsc1"
+  }
+}

@@ -38,6 +38,7 @@ from app.core.config import settings
 from app.core.feature_flags import get_technique_config
 from app.core.logging import get_logger
 from app.core.model_factory import get_chat_model
+from app.core.provider_config import get_structured_output_kwargs
 from app.core.types import AnalysisID
 from app.domains.analysis.workflows.agents.base import (
     ToolCallConfig,
@@ -49,27 +50,6 @@ from app.shared.services.agents.few_shot_factory import create_few_shot_agent
 from app.shared.services.embeddings.service import EmbeddingService
 
 logger = get_logger(__name__)
-
-
-def _get_structured_output_kwargs(provider: str) -> dict:
-    """Get provider-specific kwargs for with_structured_output().
-
-    Args:
-        provider: LLM provider name (e.g., 'openai', 'anthropic', 'google_genai')
-
-    Returns:
-        Dict of kwargs for with_structured_output()
-
-    Note:
-        - strict=True is OpenAI-specific (JSON mode with guaranteed schema compliance)
-        - Gemini and Anthropic ignore this parameter silently
-        - Providing strict=True to non-OpenAI providers can cause unexpected behavior
-
-    """
-    if provider == "openai":
-        return {"strict": True}
-    # Gemini and Anthropic don't support strict mode
-    return {}
 
 
 def create_agent_with_lcel_fallback(  # noqa: PLR0913 - Factory needs all params
@@ -118,8 +98,9 @@ def create_agent_with_lcel_fallback(  # noqa: PLR0913 - Factory needs all params
         has_tools=tools is not None,
     )
 
-    # Get provider-specific kwargs (strict=True only for OpenAI)
-    structured_kwargs = _get_structured_output_kwargs(provider)
+    # Get provider-specific kwargs (strict=True only for OpenAI/xAI/DeepSeek)
+    # Issue #637: Uses centralized provider_config registry
+    structured_kwargs = get_structured_output_kwargs(provider)
 
     # Create primary model
     primary = get_chat_model(config={"configurable": {"model": primary_model}})
