@@ -2147,15 +2147,15 @@ psycopg-pool = ">=3.2.0"
 
 [[package]]
 name = "langgraph-checkpoint-redis"
-version = "0.3.1"
+version = "0.3.2"
 description = "Redis implementation of the LangGraph agent checkpoint saver and store."
 optional = false
 python-versions = "<3.14,>=3.10"
 groups = ["main"]
 markers = "python_version == \"3.13\""
 files = [
-    {file = "langgraph_checkpoint_redis-0.3.1-py3-none-any.whl", hash = "sha256:6085b781e24f4a35f1110b52e29e759ff260a2661e086fe1df4c5b09ef0b015d"},
-    {file = "langgraph_checkpoint_redis-0.3.1.tar.gz", hash = "sha256:7439cf0024a4a34075eb00b7734f73bc1b7e0d4ec7a0cb722bfddd630d0ea99c"},
+    {file = "langgraph_checkpoint_redis-0.3.2-py3-none-any.whl", hash = "sha256:7641bf5d3f1b64b396e064856f6fd36e983548e353fe2a11c9b0357bceb304fd"},
+    {file = "langgraph_checkpoint_redis-0.3.2.tar.gz", hash = "sha256:1fa28a3f06c1152ebcbfdddec865cdcac65e92ecccd39ecbca99a8be18a8d71b"},
 ]
 
 [package.dependencies]
@@ -5480,7 +5480,7 @@ description = "Provider of IANA time zone data"
 optional = false
 python-versions = ">=2"
 groups = ["main"]
-markers = "platform_system == \"Windows\" or sys_platform == \"win32\""
+markers = "sys_platform == \"win32\" or platform_system == \"Windows\""
 files = [
     {file = "tzdata-2025.3-py2.py3-none-any.whl", hash = "sha256:06a47e5700f3081aab02b2e513160914ff0694bce9947d6b76ebd6bf57cfc5d1"},
     {file = "tzdata-2025.3.tar.gz", hash = "sha256:de39c2ca5dc7b0344f2eba86f49d614019d29f060fc4ebc8a417896a620b56a7"},
