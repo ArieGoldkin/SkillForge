@@ -48,7 +48,7 @@ importers:
         specifier: ^12.23.26
         version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       ky:
-        specifier: ^1.14.1
+        specifier: ^1.14.2
         version: 1.14.2
       lucide-react:
         specifier: ^0.562.0
