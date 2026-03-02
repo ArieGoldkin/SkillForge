@@ -198,7 +198,7 @@ jobs:
     if: always()
     steps:
       - name: Download security reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: "*-security-report"
           path: security-reports
