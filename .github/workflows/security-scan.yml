@@ -73,7 +73,7 @@ jobs:
           pip-audit --requirement requirements.txt --desc --format=json --output=backend-security-report.json
 
       - name: Upload security report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-security-report
@@ -124,7 +124,7 @@ jobs:
           npm audit --json > frontend-security-report.json
 
       - name: Upload security report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: frontend-security-report
@@ -224,7 +224,7 @@ jobs:
           fi
 
       - name: Upload security summary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: security-summary
           path: security-summary.md

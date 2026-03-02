@@ -386,7 +386,7 @@ jobs:
           echo "**Note:** With storageState optimization and 4 parallel workers, expected 50-70% time reduction vs sequential execution." >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-lightweight
@@ -396,7 +396,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload test results on failure
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-results-lightweight
@@ -621,7 +621,7 @@ jobs:
           echo "**Note:** With storageState optimization and 4 parallel workers, expected 50-70% time reduction vs sequential execution." >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-with-llm
@@ -631,7 +631,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload test results on failure
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-results-with-llm
@@ -704,7 +704,7 @@ jobs:
           docker compose -f docker-compose.e2e.yml up --build --exit-code-from e2e
 
       - name: Upload Docker test report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-docker
